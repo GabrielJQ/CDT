@@ -13,40 +13,34 @@ class DashboardController extends Controller
         $updatedAt = cache()->get('dashboard_updated_at');
 
         if ($cached) {
-            $headers = $cached['headers'];
-            $stores = $cached['stores'];
+            $stores = $cached;
         } else {
-            $parsed = $this->fetchFromSheet();
-            if ($parsed === null) {
+            $stores = $this->fetchFromSheet();
+            if ($stores === null) {
                 return view('dashboard', [
-                    'headers' => [],
+                    'kpis' => [],
                     'stores' => [],
-                    'numericColumns' => [],
                     'error' => 'No se pudieron obtener los datos del Google Sheet.',
                     'updatedAt' => null,
                 ]);
             }
-            $headers = $parsed['headers'];
-            $stores = $parsed['stores'];
-            $this->storeInCache(['headers' => $headers, 'stores' => $stores]);
+            $this->storeInCache($stores);
         }
 
-        $numericColumns = $this->detectNumericColumns($headers, $stores);
+        $kpis = $this->calculateConnectivityKpis($stores);
 
-        return view('dashboard', compact(
-            'headers', 'stores', 'numericColumns', 'updatedAt'
-        ));
+        return view('dashboard', compact('kpis', 'stores', 'updatedAt'));
     }
 
     public function refresh()
     {
-        $parsed = $this->fetchFromSheet();
+        $stores = $this->fetchFromSheet();
 
-        if ($parsed === null) {
+        if ($stores === null) {
             return back()->with('error', 'No se pudieron refrescar los datos desde el Google Sheet.');
         }
 
-        $this->storeInCache($parsed);
+        $this->storeInCache($stores);
 
         return back()->with('success', 'Datos actualizados correctamente desde el Google Sheet.');
     }
@@ -63,7 +57,6 @@ class DashboardController extends Controller
         $csv = $response->body();
         $lines = explode("\n", trim($csv));
 
-        // Remove BOM if present
         if (isset($lines[0]) && str_starts_with($lines[0], "\xEF\xBB\xBF")) {
             $lines[0] = substr($lines[0], 3);
         }
@@ -72,90 +65,86 @@ class DashboardController extends Controller
             return null;
         }
 
-        // Skip first 6 metadata rows, row index 6 is the header row
         $headerLine = $lines[6] ?? '';
         $rawHeaders = str_getcsv($headerLine);
 
-        // Data starts at row index 7
-        $allData = [];
+        $stores = [];
         for ($i = 7; $i < count($lines); $i++) {
             $line = trim($lines[$i]);
             if ($line === '') continue;
             $row = str_getcsv($line);
-            $allData[] = $row;
-        }
-
-        if (empty($allData)) {
-            return null;
-        }
-
-        // Detect constant columns
-        $numCols = count($rawHeaders);
-        $constantCols = [];
-        if ($numCols > 0) {
-            for ($c = 0; $c < $numCols; $c++) {
-                $firstVal = $allData[0][$c] ?? '';
-                $isConstant = true;
-                foreach ($allData as $row) {
-                    if (($row[$c] ?? '') !== $firstVal) {
-                        $isConstant = false;
-                        break;
-                    }
-                }
-                if ($isConstant) {
-                    $constantCols[] = $c;
-                }
-            }
-        }
-
-        // Build final headers and data excluding constant columns
-        $headers = [];
-        $colMap = [];
-        foreach ($rawHeaders as $i => $h) {
-            $h = trim($h);
-            if ($h === '' || in_array($i, $constantCols)) continue;
-            $colMap[$i] = count($headers);
-            $headers[] = $h;
-        }
-
-        $stores = [];
-        foreach ($allData as $row) {
             $store = [];
-            foreach ($colMap as $origIdx => $newIdx) {
-                $store[$headers[$newIdx]] = trim($row[$origIdx] ?? '');
+            foreach ($rawHeaders as $idx => $header) {
+                $h = trim($header);
+                if ($h === '') continue;
+                $store[$h] = trim($row[$idx] ?? '');
             }
             $stores[] = $store;
         }
 
-        return compact('headers', 'stores');
+        return $stores;
     }
 
-    private function detectNumericColumns(array $headers, array $stores): array
+    private function calculateConnectivityKpis(array $stores): array
     {
-        $numeric = [];
-        if (empty($stores)) return $numeric;
+        $total = count($stores);
+        $fields = [
+            'TELEFONIA' => ['label' => 'Teléfono', 'icon' => '📞'],
+            'INTERNET' => ['label' => 'Internet', 'icon' => '🌐'],
+            'Señal de celular' => ['label' => 'Señal Celular', 'icon' => '📱'],
+        ];
 
-        $sample = $stores[0];
-        foreach ($headers as $h) {
-            if (isset($sample[$h]) && is_numeric(str_replace(',', '', $sample[$h]))) {
-                $sum = 0;
-                foreach ($stores as $s) {
-                    $val = str_replace(',', '', $s[$h] ?? '0');
-                    if (is_numeric($val)) {
-                        $sum += (float)$val;
-                    }
+        $kpis = [];
+        $companiaCount = [];
+
+        foreach ($fields as $col => $info) {
+            $yes = 0;
+            $no = 0;
+            foreach ($stores as $store) {
+                $val = strtoupper(trim($store[$col] ?? ''));
+                if ($val === 'S') {
+                    $yes++;
+                } elseif ($val === 'N') {
+                    $no++;
                 }
-                $numeric[$h] = $sum;
             }
+            $pctYes = $total > 0 ? round($yes / $total * 100) : 0;
+            $kpis[$col] = [
+                'label' => $info['label'],
+                'icon' => $info['icon'],
+                'yes' => $yes,
+                'no' => $no,
+                'pctYes' => $pctYes,
+                'pctNo' => 100 - $pctYes,
+            ];
         }
 
-        arsort($numeric);
-        return array_slice($numeric, 0, 6);
+        // Compañía distribution (only where Señal de celular = S)
+        foreach ($stores as $store) {
+            $senial = strtoupper(trim($store['Señal de celular'] ?? ''));
+            if ($senial !== 'S') continue;
+            $comp = trim($store['Compañía'] ?? 'Sin dato');
+            if ($comp === '') $comp = 'Sin dato';
+            $companiaCount[$comp] = ($companiaCount[$comp] ?? 0) + 1;
+        }
+        arsort($companiaCount);
+        $totalComp = array_sum($companiaCount);
+        foreach ($companiaCount as $comp => $count) {
+            $companiaPct[$comp] = [
+                'count' => $count,
+                'pct' => $totalComp > 0 ? round($count / $totalComp * 100) : 0,
+            ];
+        }
+
+        $kpis['_compania'] = $companiaPct ?? [];
+        $kpis['_total'] = $total;
+
+        return $kpis;
     }
 
-    private function storeInCache(array $data): void
+    private function storeInCache(array $stores): void
     {
-        cache()->put('dashboard_data', $data, now()->addHours(1));
+        cache()->put('dashboard_data', $stores, now()->addHours(1));
         cache()->put('dashboard_updated_at', now()->toDateTimeString(), now()->addHours(1));
     }
 }
