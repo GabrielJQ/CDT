@@ -13,6 +13,7 @@
             $currentPath = request()->path();
             $navItems = [
                 '/' => ['label' => 'Dashboard', 'icon' => '📊'],
+                'auditoria' => ['label' => 'Auditoría', 'icon' => '🔍'],
                 'directorio' => ['label' => 'Directorio', 'icon' => '📋'],
             ];
             $presenciaChildren = [

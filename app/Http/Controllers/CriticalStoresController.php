@@ -152,11 +152,12 @@ class CriticalStoresController extends Controller
             'icon' => '📄',
         ];
 
-        $gdomarg = strtoupper(trim($store['GDOMARG'] ?? ''));
-        $conditions['rotacion_baja'] = $gdomarg === 'BAJA';
+        $vtaMes = (float) str_replace([',', '$', ' '], '', $store['Vta_Mes'] ?? '0');
+        $rotacion = $capTot > 0 ? $vtaMes / $capTot : 0;
+        $conditions['rotacion_baja'] = $rotacion < 1.5;
         $labels['rotacion_baja'] = [
             'label' => 'Rotación baja',
-            'detail' => 'GDOMARG: ' . ($gdomarg ?: 'Sin dato'),
+            'detail' => 'Vta_Mes/Cap_Tot: ' . number_format($rotacion, 2),
             'icon' => '📉',
         ];
 
