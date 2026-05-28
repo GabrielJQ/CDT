@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Http;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $cached = cache()->get('dashboard_data');
         $updatedAt = cache()->get('dashboard_updated_at');
@@ -20,6 +20,10 @@ class DashboardController extends Controller
                 return view('dashboard', [
                     'kpis' => [],
                     'stores' => [],
+                    'totalCount' => 0,
+                    'filteredCount' => 0,
+                    'filterOptions' => [],
+                    'filters' => [],
                     'error' => 'No se pudieron obtener los datos del Google Sheet.',
                     'updatedAt' => null,
                 ]);
@@ -27,9 +31,58 @@ class DashboardController extends Controller
             $this->storeInCache($stores);
         }
 
-        $kpis = $this->calculateConnectivityKpis($stores);
+        $totalCount = count($stores);
 
-        return view('dashboard', compact('kpis', 'stores', 'updatedAt'));
+        // Collect filter options from full dataset
+        $filterOptions = $this->getFilterOptions($stores);
+
+        // Read filters from request
+        $filters = [
+            'almacen' => trim($request->query('almacen', '')),
+            'telefono' => $request->query('telefono', ''),
+            'senial' => $request->query('senial', ''),
+            'compania' => $request->query('compania', ''),
+            'internet' => $request->query('internet', ''),
+        ];
+
+        // Apply filters
+        $filtered = collect($stores)->filter(function ($store) use ($filters) {
+            if ($filters['almacen'] !== '') {
+                $nombre = $store['Nombre_Almacen'] ?? '';
+                if (!str_contains(mb_strtoupper($nombre), mb_strtoupper($filters['almacen']))) {
+                    return false;
+                }
+            }
+            if ($filters['telefono'] === 'si' && (strtoupper(trim($store['TELEFONIA'] ?? '')) !== 'S')) return false;
+            if ($filters['telefono'] === 'no' && (strtoupper(trim($store['TELEFONIA'] ?? '')) !== 'N')) return false;
+            if ($filters['senial'] === 'si' && (strtoupper(trim($store['Señal de celular'] ?? '')) !== 'S')) return false;
+            if ($filters['senial'] === 'no' && (strtoupper(trim($store['Señal de celular'] ?? '')) !== 'N')) return false;
+            if ($filters['internet'] === 'si' && (strtoupper(trim($store['INTERNET'] ?? '')) !== 'S')) return false;
+            if ($filters['internet'] === 'no' && (strtoupper(trim($store['INTERNET'] ?? '')) !== 'N')) return false;
+            if ($filters['compania'] !== '') {
+                $comp = strtoupper(trim($store['Compañía'] ?? ''));
+                $filterComp = strtoupper(trim($filters['compania']));
+                if ($filterComp === 'SIN DATO' || $filterComp === 'SIN_DATO') {
+                    if ($comp !== '' && $comp !== 'SIN DATO' && $comp !== 'NINGUNO') return false;
+                } elseif ($comp !== $filterComp) {
+                    return false;
+                }
+            }
+            return true;
+        })->values()->all();
+
+        $filteredCount = count($filtered);
+        $kpis = $this->calculateConnectivityKpis($filtered);
+
+        return view('dashboard', [
+            'kpis' => $kpis,
+            'stores' => $filtered,
+            'totalCount' => $totalCount,
+            'filteredCount' => $filteredCount,
+            'filterOptions' => $filterOptions,
+            'filters' => $filters,
+            'updatedAt' => $updatedAt,
+        ]);
     }
 
     public function refresh()
@@ -85,6 +138,26 @@ class DashboardController extends Controller
         return $stores;
     }
 
+    private function getFilterOptions(array $stores): array
+    {
+        $almacenes = collect($stores)
+            ->pluck('Nombre_Almacen')
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+
+        $companias = collect($stores)
+            ->pluck('Compañía')
+            ->map(function ($v) { return trim($v) ?: 'Sin dato'; })
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+
+        return compact('almacenes', 'companias');
+    }
+
     private function calculateConnectivityKpis(array $stores): array
     {
         $total = count($stores);
@@ -108,18 +181,19 @@ class DashboardController extends Controller
                     $no++;
                 }
             }
+            $undef = $total - $yes - $no;
             $pctYes = $total > 0 ? round($yes / $total * 100) : 0;
             $kpis[$col] = [
                 'label' => $info['label'],
                 'icon' => $info['icon'],
                 'yes' => $yes,
                 'no' => $no,
+                'undef' => $undef,
                 'pctYes' => $pctYes,
                 'pctNo' => 100 - $pctYes,
             ];
         }
 
-        // Compañía distribution (only where Señal de celular = S)
         foreach ($stores as $store) {
             $senial = strtoupper(trim($store['Señal de celular'] ?? ''));
             if ($senial !== 'S') continue;
@@ -129,6 +203,7 @@ class DashboardController extends Controller
         }
         arsort($companiaCount);
         $totalComp = array_sum($companiaCount);
+        $companiaPct = [];
         foreach ($companiaCount as $comp => $count) {
             $companiaPct[$comp] = [
                 'count' => $count,
@@ -136,7 +211,7 @@ class DashboardController extends Controller
             ];
         }
 
-        $kpis['_compania'] = $companiaPct ?? [];
+        $kpis['_compania'] = $companiaPct;
         $kpis['_total'] = $total;
 
         return $kpis;
