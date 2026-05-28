@@ -7,7 +7,7 @@ abstract class Controller
     protected function applyRegionFilter(array $stores): array
     {
         $uo = session('region_filter', '');
-        if ($uo === '') return $stores;
+        if ($uo === '' || $uo === null) return $stores;
 
         return collect($stores)->filter(function ($s) use ($uo) {
             return ($s['Nombre_UniOpe'] ?? '') === $uo;

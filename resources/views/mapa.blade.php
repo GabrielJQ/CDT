@@ -172,6 +172,7 @@
                 '<strong style="font-size:0.9rem">' + (store.Nombre_Almacen || '—') + '</strong><br>' +
                 '<span style="color:#6b7280">#' + (store.No_Tienda_Actual || '—') + '</span><br>' +
                 '<span>' + (store.Municipio || '—') + ', ' + (store.Estado || '—') + '</span><br>' +
+                '<span style="color:#2563eb;font-size:0.75rem">📍 ' + (store.Nombre_UniOpe || '—') + '</span><br>' +
                 '<hr style="margin:6px 0;border-color:#e5e7eb">' +
                 '<span>📊 Vta_Mes: <strong>$' + (store.Vta_Mes ? Number(store.Vta_Mes).toLocaleString() : '—') + '</strong></span><br>' +
                 '<span>💰 Cap_Tot: <strong>$' + (store.Cap_Tot ? Number(store.Cap_Tot).toLocaleString() : '—') + '</strong></span><br>' +

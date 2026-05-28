@@ -18,6 +18,7 @@ Route::get('/directorio', [DirectorioController::class, 'index']);
 Route::get('/aperturas', [AperturaController::class, 'index']);
 
 Route::post('/set-region', function (Illuminate\Http\Request $r) {
-    $r->session()->put('region_filter', $r->input('region', ''));
+    $region = $r->input('region', '');
+    $r->session()->put('region_filter', $region ?? '');
     return back();
 })->middleware('web');

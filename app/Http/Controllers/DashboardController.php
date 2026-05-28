@@ -17,6 +17,11 @@ class DashboardController extends Controller
                 'totalCount' => 0,
                 'connectivityKpis' => [],
                 'criticalSummary' => ['rojo' => 0, 'amarillo' => 0, 'verde' => 0],
+                'sinConectividad' => 0,
+                'aperturasEsteMes' => 0,
+                'geoStats' => ['conCoordenadas' => 0, 'sinCoordenadas' => 0],
+                'aperturasKpi' => ['total' => 0, 'esteAnio' => 0],
+                'directorioStats' => ['completos' => 0, 'incompletos' => 0],
                 'updatedAt' => null,
                 'error' => 'No se pudieron obtener los datos del Google Sheet.',
             ]);
@@ -27,13 +32,22 @@ class DashboardController extends Controller
         $totalCount = count($stores);
 
         $connectivityKpis = $this->calculateConnectivityKpis($stores);
-
         $criticalSummary = $this->calculateCriticalSummary($stores);
+        $sinConectividad = $this->calculateSinConectividad($stores);
+        $aperturasEsteMes = $this->calculateAperturasEsteMes($stores);
+        $geoStats = $this->calculateGeoStats($stores);
+        $aperturasKpi = $this->calculateAperturasKpi($stores);
+        $directorioStats = $this->calculateDirectorioStats($stores);
 
         return view('dashboard', [
             'totalCount' => $totalCount,
             'connectivityKpis' => $connectivityKpis,
             'criticalSummary' => $criticalSummary,
+            'sinConectividad' => $sinConectividad,
+            'aperturasEsteMes' => $aperturasEsteMes,
+            'geoStats' => $geoStats,
+            'aperturasKpi' => $aperturasKpi,
+            'directorioStats' => $directorioStats,
             'updatedAt' => cache()->get('dashboard_updated_at'),
         ]);
     }
@@ -174,6 +188,82 @@ class DashboardController extends Controller
         }
 
         return compact('rojo', 'amarillo', 'verde');
+    }
+
+    private function calculateSinConectividad(array $stores): int
+    {
+        $count = 0;
+        foreach ($stores as $store) {
+            $tel = strtoupper(trim($store['TELEFONIA'] ?? ''));
+            $int = strtoupper(trim($store['INTERNET'] ?? ''));
+            $cel = strtoupper(trim($store['Señal de celular'] ?? ''));
+            if ($tel !== 'S' && $int !== 'S' && $cel !== 'S') $count++;
+        }
+        return $count;
+    }
+
+    private function calculateAperturasEsteMes(array $stores): int
+    {
+        $now = now();
+        $count = 0;
+        foreach ($stores as $store) {
+            $fecha = $this->parseDate($store['Fecha_Apertura'] ?? '');
+            if ($fecha && $fecha->year === $now->year && $fecha->month === $now->month) $count++;
+        }
+        return $count;
+    }
+
+    private function calculateGeoStats(array $stores): array
+    {
+        $conCoordenadas = 0;
+        $sinCoordenadas = 0;
+        foreach ($stores as $store) {
+            $lat = trim($store['Latitud'] ?? '');
+            $lon = trim($store['Longitud'] ?? '');
+            if ($lat !== '' && $lat !== '0' && $lon !== '' && $lon !== '0') {
+                $conCoordenadas++;
+            } else {
+                $sinCoordenadas++;
+            }
+        }
+        return compact('conCoordenadas', 'sinCoordenadas');
+    }
+
+    private function calculateAperturasKpi(array $stores): array
+    {
+        $now = now();
+        $total = 0;
+        $esteAnio = 0;
+        foreach ($stores as $store) {
+            $fecha = $this->parseDate($store['Fecha_Apertura'] ?? '');
+            if ($fecha) {
+                $total++;
+                if ($fecha->year === $now->year) $esteAnio++;
+            }
+        }
+        return compact('total', 'esteAnio');
+    }
+
+    private function calculateDirectorioStats(array $stores): array
+    {
+        $incompletos = 0;
+        $completos = 0;
+        $trackedColumns = [
+            'TELEFONIA', 'CORREO', 'Cap_Tot', 'Direccion',
+        ];
+        foreach ($stores as $store) {
+            $hasEmpty = false;
+            foreach ($trackedColumns as $col) {
+                $val = trim($store[$col] ?? '');
+                if ($val === '' || $val === '0') {
+                    $hasEmpty = true;
+                    break;
+                }
+            }
+            if ($hasEmpty) $incompletos++;
+            else $completos++;
+        }
+        return compact('incompletos', 'completos');
     }
 
     private function parseDate(?string $value): ?Carbon

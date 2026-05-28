@@ -8,7 +8,7 @@ class MapaController extends Controller
 {
     const MEXICO_BBOX = ['latMin' => 14.5, 'latMax' => 32.7, 'lonMin' => -118.4, 'lonMax' => -86.7];
 
-    const OAXACA_BBOX = ['latMin' => 15.6, 'latMax' => 18.7, 'lonMin' => -98.6, 'lonMax' => -94.2];
+    const OAXACA_BBOX = ['latMin' => 15.3, 'latMax' => 18.8, 'lonMin' => -98.8, 'lonMax' => -93.7];
 
     const GEO_LABELS = [
         'OK' => ['label' => 'Válidas', 'icon' => '🟢', 'color' => 'green'],
@@ -168,7 +168,7 @@ class MapaController extends Controller
         $lat = $this->parseCoordinate($latRaw);
         $lon = $this->parseCoordinate($lonRaw);
 
-        if ($lat === null || $lon === null) {
+        if ($lat === null || $lon === null || ($lat === 0.0 && $lon === 0.0)) {
             return [
                 'status' => 'SIN_COORDENADAS',
                 'lat' => null,
