@@ -35,58 +35,49 @@
             <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">{{ $error }}</div>
         @endisset
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-white rounded-xl shadow p-6 border-l-4 border-blue-500">
-                <p class="text-sm text-gray-500 uppercase tracking-wide">Total P&eacute;rdidas</p>
-                <p class="text-3xl font-bold text-gray-800">${{ number_format($totalLosses, 2) }}</p>
+        @if(count($numericColumns) > 0)
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                @foreach($numericColumns as $col => $total)
+                    <div class="bg-white rounded-xl shadow p-6 border-l-4 {{ $loop->first ? 'border-blue-500' : ($loop->index % 2 === 0 ? 'border-yellow-500' : 'border-green-500') }}">
+                        <p class="text-sm text-gray-500 uppercase tracking-wide">{{ $col }}</p>
+                        <p class="text-3xl font-bold text-gray-800">{{ is_float($total) ? '$' . number_format($total, 2) : number_format($total) }}</p>
+                    </div>
+                @endforeach
             </div>
-            <div class="bg-white rounded-xl shadow p-6 border-l-4 border-yellow-500">
-                <p class="text-sm text-gray-500 uppercase tracking-wide">Tiendas con Faltas</p>
-                <p class="text-3xl font-bold text-gray-800">{{ $storesWithShortage }}</p>
-            </div>
-            <div class="bg-white rounded-xl shadow p-6 border-l-4 border-green-500">
-                <p class="text-sm text-gray-500 uppercase tracking-wide">Total Tiendas Registradas</p>
-                <p class="text-3xl font-bold text-gray-800">{{ $totalStores }}</p>
-            </div>
-        </div>
+        @endif
 
         @if(count($stores) > 0)
-            <div class="bg-white rounded-xl shadow overflow-hidden">
-                <table class="min-w-full divide-y divide-gray-200">
+            <div class="bg-white rounded-xl shadow overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 text-sm">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tienda</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ciudad</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">P&eacute;rdidas</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Faltas Personal</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estatus</th>
+                            @foreach($headers as $header)
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">{{ $header }}</th>
+                            @endforeach
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200">
                         @foreach($stores as $store)
                             <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $store['Tienda'] }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-500">{{ $store['Ciudad'] }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-900">${{ number_format($store['Perdidas_Monetarias'], 2) }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ $store['Faltas_Personal'] }}</td>
-                                <td class="px-6 py-4">
+                                @foreach($headers as $header)
                                     @php
-                                        $estatus = $store['Estatus'];
-                                        $badgeClass = match ($estatus) {
-                                            'Ok' => 'bg-green-100 text-green-800',
-                                            'Alerta' => 'bg-red-100 text-red-800',
-                                            default => 'bg-gray-100 text-gray-800',
-                                        };
+                                        $val = $store[$header] ?? '';
+                                        $isNumeric = is_numeric(str_replace(',', '', $val));
                                     @endphp
-                                    <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $badgeClass }}">
-                                        {{ $estatus }}
-                                    </span>
-                                </td>
+                                    <td class="px-4 py-3 whitespace-nowrap {{ $isNumeric ? 'text-right font-mono' : 'text-gray-900' }}">
+                                        @if($isNumeric)
+                                            {{ number_format((float)$val, 2) }}
+                                        @else
+                                            {{ $val }}
+                                        @endif
+                                    </td>
+                                @endforeach
                             </tr>
                         @endforeach
                     </tbody>
                 </table>
             </div>
+            <p class="text-sm text-gray-400 mt-2">Total de tiendas: {{ count($stores) }}</p>
         @else
             <div class="bg-white rounded-xl shadow p-6 text-center text-gray-500">
                 No hay datos de tiendas para mostrar.
