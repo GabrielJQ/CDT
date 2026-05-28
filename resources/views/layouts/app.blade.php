@@ -16,6 +16,7 @@
                 'conectividad' => ['label' => 'Conectividad', 'icon' => '📡'],
                 'tiendas-criticas' => ['label' => 'Tiendas Críticas', 'icon' => '⚠️'],
                 'mapa' => ['label' => 'Mapa', 'icon' => '🗺️'],
+                'directorio' => ['label' => 'Directorio', 'icon' => '📋'],
             ];
         @endphp
 

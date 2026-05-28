@@ -5,6 +5,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ConnectivityController;
 use App\Http\Controllers\CriticalStoresController;
 use App\Http\Controllers\MapaController;
+use App\Http\Controllers\DirectorioController;
 
 Route::get('/', [DashboardController::class, 'index']);
 Route::post('/refresh', [DashboardController::class, 'refresh']);
@@ -12,3 +13,4 @@ Route::post('/refresh', [DashboardController::class, 'refresh']);
 Route::get('/conectividad', [ConnectivityController::class, 'index']);
 Route::get('/tiendas-criticas', [CriticalStoresController::class, 'index']);
 Route::get('/mapa', [MapaController::class, 'index']);
+Route::get('/directorio', [DirectorioController::class, 'index']);
