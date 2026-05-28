@@ -1,6 +1,6 @@
-@extends('layouts.app', ['page-title' => 'Tiendas Críticas'])
+@extends('layouts.app', ['page-title' => 'Información de Tiendas'])
 
-@section('title', 'Tiendas Críticas — Dashboard CDT')
+@section('title', 'Información de Tiendas — Dashboard CDT')
 
 @section('content')
     {{-- Summary Cards --}}

@@ -44,9 +44,9 @@
         </a>
 
         {{-- Critical Stores Module Card --}}
-        <a href="/tiendas-criticas" class="block bg-white rounded-xl shadow p-5 hover:shadow-lg transition border-l-4 border-red-500 group">
+        <a href="/informacion-tiendas" class="block bg-white rounded-xl shadow p-5 hover:shadow-lg transition border-l-4 border-red-500 group">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-bold text-gray-800 group-hover:text-red-600 transition">⚠️ Tiendas Críticas</h3>
+                <h3 class="text-lg font-bold text-gray-800 group-hover:text-red-600 transition">⚠️ Información de Tiendas</h3>
                 <span class="text-sm text-red-600 opacity-0 group-hover:opacity-100 transition">Ver más →</span>
             </div>
             @if($criticalSummary)

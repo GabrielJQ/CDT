@@ -13,11 +13,21 @@
             $currentPath = request()->path();
             $navItems = [
                 '/' => ['label' => 'Dashboard', 'icon' => '📊'],
-                'conectividad' => ['label' => 'Conectividad', 'icon' => '📡'],
-                'tiendas-criticas' => ['label' => 'Tiendas Críticas', 'icon' => '⚠️'],
-                'mapa' => ['label' => 'Mapa', 'icon' => '🗺️'],
                 'directorio' => ['label' => 'Directorio', 'icon' => '📋'],
             ];
+            $presenciaChildren = [
+                'informacion-tiendas' => ['label' => 'Información de Tiendas', 'icon' => '📋'],
+                'mapa' => ['label' => 'Mapa', 'icon' => '🗺️'],
+                'conectividad' => ['label' => 'Conectividad', 'icon' => '📡'],
+                'aperturas' => ['label' => 'Aperturas', 'icon' => '🏗️'],
+            ];
+            $presenciaActive = false;
+            foreach ($presenciaChildren as $childPath => $child) {
+                if ($currentPath === $childPath || str_starts_with($currentPath, $childPath)) {
+                    $presenciaActive = true;
+                    break;
+                }
+            }
         @endphp
 
         <aside class="w-64 bg-[#166534] text-white flex-shrink-0 flex flex-col">
@@ -37,6 +47,30 @@
                         {{ $item['label'] }}
                     </a>
                 @endforeach
+
+                {{-- Dropdown: Presencia Tiendas --}}
+                <div>
+                    <button type="button" id="presencia-toggle"
+                            class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition w-full text-left
+                                   {{ $presenciaActive ? 'bg-green-700 text-white' : 'text-green-100 hover:bg-green-700/50' }}">
+                        <span class="text-lg">🏪</span>
+                        <span class="flex-1">Presencia Tiendas</span>
+                        <span id="presencia-arrow" class="text-xs transition-transform {{ $presenciaActive ? 'rotate-0' : '-rotate-90' }}">▼</span>
+                    </button>
+                    <div id="presencia-submenu" class="ml-4 mt-1 space-y-1 {{ $presenciaActive ? '' : 'hidden' }}">
+                        @foreach($presenciaChildren as $childPath => $child)
+                            @php
+                                $isChildActive = $currentPath === $childPath || str_starts_with($currentPath, $childPath);
+                            @endphp
+                            <a href="/{{ $childPath }}"
+                               class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium transition
+                                      {{ $isChildActive ? 'bg-green-700 text-white' : 'text-green-100 hover:bg-green-700/50' }}">
+                                <span class="text-base">{{ $child['icon'] }}</span>
+                                {{ $child['label'] }}
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
             </nav>
             <div class="p-4 border-t border-green-700 text-xs text-green-300">
                 @php $layoutUpdated = cache()->get('dashboard_updated_at', '—'); @endphp
@@ -72,6 +106,19 @@
             </div>
         </main>
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var toggle = document.getElementById('presencia-toggle');
+            var submenu = document.getElementById('presencia-submenu');
+            var arrow = document.getElementById('presencia-arrow');
+            if (toggle && submenu && arrow) {
+                toggle.addEventListener('click', function () {
+                    submenu.classList.toggle('hidden');
+                    arrow.classList.toggle('-rotate-90');
+                });
+            }
+        });
+    </script>
     @stack('footer')
 </body>
 </html>
