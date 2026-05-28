@@ -15,6 +15,7 @@
                 '/' => ['label' => 'Dashboard', 'icon' => '📊'],
                 'conectividad' => ['label' => 'Conectividad', 'icon' => '📡'],
                 'tiendas-criticas' => ['label' => 'Tiendas Críticas', 'icon' => '⚠️'],
+                'mapa' => ['label' => 'Mapa', 'icon' => '🗺️'],
             ];
         @endphp
 
@@ -70,5 +71,6 @@
             </div>
         </main>
     </div>
+    @stack('footer')
 </body>
 </html>
