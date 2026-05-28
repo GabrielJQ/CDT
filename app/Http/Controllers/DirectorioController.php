@@ -22,6 +22,7 @@ class DirectorioController extends Controller
             return $this->errorView();
         }
 
+        $stores = $this->applyRegionFilter($stores);
         $totalCount = count($stores);
         $globalStats = $this->calculateStats($stores);
 

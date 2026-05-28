@@ -24,6 +24,7 @@ class MapaController extends Controller
             return $this->errorView();
         }
 
+        $stores = $this->applyRegionFilter($stores);
         $totalCount = count($stores);
 
         $evaluated = collect($stores)->map(function ($store) {

@@ -16,3 +16,8 @@ Route::get('/informacion-tiendas', [CriticalStoresController::class, 'index']);
 Route::get('/mapa', [MapaController::class, 'index']);
 Route::get('/directorio', [DirectorioController::class, 'index']);
 Route::get('/aperturas', [AperturaController::class, 'index']);
+
+Route::post('/set-region', function (Illuminate\Http\Request $r) {
+    $r->session()->put('region_filter', $r->input('region', ''));
+    return back();
+})->middleware('web');

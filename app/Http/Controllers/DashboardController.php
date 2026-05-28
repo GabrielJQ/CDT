@@ -22,6 +22,8 @@ class DashboardController extends Controller
             ]);
         }
 
+        $stores = $this->applyRegionFilter($stores);
+
         $totalCount = count($stores);
 
         $connectivityKpis = $this->calculateConnectivityKpis($stores);

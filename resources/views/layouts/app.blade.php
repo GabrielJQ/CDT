@@ -81,12 +81,25 @@
         <main class="flex-1 overflow-y-auto">
             <div class="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
                 <h2 class="text-lg font-semibold text-gray-800">@yield('page-title', 'Dashboard')</h2>
-                <form action="/refresh" method="POST">
-                    @csrf
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg text-sm shadow transition">
-                        ↻ Refrescar datos
-                    </button>
-                </form>
+                <div class="flex items-center gap-3">
+                    @php $currentRegion = session('region_filter', ''); @endphp
+                    <form action="/set-region" method="POST" id="region-form">
+                        @csrf
+                        <select name="region" onchange="document.getElementById('region-form').submit()"
+                                class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white">
+                            <option value="">🌎 Todas las regiones</option>
+                            <option value="U.O. OAXACA" {{ $currentRegion === 'U.O. OAXACA' ? 'selected' : '' }}>📍 Oaxaca</option>
+                            <option value="U.O. ISTMO" {{ $currentRegion === 'U.O. ISTMO' ? 'selected' : '' }}>📍 Istmo</option>
+                            <option value="U.O. MIXTECA" {{ $currentRegion === 'U.O. MIXTECA' ? 'selected' : '' }}>📍 Mixteca</option>
+                        </select>
+                    </form>
+                    <form action="/refresh" method="POST">
+                        @csrf
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg text-sm shadow transition">
+                            ↻ Refrescar datos
+                        </button>
+                    </form>
+                </div>
             </div>
 
             <div class="px-6 pt-4">

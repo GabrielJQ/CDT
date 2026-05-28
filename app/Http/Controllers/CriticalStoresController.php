@@ -14,6 +14,7 @@ class CriticalStoresController extends Controller
             return $this->errorView('No se pudieron obtener los datos del Google Sheet.');
         }
 
+        $stores = $this->applyRegionFilter($stores);
         $totalCount = count($stores);
 
         $filters = [

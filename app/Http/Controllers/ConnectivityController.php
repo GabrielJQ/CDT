@@ -13,6 +13,7 @@ class ConnectivityController extends Controller
             return $this->errorView('No se pudieron obtener los datos del Google Sheet.');
         }
 
+        $stores = $this->applyRegionFilter($stores);
         $totalCount = count($stores);
         $filterOptions = $this->getFilterOptions($stores);
 
