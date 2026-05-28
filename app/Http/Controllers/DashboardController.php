@@ -4,84 +4,35 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
-        $cached = cache()->get('dashboard_data');
-        $updatedAt = cache()->get('dashboard_updated_at');
+        $stores = $this->getCachedStores();
 
-        if ($cached) {
-            $stores = $cached;
-        } else {
-            $stores = $this->fetchFromSheet();
-            if ($stores === null) {
-                return view('dashboard', [
-                    'kpis' => [],
-                    'stores' => [],
-                    'totalCount' => 0,
-                    'filteredCount' => 0,
-                    'filterOptions' => [],
-                    'filters' => [],
-                    'error' => 'No se pudieron obtener los datos del Google Sheet.',
-                    'updatedAt' => null,
-                ]);
-            }
-            $this->storeInCache($stores);
+        if ($stores === null) {
+            return view('dashboard', [
+                'totalCount' => 0,
+                'connectivityKpis' => [],
+                'criticalSummary' => ['rojo' => 0, 'amarillo' => 0, 'verde' => 0],
+                'updatedAt' => null,
+                'error' => 'No se pudieron obtener los datos del Google Sheet.',
+            ]);
         }
 
         $totalCount = count($stores);
 
-        // Collect filter options from full dataset
-        $filterOptions = $this->getFilterOptions($stores);
+        $connectivityKpis = $this->calculateConnectivityKpis($stores);
 
-        // Read filters from request
-        $filters = [
-            'almacen' => trim($request->query('almacen', '')),
-            'telefono' => $request->query('telefono', ''),
-            'senial' => $request->query('senial', ''),
-            'compania' => $request->query('compania', ''),
-            'internet' => $request->query('internet', ''),
-        ];
-
-        // Apply filters
-        $filtered = collect($stores)->filter(function ($store) use ($filters) {
-            if ($filters['almacen'] !== '') {
-                $nombre = $store['Nombre_Almacen'] ?? '';
-                if (!str_contains(mb_strtoupper($nombre), mb_strtoupper($filters['almacen']))) {
-                    return false;
-                }
-            }
-            if ($filters['telefono'] === 'si' && (strtoupper(trim($store['TELEFONIA'] ?? '')) !== 'S')) return false;
-            if ($filters['telefono'] === 'no' && (strtoupper(trim($store['TELEFONIA'] ?? '')) !== 'N')) return false;
-            if ($filters['senial'] === 'si' && (strtoupper(trim($store['Señal de celular'] ?? '')) !== 'S')) return false;
-            if ($filters['senial'] === 'no' && (strtoupper(trim($store['Señal de celular'] ?? '')) !== 'N')) return false;
-            if ($filters['internet'] === 'si' && (strtoupper(trim($store['INTERNET'] ?? '')) !== 'S')) return false;
-            if ($filters['internet'] === 'no' && (strtoupper(trim($store['INTERNET'] ?? '')) !== 'N')) return false;
-            if ($filters['compania'] !== '') {
-                $comp = strtoupper(trim($store['Compañía'] ?? ''));
-                $filterComp = strtoupper(trim($filters['compania']));
-                if ($filterComp === 'SIN DATO' || $filterComp === 'SIN_DATO') {
-                    if ($comp !== '' && $comp !== 'SIN DATO' && $comp !== 'NINGUNO') return false;
-                } elseif ($comp !== $filterComp) {
-                    return false;
-                }
-            }
-            return true;
-        })->values()->all();
-
-        $filteredCount = count($filtered);
-        $kpis = $this->calculateConnectivityKpis($filtered);
+        $criticalSummary = $this->calculateCriticalSummary($stores);
 
         return view('dashboard', [
-            'kpis' => $kpis,
-            'stores' => $filtered,
             'totalCount' => $totalCount,
-            'filteredCount' => $filteredCount,
-            'filterOptions' => $filterOptions,
-            'filters' => $filters,
-            'updatedAt' => $updatedAt,
+            'connectivityKpis' => $connectivityKpis,
+            'criticalSummary' => $criticalSummary,
+            'updatedAt' => cache()->get('dashboard_updated_at'),
         ]);
     }
 
@@ -98,7 +49,22 @@ class DashboardController extends Controller
         return back()->with('success', 'Datos actualizados correctamente desde el Google Sheet.');
     }
 
-    private function fetchFromSheet(): ?array
+    private function getCachedStores(): ?array
+    {
+        $cached = cache()->get('dashboard_data');
+        if ($cached) {
+            return $cached;
+        }
+
+        $stores = $this->fetchFromSheet();
+        if ($stores !== null) {
+            $this->storeInCache($stores);
+        }
+
+        return $stores;
+    }
+
+    public function fetchFromSheet(): ?array
     {
         $url = config('app.google_sheet_url');
         $response = Http::timeout(30)->get($url);
@@ -138,24 +104,10 @@ class DashboardController extends Controller
         return $stores;
     }
 
-    private function getFilterOptions(array $stores): array
+    public function storeInCache(array $stores): void
     {
-        $almacenes = collect($stores)
-            ->pluck('Nombre_Almacen')
-            ->unique()
-            ->sort()
-            ->values()
-            ->all();
-
-        $companias = collect($stores)
-            ->pluck('Compañía')
-            ->map(function ($v) { return trim($v) ?: 'Sin dato'; })
-            ->unique()
-            ->sort()
-            ->values()
-            ->all();
-
-        return compact('almacenes', 'companias');
+        cache()->put('dashboard_data', $stores, now()->addHours(1));
+        cache()->put('dashboard_updated_at', now()->toDateTimeString(), now()->addHours(1));
     }
 
     private function calculateConnectivityKpis(array $stores): array
@@ -168,58 +120,75 @@ class DashboardController extends Controller
         ];
 
         $kpis = [];
-        $companiaCount = [];
-
         foreach ($fields as $col => $info) {
             $yes = 0;
-            $no = 0;
             foreach ($stores as $store) {
                 $val = strtoupper(trim($store[$col] ?? ''));
-                if ($val === 'S') {
-                    $yes++;
-                } elseif ($val === 'N') {
-                    $no++;
-                }
+                if ($val === 'S') $yes++;
             }
-            $undef = $total - $yes - $no;
-            $pctYes = $total > 0 ? round($yes / $total * 100) : 0;
             $kpis[$col] = [
                 'label' => $info['label'],
                 'icon' => $info['icon'],
                 'yes' => $yes,
-                'no' => $no,
-                'undef' => $undef,
-                'pctYes' => $pctYes,
-                'pctNo' => 100 - $pctYes,
+                'pctYes' => $total > 0 ? round($yes / $total * 100) : 0,
             ];
         }
-
-        foreach ($stores as $store) {
-            $senial = strtoupper(trim($store['Señal de celular'] ?? ''));
-            if ($senial !== 'S') continue;
-            $comp = trim($store['Compañía'] ?? 'Sin dato');
-            if ($comp === '') $comp = 'Sin dato';
-            $companiaCount[$comp] = ($companiaCount[$comp] ?? 0) + 1;
-        }
-        arsort($companiaCount);
-        $totalComp = array_sum($companiaCount);
-        $companiaPct = [];
-        foreach ($companiaCount as $comp => $count) {
-            $companiaPct[$comp] = [
-                'count' => $count,
-                'pct' => $totalComp > 0 ? round($count / $totalComp * 100) : 0,
-            ];
-        }
-
-        $kpis['_compania'] = $companiaPct;
         $kpis['_total'] = $total;
 
         return $kpis;
     }
 
-    private function storeInCache(array $stores): void
+    private function calculateCriticalSummary(array $stores): array
     {
-        cache()->put('dashboard_data', $stores, now()->addHours(1));
-        cache()->put('dashboard_updated_at', now()->toDateTimeString(), now()->addHours(1));
+        $rojo = 0;
+        $amarillo = 0;
+        $verde = 0;
+
+        foreach ($stores as $store) {
+            $count = 0;
+
+            $capTot = (float) str_replace([',', '$', ' '], '', $store['Cap_Tot'] ?? '0');
+            if ($capTot > 0 && $capTot < 100000) $count++;
+
+            $vigencia = $this->parseDate($store['Vigencia'] ?? '');
+            if ($vigencia !== null && $vigencia->isPast()) $count++;
+
+            $impuesto = (float) str_replace([',', '$', ' '], '', $store['Imp_Res_Audi_Mes'] ?? '0');
+            if ($impuesto > 500000) $count++;
+
+            $pagareDate = $this->parseDate($store['Pagare_Fecha'] ?? '');
+            if ($pagareDate !== null && ($pagareDate->isPast() || $pagareDate->diffInMonths(now()) <= 3)) $count++;
+
+            $gdomarg = strtoupper(trim($store['GDOMARG'] ?? ''));
+            if ($gdomarg === 'BAJA') $count++;
+
+            $asamProg = (int) ($store['Asam_Prog_Mes'] ?? 0);
+            $asamReal = (int) ($store['Asam_Real_Mes'] ?? 0);
+            if ($asamProg > 0 && $asamReal === 0) $count++;
+
+            if ($count >= 4) $rojo++;
+            elseif ($count >= 2) $amarillo++;
+            else $verde++;
+        }
+
+        return compact('rojo', 'amarillo', 'verde');
+    }
+
+    private function parseDate(?string $value): ?Carbon
+    {
+        if ($value === null || trim($value) === '' || trim($value) === '0') return null;
+
+        $formats = ['Y-m-d', 'd/m/Y', 'm/d/Y', 'Y/m/d', 'd-m-Y', 'm-d-Y'];
+
+        foreach ($formats as $format) {
+            try {
+                $date = Carbon::createFromFormat($format, trim($value));
+                if ($date !== false) return $date;
+            } catch (\Exception $e) {
+                continue;
+            }
+        }
+
+        return null;
     }
 }
