@@ -1,4 +1,4 @@
-@extends('layouts.app', ['page-title' => 'Apertura de Tiendas'])
+@extends('layouts.app', ['pageTitle' => 'Apertura de Tiendas'])
 
 @section('title', 'Aperturas — Dashboard CDT')
 

@@ -1,4 +1,4 @@
-@extends('layouts.app', ['page-title' => 'Dashboard'])
+@extends('layouts.app', ['pageTitle' => 'Dashboard'])
 
 @section('title', 'Dashboard — CDT')
 
@@ -8,58 +8,58 @@
     @endisset
 
     {{-- Row 1 — 4 Metric KPIs --}}
-    <div class="grid grid-cols-2 gap-4 mb-6">
+    <div class="grid grid-cols-2 gap-3 lg:gap-4 mb-6">
         {{-- Total --}}
-        <div class="bg-white rounded-xl shadow p-5">
-            <div class="text-3xl font-bold text-gray-800">{{ $totalCount }}</div>
-            <div class="text-sm text-gray-500 mt-1">🏪 Total de tiendas</div>
+        <div class="bg-white rounded-xl shadow p-4 lg:p-5">
+            <div class="text-2xl lg:text-3xl font-bold text-gray-800">{{ $totalCount }}</div>
+            <div class="text-xs lg:text-sm text-gray-500 mt-1">🏪 Total de tiendas</div>
         </div>
 
         {{-- Críticas --}}
-        <div class="bg-white rounded-xl shadow p-5">
-            <div class="text-3xl font-bold text-red-600">{{ $criticalSummary['rojo'] }}</div>
-            <div class="text-sm text-red-500 mt-1">⚠️ Tiendas críticas</div>
+        <div class="bg-white rounded-xl shadow p-4 lg:p-5">
+            <div class="text-2xl lg:text-3xl font-bold text-red-600">{{ $criticalSummary['rojo'] }}</div>
+            <div class="text-xs lg:text-sm text-red-500 mt-1">⚠️ Tiendas críticas</div>
         </div>
 
         {{-- Sin conectividad --}}
-        <div class="bg-white rounded-xl shadow p-5">
-            <div class="text-3xl font-bold text-gray-800">{{ $sinConectividad }}</div>
-            <div class="text-sm text-gray-500 mt-1">📡 Sin conectividad</div>
+        <div class="bg-white rounded-xl shadow p-4 lg:p-5">
+            <div class="text-2xl lg:text-3xl font-bold text-gray-800">{{ $sinConectividad }}</div>
+            <div class="text-xs lg:text-sm text-gray-500 mt-1">📡 Sin conectividad</div>
         </div>
 
         {{-- Aperturas este mes --}}
-        <div class="bg-white rounded-xl shadow p-5">
-            <div class="text-3xl font-bold text-blue-600">{{ $aperturasEsteMes }}</div>
-            <div class="text-sm text-blue-500 mt-1">📅 Aperturas este mes</div>
+        <div class="bg-white rounded-xl shadow p-4 lg:p-5">
+            <div class="text-2xl lg:text-3xl font-bold text-blue-600">{{ $aperturasEsteMes }}</div>
+            <div class="text-xs lg:text-sm text-blue-500 mt-1">📅 Aperturas este mes</div>
         </div>
     </div>
 
     {{-- Row 1b — Auditoría KPIs --}}
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white rounded-xl shadow p-5 border-l-4 border-red-500">
-            <div class="text-3xl font-bold text-red-600">{{ $auditoriaKpis['comitesVencidos'] }}</div>
-            <div class="text-sm text-red-500 mt-1">🏛️ Comités vencidos</div>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6">
+        <div class="bg-white rounded-xl shadow p-4 lg:p-5 border-l-4 border-red-500">
+            <div class="text-2xl lg:text-3xl font-bold text-red-600">{{ $auditoriaKpis['comitesVencidos'] }}</div>
+            <div class="text-xs lg:text-sm text-red-500 mt-1">🏛️ Comités vencidos</div>
         </div>
-        <div class="bg-white rounded-xl shadow p-5 border-l-4 border-orange-500">
-            <div class="text-3xl font-bold text-orange-600">{{ $auditoriaKpis['auditoriaAlta'] }}</div>
-            <div class="text-sm text-orange-500 mt-1">🔍 Auditoría > $500k</div>
+        <div class="bg-white rounded-xl shadow p-4 lg:p-5 border-l-4 border-orange-500">
+            <div class="text-2xl lg:text-3xl font-bold text-orange-600">{{ $auditoriaKpis['auditoriaAlta'] }}</div>
+            <div class="text-xs lg:text-sm text-orange-500 mt-1">🔍 Auditoría > $500k</div>
         </div>
-        <div class="bg-white rounded-xl shadow p-5 border-l-4 border-amber-500">
-            <div class="text-3xl font-bold text-amber-600">{{ $auditoriaKpis['rotacionBaja'] }}</div>
-            <div class="text-sm text-amber-500 mt-1">📉 Rotación baja (&lt;1.5)</div>
+        <div class="bg-white rounded-xl shadow p-4 lg:p-5 border-l-4 border-amber-500">
+            <div class="text-2xl lg:text-3xl font-bold text-amber-600">{{ $auditoriaKpis['rotacionBaja'] }}</div>
+            <div class="text-xs lg:text-sm text-amber-500 mt-1">📉 Rotación baja (&lt;1.5)</div>
         </div>
-        <div class="bg-white rounded-xl shadow p-5 border-l-4 border-gray-400">
-            <div class="text-3xl font-bold text-gray-600">{{ $auditoriaKpis['auditoriaPendiente'] }}</div>
-            <div class="text-sm text-gray-500 mt-1">📅 Aud. pendiente (&gt;3 meses)</div>
+        <div class="bg-white rounded-xl shadow p-4 lg:p-5 border-l-4 border-gray-400">
+            <div class="text-2xl lg:text-3xl font-bold text-gray-600">{{ $auditoriaKpis['auditoriaPendiente'] }}</div>
+            <div class="text-xs lg:text-sm text-gray-500 mt-1">📅 Aud. pendiente (&gt;3 meses)</div>
         </div>
     </div>
 
     {{-- Row 2 — Module Access Cards --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-5 mb-6">
         {{-- Conectividad --}}
-        <a href="/conectividad" class="block bg-white rounded-xl shadow p-5 hover:shadow-lg transition border-l-4 border-blue-500 group">
-            <div class="flex items-center justify-between mb-3">
-                <h3 class="text-lg font-bold text-gray-800 group-hover:text-blue-600 transition">📡 Conectividad</h3>
+        <a href="/conectividad" class="block bg-white rounded-xl shadow p-4 lg:p-5 hover:shadow-lg transition border-l-4 border-blue-500 group">
+            <div class="flex items-center justify-between mb-2 lg:mb-3">
+                <h3 class="text-base lg:text-lg font-bold text-gray-800 group-hover:text-blue-600 transition">📡 Conectividad</h3>
                 <span class="text-xs text-blue-600 opacity-0 group-hover:opacity-100 transition">Ver más →</span>
             </div>
             @if(!empty($connectivityKpis))
@@ -80,9 +80,9 @@
         </a>
 
         {{-- Información de Tiendas --}}
-        <a href="/informacion-tiendas" class="block bg-white rounded-xl shadow p-5 hover:shadow-lg transition border-l-4 border-red-500 group">
-            <div class="flex items-center justify-between mb-3">
-                <h3 class="text-lg font-bold text-gray-800 group-hover:text-red-600 transition">⚠️ Info. Tiendas</h3>
+        <a href="/informacion-tiendas" class="block bg-white rounded-xl shadow p-4 lg:p-5 hover:shadow-lg transition border-l-4 border-red-500 group">
+            <div class="flex items-center justify-between mb-2 lg:mb-3">
+                <h3 class="text-base lg:text-lg font-bold text-gray-800 group-hover:text-red-600 transition">⚠️ Info. Tiendas</h3>
                 <span class="text-xs text-red-600 opacity-0 group-hover:opacity-100 transition">Ver más →</span>
             </div>
             @if($criticalSummary)
@@ -106,9 +106,9 @@
         </a>
 
         {{-- Mapa --}}
-        <a href="/mapa" class="block bg-white rounded-xl shadow p-5 hover:shadow-lg transition border-l-4 border-emerald-500 group">
-            <div class="flex items-center justify-between mb-3">
-                <h3 class="text-lg font-bold text-gray-800 group-hover:text-emerald-600 transition">🗺️ Mapa</h3>
+        <a href="/mapa" class="block bg-white rounded-xl shadow p-4 lg:p-5 hover:shadow-lg transition border-l-4 border-emerald-500 group">
+            <div class="flex items-center justify-between mb-2 lg:mb-3">
+                <h3 class="text-base lg:text-lg font-bold text-gray-800 group-hover:text-emerald-600 transition">🗺️ Mapa</h3>
                 <span class="text-xs text-emerald-600 opacity-0 group-hover:opacity-100 transition">Ver más →</span>
             </div>
             @if($geoStats)
@@ -128,9 +128,9 @@
         </a>
 
         {{-- Aperturas --}}
-        <a href="/aperturas" class="block bg-white rounded-xl shadow p-5 hover:shadow-lg transition border-l-4 border-purple-500 group">
-            <div class="flex items-center justify-between mb-3">
-                <h3 class="text-lg font-bold text-gray-800 group-hover:text-purple-600 transition">🏗️ Aperturas</h3>
+        <a href="/aperturas" class="block bg-white rounded-xl shadow p-4 lg:p-5 hover:shadow-lg transition border-l-4 border-purple-500 group">
+            <div class="flex items-center justify-between mb-2 lg:mb-3">
+                <h3 class="text-base lg:text-lg font-bold text-gray-800 group-hover:text-purple-600 transition">🏗️ Aperturas</h3>
                 <span class="text-xs text-purple-600 opacity-0 group-hover:opacity-100 transition">Ver más →</span>
             </div>
             @if($aperturasKpi)
@@ -150,9 +150,9 @@
         </a>
 
         {{-- Directorio --}}
-        <a href="/directorio" class="block bg-white rounded-xl shadow p-5 hover:shadow-lg transition border-l-4 border-amber-500 group">
-            <div class="flex items-center justify-between mb-3">
-                <h3 class="text-lg font-bold text-gray-800 group-hover:text-amber-600 transition">📋 Directorio</h3>
+        <a href="/directorio" class="block bg-white rounded-xl shadow p-4 lg:p-5 hover:shadow-lg transition border-l-4 border-amber-500 group">
+            <div class="flex items-center justify-between mb-2 lg:mb-3">
+                <h3 class="text-base lg:text-lg font-bold text-gray-800 group-hover:text-amber-600 transition">📋 Directorio</h3>
                 <span class="text-xs text-amber-600 opacity-0 group-hover:opacity-100 transition">Ver más →</span>
             </div>
             @if($directorioStats)
@@ -172,9 +172,9 @@
         </a>
 
         {{-- Auditoría --}}
-        <a href="/auditoria" class="block bg-white rounded-xl shadow p-5 hover:shadow-lg transition border-l-4 border-purple-500 group">
-            <div class="flex items-center justify-between mb-3">
-                <h3 class="text-lg font-bold text-gray-800 group-hover:text-purple-600 transition">🔍 Auditoría</h3>
+        <a href="/auditoria" class="block bg-white rounded-xl shadow p-4 lg:p-5 hover:shadow-lg transition border-l-4 border-purple-500 group">
+            <div class="flex items-center justify-between mb-2 lg:mb-3">
+                <h3 class="text-base lg:text-lg font-bold text-gray-800 group-hover:text-purple-600 transition">🔍 Auditoría</h3>
                 <span class="text-xs text-purple-600 opacity-0 group-hover:opacity-100 transition">Ver más →</span>
             </div>
             @if($auditoriaKpis)
