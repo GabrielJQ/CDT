@@ -4,13 +4,13 @@
 
 @push('head')
 <style>
-    .store-row { transition: background 0.15s; }
-    .store-row:hover { background: #f9fafb; }
-    .store-row.risk-rojo { background: #fef2f2; }
-    .store-row.risk-rojo:hover { background: #fee2e2; }
-    .store-row.risk-amarillo { background: #fffbeb; }
-    .store-row.risk-amarillo:hover { background: #fef3c7; }
+    #audit-table td, #audit-table th { white-space: nowrap; padding: 0.4rem 0.6rem; font-size: 0.8rem; }
+    #audit-table th { position: sticky; top: 0; z-index: 1; }
     .badge { display: inline-flex; padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; }
+    .page-btn { min-width: 2rem; text-align: center; }
+    .page-btn.active { background: #166534; color: white; border-color: #166534; }
+    .col-toggle { user-select: none; cursor: pointer; }
+    .col-toggle input { accent-color: #166534; }
 </style>
 @endpush
 
@@ -41,7 +41,7 @@
         </div>
 
         {{-- Filters --}}
-        <div class="bg-white rounded-xl shadow p-4 mb-6">
+        <div class="bg-white rounded-xl shadow p-4 mb-4">
             <form method="GET" action="/auditoria" class="flex flex-wrap items-end gap-3">
                 <div class="flex-1 min-w-[160px]">
                     <label class="block text-xs text-gray-500 uppercase mb-1">Almacén</label>
@@ -70,6 +70,25 @@
                         <option value="sin_fecha" {{ $filters['estado_comite'] === 'sin_fecha' ? 'selected' : '' }}>⚪ Sin fecha</option>
                     </select>
                 </div>
+                <div class="min-w-[150px]">
+                    <label class="block text-xs text-gray-500 uppercase mb-1">Estado de auditoría</label>
+                    <select name="estado_auditoria"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white">
+                        <option value="">Todos</option>
+                        <option value="al_dia" {{ $filters['estado_auditoria'] === 'al_dia' ? 'selected' : '' }}>🟢 Al día</option>
+                        <option value="vencida" {{ $filters['estado_auditoria'] === 'vencida' ? 'selected' : '' }}>🔴 Vencida</option>
+                        <option value="sin_fecha" {{ $filters['estado_auditoria'] === 'sin_fecha' ? 'selected' : '' }}>⚪ Sin fecha</option>
+                    </select>
+                </div>
+                <div class="min-w-[140px]">
+                    <label class="block text-xs text-gray-500 uppercase mb-1">Aud. > $500k</label>
+                    <select name="filtro_500k"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white">
+                        <option value="">Todos</option>
+                        <option value="si" {{ $filters['filtro_500k'] === 'si' ? 'selected' : '' }}>🔴 Sí</option>
+                        <option value="no" {{ $filters['filtro_500k'] === 'no' ? 'selected' : '' }}>🟢 No</option>
+                    </select>
+                </div>
                 <div class="flex gap-2">
                     <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Filtrar</button>
                     <a href="/auditoria" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-semibold transition inline-block">Limpiar</a>
@@ -77,131 +96,270 @@
             </form>
         </div>
 
+        {{-- Column toggles --}}
+        <div class="bg-white rounded-xl shadow p-3 mb-4 flex flex-wrap gap-4">
+            <span class="text-xs text-gray-500 uppercase font-semibold self-center">Columnas:</span>
+            <label class="col-toggle flex items-center gap-1.5 text-sm font-medium cursor-pointer" data-group="General">
+                <input type="checkbox" checked disabled class="opacity-50"> 📋 General
+            </label>
+            <label class="col-toggle flex items-center gap-1.5 text-sm cursor-pointer" data-group="Comite">
+                <input type="checkbox" checked> 🏛️ Comité
+            </label>
+            <label class="col-toggle flex items-center gap-1.5 text-sm cursor-pointer" data-group="Auditoria">
+                <input type="checkbox" checked> 🔍 Auditoría
+            </label>
+            <label class="col-toggle flex items-center gap-1.5 text-sm cursor-pointer" data-group="Rendimiento">
+                <input type="checkbox" checked> 📊 Rendimiento
+            </label>
+        </div>
+
         {{-- Count --}}
         <div class="text-sm text-gray-500 mb-2">
-            Mostrando <strong>{{ count($stores) }}</strong> tiendas
+            Mostrando <strong id="info-from">0</strong>–<strong id="info-to">0</strong> de <strong id="info-total">{{ count($stores) }}</strong> tiendas
             @if($filteredCount !== $totalCount)
-                (filtradas de <strong>{{ $totalCount }}</strong>)
+                <span class="text-gray-400">(filtradas de {{ $totalCount }})</span>
             @endif
         </div>
 
         {{-- Table --}}
-        @if(count($stores) > 0)
-            <div class="bg-white rounded-xl shadow overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200 text-sm">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Almacén</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Localidad</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Municipio</th>
-                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Vigencia</th>
-                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Comité</th>
-                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Fch. Audit</th>
-                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Estado Aud.</th>
-                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Imp. Res. Audi.</th>
-                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rotación</th>
-                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Riesgo</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
-                        @foreach($stores as $store)
-                            @php
-                                $a = $store['_audit'] ?? [];
-                                $level = $a['level'] ?? 'verde';
-                                $vigenciaDate = $a['vigencia'] ?? null;
-                                $impuesto = $a['impuesto'] ?? 0;
-                                $rotacion = $a['rotacion'] ?? 0;
-                                $fchAuditDate = $a['fchAudit'] ?? null;
-                                $mesesSinAuditoria = $a['mesesSinAuditoria'] ?? null;
-                                $estadoComite = $a['estadoComite'] ?? 'sin_fecha';
+        <div class="bg-white rounded-xl shadow overflow-x-auto">
+            <table id="audit-table" class="w-full divide-y divide-gray-200 text-sm">
+                <thead class="bg-gray-50">
+                    <tr id="audit-header"></tr>
+                </thead>
+                <tbody id="audit-body" class="divide-y divide-gray-200"></tbody>
+            </table>
+        </div>
 
-                                $badgeComite = [
-                                    'vigente' => ['bg-green-100 text-green-800', '🟢 Vigente'],
-                                    'proximo_a_vencer' => ['bg-yellow-100 text-yellow-800', '🟡 Próximo a vencer'],
-                                    'vencido' => ['bg-red-100 text-red-800', '🔴 Vencido'],
-                                    'sin_fecha' => ['bg-gray-100 text-gray-500', '⚪ Sin fecha'],
-                                ][$estadoComite] ?? ['bg-gray-100 text-gray-500', '⚪ Sin fecha'];
-
-                                $badgeRiesgo = [
-                                    'rojo' => ['bg-red-100 text-red-800', '🔴 Crítico'],
-                                    'amarillo' => ['bg-yellow-100 text-yellow-800', '🟡 Monitoreo'],
-                                    'verde' => ['bg-green-100 text-green-800', '🟢 Normal'],
-                                ][$level] ?? ['bg-gray-100 text-gray-500', '—'];
-
-                                $rowRisk = $level === 'rojo' ? 'risk-rojo' : ($level === 'amarillo' ? 'risk-amarillo' : '');
-                            @endphp
-                            <tr class="store-row {{ $rowRisk }}">
-                                <td class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{{ $store['Nombre_Almacen'] ?? '—' }}</td>
-                                <td class="px-4 py-3 text-gray-700 whitespace-nowrap">{{ $store['Localidad'] ?? '—' }}</td>
-                                <td class="px-4 py-3 text-gray-500 whitespace-nowrap">{{ $store['Municipio'] ?? '—' }}</td>
-                                <td class="px-4 py-3 text-center font-mono text-gray-700 whitespace-nowrap">
-                                    @if($vigenciaDate)
-                                        {{ $vigenciaDate->format('d/m/Y') }}
-                                    @else
-                                        <span class="text-gray-400">—</span>
-                                    @endif
-                                </td>
-                                <td class="px-4 py-3 text-center whitespace-nowrap">
-                                    <span class="badge {{ $badgeComite[0] }}">{{ $badgeComite[1] }}</span>
-                                </td>
-                                <td class="px-4 py-3 text-center font-mono text-gray-700 whitespace-nowrap">
-                                    @if($fchAuditDate)
-                                        {{ $fchAuditDate->format('d/m/Y') }}
-                                    @else
-                                        <span class="text-gray-400">—</span>
-                                    @endif
-                                </td>
-                                <td class="px-4 py-3 text-center whitespace-nowrap">
-                                    @php
-                                        $auditBadge = ['bg-gray-100 text-gray-500', '⚪ Sin fecha', ''];
-                                        if ($fchAuditDate) {
-                                            $mesesInt = (int) round($mesesSinAuditoria);
-                                            if ($mesesInt >= 12) {
-                                                $anos = (int) ($mesesInt / 12);
-                                                $resto = $mesesInt % 12;
-                                                $labelMeses = $anos . ' año' . ($anos > 1 ? 's' : '');
-                                                if ($resto > 0) $labelMeses .= ' ' . $resto . ' mes' . ($resto > 1 ? 'es' : '');
-                                            } else {
-                                                $labelMeses = $mesesInt . ' mes' . ($mesesInt > 1 ? 'es' : '');
-                                            }
-                                            if ($mesesSinAuditoria >= 3) {
-                                                $auditBadge = ['bg-red-100 text-red-800', '🔴 Vencida', $labelMeses];
-                                            } else {
-                                                $auditBadge = ['bg-green-100 text-green-800', '🟢 Al día', $labelMeses];
-                                            }
-                                        }
-                                    @endphp
-                                    <span class="badge {{ $auditBadge[0] }}">{{ $auditBadge[1] }}</span>
-                                    @if($auditBadge[2])
-                                        <br><span class="text-xs text-gray-400">{{ $auditBadge[2] }}</span>
-                                    @endif
-                                </td>
-                                <td class="px-4 py-3 text-right font-mono text-gray-700 whitespace-nowrap">
-                                    @if($impuesto > 0)
-                                        ${{ number_format($impuesto, 2) }}
-                                    @else
-                                        <span class="text-gray-400">—</span>
-                                    @endif
-                                </td>
-                                <td class="px-4 py-3 text-center font-mono text-gray-700 whitespace-nowrap">
-                                    @if($rotacion > 0)
-                                        {{ number_format($rotacion, 2) }}
-                                    @else
-                                        <span class="text-gray-400">—</span>
-                                    @endif
-                                </td>
-                                <td class="px-4 py-3 text-center whitespace-nowrap">
-                                    <span class="badge {{ $badgeRiesgo[0] }}">{{ $badgeRiesgo[1] }}</span>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @else
-            <div class="bg-white rounded-xl shadow p-6 text-center text-gray-500">
-                No hay tiendas para mostrar con los filtros actuales.
-            </div>
-        @endif
+        {{-- Pagination --}}
+        <div class="flex items-center justify-between mt-4">
+            <button id="page-prev" class="bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition">
+                ← Anterior
+            </button>
+            <div id="page-numbers" class="flex gap-1"></div>
+            <button id="page-next" class="bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition">
+                Siguiente →
+            </button>
+        </div>
     </div>
 @endsection
+
+@push('footer')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var PAGE_SIZE = 25;
+        var allStores = @json($stores);
+        var currentPage = 1;
+
+        var columnGroups = {
+            General: ['Nombre_Almacen', 'Localidad', 'Municipio'],
+            Comite: ['Vigencia', 'Comite'],
+            Auditoria: ['Fch_Audit', 'Estado_Aud', 'Imp_Res_Audi_Mes'],
+            Rendimiento: ['Rotacion', 'Riesgo'],
+        };
+
+        var columnLabels = {
+            Nombre_Almacen: 'Almacén',
+            Localidad: 'Localidad',
+            Municipio: 'Municipio',
+            Vigencia: 'Vigencia',
+            Comite: 'Comité',
+            Fch_Audit: 'Fch. Audit',
+            Estado_Aud: 'Estado Aud.',
+            Imp_Res_Audi_Mes: 'Imp. Res. Audi.',
+            Rotacion: 'Rotación',
+            Riesgo: 'Riesgo',
+        };
+
+        function formatMoney(val) {
+            var num = parseFloat(String(val).replace(/,/g, ''));
+            if (isNaN(num)) return null;
+            return '$' + num.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function mesesLabel(meses) {
+            if (meses == null) return '';
+            var m = Math.round(meses);
+            if (m >= 12) {
+                var a = Math.floor(m / 12);
+                var r = m % 12;
+                var label = a + ' año' + (a > 1 ? 's' : '');
+                if (r > 0) label += ' ' + r + ' mes' + (r > 1 ? 'es' : '');
+                return label;
+            }
+            return m + ' mes' + (m > 1 ? 'es' : '');
+        }
+
+        function renderCell(col, store) {
+            var a = store._audit || {};
+            if (col === 'Nombre_Almacen') return '<strong>' + esc(store[col] || '—') + '</strong>';
+            if (col === 'Localidad' || col === 'Municipio') return esc(store[col] || '—');
+
+            if (col === 'Vigencia') {
+                var d = a.vigencia;
+                if (d) return '<span class="font-mono text-gray-700">' + d.substr(0, 10) + '</span>';
+                return '<span class="text-gray-400">—</span>';
+            }
+
+            if (col === 'Comite') {
+                var badges = { vigente: ['bg-green-100 text-green-800', '🟢 Vigente'], proximo_a_vencer: ['bg-yellow-100 text-yellow-800', '🟡 Próximo a vencer'], vencido: ['bg-red-100 text-red-800', '🔴 Vencido'] };
+                var ec = a.estadoComite || 'sin_fecha';
+                var b = badges[ec] || ['bg-gray-100 text-gray-500', '⚪ Sin fecha'];
+                return '<span class="badge ' + b[0] + '">' + b[1] + '</span>';
+            }
+
+            if (col === 'Fch_Audit') {
+                var d = a.fchAudit;
+                if (d) return '<span class="font-mono text-gray-700">' + d.substr(0, 10) + '</span>';
+                return '<span class="text-gray-400">—</span>';
+            }
+
+            if (col === 'Estado_Aud') {
+                var fch = a.fchAudit;
+                var meses = a.mesesSinAuditoria;
+                var color, label, sub;
+                if (!fch) { color = 'bg-gray-100 text-gray-500'; label = '⚪ Sin fecha'; sub = ''; }
+                else if (meses >= 3) { color = 'bg-red-100 text-red-800'; label = '🔴 Vencida'; sub = mesesLabel(meses); }
+                else { color = 'bg-green-100 text-green-800'; label = '🟢 Al día'; sub = mesesLabel(meses); }
+                var html = '<span class="badge ' + color + '">' + label + '</span>';
+                if (sub) html += '<br><span class="text-xs text-gray-400">' + sub + '</span>';
+                return html;
+            }
+
+            if (col === 'Imp_Res_Audi_Mes') {
+                var imp = a.impuesto || 0;
+                if (imp > 0) return '<span class="font-mono text-gray-700 text-right block">' + formatMoney(imp) + '</span>';
+                return '<span class="text-gray-400">—</span>';
+            }
+
+            if (col === 'Rotacion') {
+                var r = a.rotacion || 0;
+                if (r > 0) return '<span class="font-mono text-gray-700">' + r.toFixed(2) + '</span>';
+                return '<span class="text-gray-400">—</span>';
+            }
+
+            if (col === 'Riesgo') {
+                var level = a.level || 'verde';
+                var badges = { rojo: ['bg-red-100 text-red-800', '🔴 Crítico'], amarillo: ['bg-yellow-100 text-yellow-800', '🟡 Monitoreo'], verde: ['bg-green-100 text-green-800', '🟢 Normal'] };
+                var b = badges[level] || ['bg-green-100 text-green-800', '🟢 Normal'];
+                return '<span class="badge ' + b[0] + '">' + b[1] + '</span>';
+            }
+
+            return esc(store[col] || '');
+        }
+
+        function esc(str) {
+            var d = document.createElement('div');
+            d.textContent = str;
+            return d.innerHTML;
+        }
+
+        function getActiveCols() {
+            var cols = [];
+            document.querySelectorAll('[data-group] input').forEach(function (cb) {
+                var group = cb.closest('[data-group]').dataset.group;
+                if (cb.checked && columnGroups[group]) cols = cols.concat(columnGroups[group]);
+            });
+            return cols;
+        }
+
+        function renderTable() {
+            var cols = getActiveCols();
+            var total = allStores.length;
+            var totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+            if (currentPage > totalPages) currentPage = totalPages;
+
+            var start = (currentPage - 1) * PAGE_SIZE;
+            var end = Math.min(start + PAGE_SIZE, total);
+            var pageData = allStores.slice(start, end);
+
+            var headerRow = document.getElementById('audit-header');
+            headerRow.innerHTML = cols.map(function (c) {
+                return '<th class="text-left text-xs font-medium text-gray-500 uppercase bg-gray-50">' + (columnLabels[c] || c) + '</th>';
+            }).join('');
+
+            var body = document.getElementById('audit-body');
+            body.innerHTML = pageData.map(function (store) {
+                var level = (store._audit || {}).level || 'verde';
+                var rowClass = level === 'rojo' ? ' bg-red-50' : (level === 'amarillo' ? ' bg-amber-50' : '');
+                return '<tr class="hover:bg-gray-100' + rowClass + '">' +
+                    cols.map(function (c) {
+                        return '<td class="text-gray-700">' + renderCell(c, store) + '</td>';
+                    }).join('') +
+                    '</tr>';
+            }).join('');
+
+            document.getElementById('info-from').textContent = total > 0 ? start + 1 : 0;
+            document.getElementById('info-to').textContent = end;
+            document.getElementById('info-total').textContent = total;
+
+            renderPagination(totalPages);
+        }
+
+        function renderPagination(totalPages) {
+            var container = document.getElementById('page-numbers');
+            container.innerHTML = '';
+            if (totalPages <= 1) return;
+
+            var maxVisible = 7;
+            var pages = [];
+            var startP, endP;
+
+            if (totalPages <= maxVisible) {
+                startP = 1; endP = totalPages;
+            } else {
+                var half = Math.floor(maxVisible / 2);
+                startP = currentPage - half;
+                endP = currentPage + half;
+                if (startP < 1) { startP = 1; endP = maxVisible; }
+                if (endP > totalPages) { endP = totalPages; startP = totalPages - maxVisible + 1; }
+            }
+
+            if (startP > 1) {
+                pages.push(1);
+                if (startP > 2) pages.push('…');
+            }
+            for (var i = startP; i <= endP; i++) pages.push(i);
+            if (endP < totalPages) {
+                if (endP < totalPages - 1) pages.push('…');
+                pages.push(totalPages);
+            }
+
+            pages.forEach(function (p) {
+                if (p === '…') {
+                    container.innerHTML += '<span class="text-gray-400 px-1 self-end">…</span>';
+                } else {
+                    container.innerHTML += '<button class="page-btn px-2.5 py-1 text-sm border border-gray-300 rounded-lg transition hover:bg-gray-100 ' + (p === currentPage ? 'active' : 'bg-white text-gray-700') + '" data-page="' + p + '">' + p + '</button>';
+                }
+            });
+
+            container.querySelectorAll('[data-page]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    currentPage = parseInt(this.dataset.page);
+                    renderTable();
+                });
+            });
+
+            document.getElementById('page-prev').disabled = currentPage <= 1;
+            document.getElementById('page-next').disabled = currentPage >= totalPages;
+        }
+
+        document.getElementById('page-prev').addEventListener('click', function () {
+            if (currentPage > 1) { currentPage--; renderTable(); }
+        });
+        document.getElementById('page-next').addEventListener('click', function () {
+            var total = Math.max(1, Math.ceil(allStores.length / PAGE_SIZE));
+            if (currentPage < total) { currentPage++; renderTable(); }
+        });
+
+        document.querySelectorAll('[data-group] input').forEach(function (cb) {
+            cb.addEventListener('change', function () {
+                currentPage = 1;
+                renderTable();
+            });
+        });
+
+        renderTable();
+    });
+</script>
+@endpush

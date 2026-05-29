@@ -22,6 +22,7 @@ class DashboardController extends Controller
                 'geoStats' => ['conCoordenadas' => 0, 'sinCoordenadas' => 0],
                 'aperturasKpi' => ['total' => 0, 'esteAnio' => 0],
                 'directorioStats' => ['completos' => 0, 'incompletos' => 0],
+                'auditoriaKpis' => ['comitesVencidos' => 0, 'auditoriaAlta' => 0, 'rotacionBaja' => 0, 'auditoriaPendiente' => 0],
                 'updatedAt' => null,
                 'error' => 'No se pudieron obtener los datos del Google Sheet.',
             ]);
@@ -38,6 +39,7 @@ class DashboardController extends Controller
         $geoStats = $this->calculateGeoStats($stores);
         $aperturasKpi = $this->calculateAperturasKpi($stores);
         $directorioStats = $this->calculateDirectorioStats($stores);
+        $auditoriaKpis = $this->calculateAuditoriaKpis($stores);
 
         return view('dashboard', [
             'totalCount' => $totalCount,
@@ -48,6 +50,7 @@ class DashboardController extends Controller
             'geoStats' => $geoStats,
             'aperturasKpi' => $aperturasKpi,
             'directorioStats' => $directorioStats,
+            'auditoriaKpis' => $auditoriaKpis,
             'updatedAt' => cache()->get('dashboard_updated_at'),
         ]);
     }
@@ -264,6 +267,33 @@ class DashboardController extends Controller
             else $completos++;
         }
         return compact('incompletos', 'completos');
+    }
+
+    private function calculateAuditoriaKpis(array $stores): array
+    {
+        $comitesVencidos = 0;
+        $auditoriaAlta = 0;
+        $rotacionBaja = 0;
+        $auditoriaPendiente = 0;
+
+        foreach ($stores as $store) {
+            $vigencia = $this->parseDate($store['Vigencia'] ?? '');
+            if ($vigencia !== null && $vigencia->isPast()) $comitesVencidos++;
+
+            $impuesto = (float) str_replace([',', '$', ' '], '', $store['Imp_Res_Audi_Mes'] ?? '0');
+            if ($impuesto > 500000) $auditoriaAlta++;
+
+            $capTot = (float) str_replace([',', '$', ' '], '', $store['Cap_Tot'] ?? '0');
+            $vtaMes = (float) str_replace([',', '$', ' '], '', $store['Vta_Mes'] ?? '0');
+            $rotacion = $capTot > 0 ? $vtaMes / $capTot : 0;
+            if ($rotacion < 1.5) $rotacionBaja++;
+
+            $fchAudit = $this->parseDate($store['Fch_Audit'] ?? '');
+            $mesesSinAuditoria = $fchAudit ? $fchAudit->diffInMonths(now()) : null;
+            if ($fchAudit === null || ($mesesSinAuditoria !== null && $mesesSinAuditoria >= 3)) $auditoriaPendiente++;
+        }
+
+        return compact('comitesVencidos', 'auditoriaAlta', 'rotacionBaja', 'auditoriaPendiente');
     }
 
     private function parseDate(?string $value): ?Carbon

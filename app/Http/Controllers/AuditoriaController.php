@@ -21,6 +21,8 @@ class AuditoriaController extends Controller
             'almacen' => trim($request->query('almacen', '')),
             'nivel' => $request->query('nivel', ''),
             'estado_comite' => $request->query('estado_comite', ''),
+            'estado_auditoria' => $request->query('estado_auditoria', ''),
+            'filtro_500k' => $request->query('filtro_500k', ''),
         ];
 
         $evaluated = collect($stores)->map(function ($store) {
@@ -40,6 +42,21 @@ class AuditoriaController extends Controller
             }
             if ($filters['estado_comite'] !== '' && ($store['_audit']['estadoComite'] ?? '') !== $filters['estado_comite']) {
                 return false;
+            }
+            if ($filters['estado_auditoria'] !== '') {
+                $fch = $store['_audit']['fchAudit'] ?? null;
+                $meses = $store['_audit']['mesesSinAuditoria'] ?? null;
+                $estado = $fch ? ($meses >= 3 ? 'vencida' : 'al_dia') : 'sin_fecha';
+                if ($estado !== $filters['estado_auditoria']) {
+                    return false;
+                }
+            }
+            if ($filters['filtro_500k'] !== '') {
+                $impuesto = $store['_audit']['impuesto'] ?? 0;
+                $esAlto = $impuesto > 500000;
+                if (($filters['filtro_500k'] === 'si' && !$esAlto) || ($filters['filtro_500k'] === 'no' && $esAlto)) {
+                    return false;
+                }
             }
             return true;
         })->values()->all();
@@ -73,7 +90,7 @@ class AuditoriaController extends Controller
 
     private function errorView()
     {
-        $filters = ['almacen' => '', 'nivel' => '', 'estado_comite' => ''];
+        $filters = ['almacen' => '', 'nivel' => '', 'estado_comite' => '', 'estado_auditoria' => '', 'filtro_500k' => ''];
         return view('auditoria', [
             'stores' => [],
             'totalCount' => 0,

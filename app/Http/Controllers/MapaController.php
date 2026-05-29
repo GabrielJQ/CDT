@@ -35,7 +35,6 @@ class MapaController extends Controller
 
         $filters = [
             'almacen' => trim($request->query('almacen', '')),
-            'estado' => $request->query('estado', ''),
             'estado_geo' => $request->query('estado_geo', ''),
         ];
 
@@ -43,12 +42,6 @@ class MapaController extends Controller
             if ($filters['almacen'] !== '') {
                 $nombre = $store['Nombre_Almacen'] ?? '';
                 if (!str_contains(mb_strtoupper($nombre), mb_strtoupper($filters['almacen']))) {
-                    return false;
-                }
-            }
-            if ($filters['estado'] !== '') {
-                $estado = strtoupper(trim($store['Estado'] ?? ''));
-                if ($estado !== strtoupper(trim($filters['estado']))) {
                     return false;
                 }
             }
@@ -62,8 +55,6 @@ class MapaController extends Controller
 
         $stats = $this->calculateStats($evaluated->all());
 
-        $estadosList = ['OAXACA'];
-
         $criticales = collect($filtered)->filter(function ($s) {
             return ($s['_geo']['status'] ?? 'OK') !== 'OK';
         })->values()->all();
@@ -74,7 +65,6 @@ class MapaController extends Controller
             'totalCount' => $totalCount,
             'filteredCount' => $filteredCount,
             'stats' => $stats,
-            'estadosList' => $estadosList,
             'filters' => $filters,
             'geoLabels' => self::GEO_LABELS,
             'updatedAt' => cache()->get('dashboard_updated_at'),
@@ -103,8 +93,7 @@ class MapaController extends Controller
             'totalCount' => 0,
             'filteredCount' => 0,
             'stats' => ['OK' => 0, 'SIN_COORDENADAS' => 0, 'FUERA_MEXICO' => 0, 'FUERA_ESTADO' => 0],
-            'estadosList' => [],
-            'filters' => ['almacen' => '', 'estado' => '', 'estado_geo' => ''],
+            'filters' => ['almacen' => '', 'estado_geo' => ''],
             'geoLabels' => self::GEO_LABELS,
             'error' => 'No se pudieron obtener los datos del Google Sheet.',
             'updatedAt' => null,

@@ -34,6 +34,26 @@
         </div>
     </div>
 
+    {{-- Row 1b — Auditoría KPIs --}}
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl shadow p-5 border-l-4 border-red-500">
+            <div class="text-3xl font-bold text-red-600">{{ $auditoriaKpis['comitesVencidos'] }}</div>
+            <div class="text-sm text-red-500 mt-1">🏛️ Comités vencidos</div>
+        </div>
+        <div class="bg-white rounded-xl shadow p-5 border-l-4 border-orange-500">
+            <div class="text-3xl font-bold text-orange-600">{{ $auditoriaKpis['auditoriaAlta'] }}</div>
+            <div class="text-sm text-orange-500 mt-1">🔍 Auditoría > $500k</div>
+        </div>
+        <div class="bg-white rounded-xl shadow p-5 border-l-4 border-amber-500">
+            <div class="text-3xl font-bold text-amber-600">{{ $auditoriaKpis['rotacionBaja'] }}</div>
+            <div class="text-sm text-amber-500 mt-1">📉 Rotación baja (&lt;1.5)</div>
+        </div>
+        <div class="bg-white rounded-xl shadow p-5 border-l-4 border-gray-400">
+            <div class="text-3xl font-bold text-gray-600">{{ $auditoriaKpis['auditoriaPendiente'] }}</div>
+            <div class="text-sm text-gray-500 mt-1">📅 Aud. pendiente (&gt;3 meses)</div>
+        </div>
+    </div>
+
     {{-- Row 2 — Module Access Cards --}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-6">
         {{-- Conectividad --}}
@@ -144,6 +164,28 @@
                     <div class="p-1.5 bg-amber-50 rounded-lg">
                         <div class="text-base font-bold text-amber-600">{{ $directorioStats['incompletos'] }}</div>
                         <div class="text-xs text-gray-500">🟡 Incompletos</div>
+                    </div>
+                </div>
+            @else
+                <p class="text-sm text-gray-400">Sin datos</p>
+            @endif
+        </a>
+
+        {{-- Auditoría --}}
+        <a href="/auditoria" class="block bg-white rounded-xl shadow p-5 hover:shadow-lg transition border-l-4 border-purple-500 group">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-lg font-bold text-gray-800 group-hover:text-purple-600 transition">🔍 Auditoría</h3>
+                <span class="text-xs text-purple-600 opacity-0 group-hover:opacity-100 transition">Ver más →</span>
+            </div>
+            @if($auditoriaKpis)
+                <div class="grid grid-cols-2 gap-2 text-center">
+                    <div class="p-1.5 bg-red-50 rounded-lg">
+                        <div class="text-base font-bold text-red-600">{{ $auditoriaKpis['comitesVencidos'] }}</div>
+                        <div class="text-xs text-gray-500">🔴 Comités venc.</div>
+                    </div>
+                    <div class="p-1.5 bg-orange-50 rounded-lg">
+                        <div class="text-base font-bold text-orange-600">{{ $auditoriaKpis['auditoriaAlta'] }}</div>
+                        <div class="text-xs text-gray-500">🔍 > $500k</div>
                     </div>
                 </div>
             @else

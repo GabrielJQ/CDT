@@ -118,7 +118,7 @@ class CriticalStoresController extends Controller
         $conditions['capital_bajo'] = $capTot > 0 && $capTot < 100000;
         $labels['capital_bajo'] = [
             'label' => 'Capital bajo',
-            'detail' => 'Cap_Tot: $' . number_format($capTot, 2),
+            'detail' => '$' . number_format($capTot, 2),
             'icon' => '💰',
         ];
 
@@ -127,7 +127,7 @@ class CriticalStoresController extends Controller
         $conditions['comite_vencido'] = $vigenciaDate !== null && $vigenciaDate->isPast();
         $labels['comite_vencido'] = [
             'label' => 'Comité vencido',
-            'detail' => 'Vigencia: ' . ($vigenciaDate ? $vigenciaDate->format('d/m/Y') : 'Sin fecha'),
+            'detail' => $vigenciaDate ? $vigenciaDate->format('d/m/Y') : 'Sin fecha',
             'icon' => '📅',
         ];
 
@@ -136,7 +136,7 @@ class CriticalStoresController extends Controller
         $conditions['auditoria_elevada'] = $impuesto > 500000;
         $labels['auditoria_elevada'] = [
             'label' => 'Auditoría > $500k',
-            'detail' => 'Imp_Res_Audi_Mes: $' . number_format($impuesto, 2),
+            'detail' => '$' . number_format($impuesto, 2),
             'icon' => '🔍',
         ];
 
@@ -148,7 +148,7 @@ class CriticalStoresController extends Controller
         }
         $labels['pagare_proximo'] = [
             'label' => 'Pagare próximo',
-            'detail' => 'Pagare_Fecha: ' . ($pagareDate ? $pagareDate->format('d/m/Y') : 'Sin fecha'),
+            'detail' => $pagareDate ? $pagareDate->format('d/m/Y') : 'Sin fecha',
             'icon' => '📄',
         ];
 
@@ -157,7 +157,7 @@ class CriticalStoresController extends Controller
         $conditions['rotacion_baja'] = $rotacion < 1.5;
         $labels['rotacion_baja'] = [
             'label' => 'Rotación baja',
-            'detail' => 'Vta_Mes/Cap_Tot: ' . number_format($rotacion, 2),
+            'detail' => number_format($rotacion, 2),
             'icon' => '📉',
         ];
 

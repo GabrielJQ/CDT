@@ -45,15 +45,6 @@
                        placeholder="Buscar..."
                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
             </div>
-            <div class="min-w-[150px]">
-                <label class="block text-xs text-gray-500 uppercase mb-1">Estado</label>
-                <select name="estado" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white">
-                    <option value="">Todos</option>
-                    @foreach($estadosList as $est)
-                        <option value="{{ $est }}" {{ $filters['estado'] === $est ? 'selected' : '' }}>{{ $est }}</option>
-                    @endforeach
-                </select>
-            </div>
             <div class="min-w-[180px]">
                 <label class="block text-xs text-gray-500 uppercase mb-1">Estado geolocalización</label>
                 <select name="estado_geo" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white">
