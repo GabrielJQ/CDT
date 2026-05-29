@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Dashboard CDT')</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        #sidebar { width: 4rem; transition: width .2s ease; }
+        #sidebar.expanded { width: 16rem; }
+        @media (max-width: 1023px) {
+            #sidebar { position: fixed; inset: 0; left: 0; z-index: 30; transform: translateX(-100%); width: 16rem; }
+            #sidebar.expanded { transform: translateX(0); }
+        }
+        .nav-label { overflow: hidden; white-space: nowrap; }
+        #sidebar:not(.expanded) .nav-label,
+        #sidebar:not(.expanded) .sidebar-extra { display: none; }
+        @media (max-width: 1023px) {
+            #sidebar:not(.expanded) .nav-label,
+            #sidebar:not(.expanded) .sidebar-extra { display: block; }
+        }
+    </style>
     @stack('head')
 </head>
 <body class="bg-gray-100">
@@ -31,58 +46,59 @@
             }
         @endphp
 
-        {{-- Overlay --}}
-        <div id="sidebar-overlay" class="fixed inset-0 bg-black/40 z-20 hidden" onclick="toggleSidebar()"></div>
+        {{-- Overlay for mobile --}}
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black/40 z-20 hidden lg:hidden" onclick="toggleSidebar()"></div>
 
         {{-- Sidebar --}}
-        <aside id="sidebar"
-               class="fixed inset-y-0 left-0 w-64 bg-[#166534] text-white flex flex-col z-30
-                      -translate-x-full transition-transform duration-200 ease-in-out">
-            <div class="p-5 border-b border-green-700 flex items-center justify-between">
-                <div>
-                    <h1 class="text-xl font-bold tracking-tight">CDT Dashboard</h1>
-                    <p class="text-xs text-green-300 mt-0.5">Panel de Monitoreo</p>
+        <aside id="sidebar" class="flex-shrink-0 bg-[#166534] text-white flex flex-col z-30 overflow-hidden">
+            <div class="border-b border-green-700 flex items-center justify-between flex-shrink-0" style="height:3.5rem">
+                <div class="px-4 flex items-center gap-2 overflow-hidden">
+                    <span class="text-xl font-bold tracking-tight flex-shrink-0">CDT</span>
+                    <span class="nav-label text-xs text-green-300 whitespace-nowrap">Panel de Monitoreo</span>
                 </div>
-                <button onclick="toggleSidebar()" class="text-green-200 hover:text-white text-xl leading-none">&times;</button>
+                <button onclick="toggleSidebar()" class="lg:hidden text-green-200 hover:text-white text-xl leading-none px-2">&times;</button>
             </div>
-            <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
+            <nav class="flex-1 p-2 space-y-1 overflow-y-auto overflow-x-hidden">
                 @foreach($navItems as $path => $item)
                     @php
                         $isActive = $currentPath === $path || ($path !== '/' && str_starts_with($currentPath, $path));
                     @endphp
                     <a href="/{{ $path === '/' ? '' : $path }}"
-                       class="nav-link flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition
+                       title="{{ $item['label'] }}"
+                       class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition
                               {{ $isActive ? 'bg-green-700 text-white' : 'text-green-100 hover:bg-green-700/50' }}">
-                        <span class="text-lg">{{ $item['icon'] }}</span>
-                        {{ $item['label'] }}
+                        <span class="text-lg flex-shrink-0 w-6 text-center">{{ $item['icon'] }}</span>
+                        <span class="nav-label truncate">{{ $item['label'] }}</span>
                     </a>
                 @endforeach
 
                 {{-- Dropdown: Presencia Tiendas --}}
                 <div>
                     <button type="button" id="presencia-toggle"
-                            class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition w-full text-left
+                            title="Presencia Tiendas"
+                            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition w-full text-left
                                    {{ $presenciaActive ? 'bg-green-700 text-white' : 'text-green-100 hover:bg-green-700/50' }}">
-                        <span class="text-lg">🏪</span>
-                        <span class="flex-1">Presencia Tiendas</span>
-                        <span id="presencia-arrow" class="text-xs transition-transform {{ $presenciaActive ? 'rotate-0' : '-rotate-90' }}">▼</span>
+                        <span class="text-lg flex-shrink-0 w-6 text-center">🏪</span>
+                        <span class="nav-label flex-1 truncate">Presencia Tiendas</span>
+                        <span id="presencia-arrow" class="sidebar-extra text-xs transition-transform {{ $presenciaActive ? 'rotate-0' : '-rotate-90' }}">▼</span>
                     </button>
-                    <div id="presencia-submenu" class="ml-4 mt-1 space-y-1 {{ $presenciaActive ? '' : 'hidden' }}">
+                    <div id="presencia-submenu" class="ml-2 mt-1 space-y-1 {{ $presenciaActive ? '' : 'hidden' }}">
                         @foreach($presenciaChildren as $childPath => $child)
                             @php
                                 $isChildActive = $currentPath === $childPath || str_starts_with($currentPath, $childPath);
                             @endphp
                             <a href="/{{ $childPath }}"
-                               class="nav-link flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium transition
+                               title="{{ $child['label'] }}"
+                               class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition
                                       {{ $isChildActive ? 'bg-green-700 text-white' : 'text-green-100 hover:bg-green-700/50' }}">
-                                <span class="text-base">{{ $child['icon'] }}</span>
-                                {{ $child['label'] }}
+                                <span class="text-base flex-shrink-0 w-6 text-center">{{ $child['icon'] }}</span>
+                                <span class="nav-label truncate">{{ $child['label'] }}</span>
                             </a>
                         @endforeach
                     </div>
                 </div>
             </nav>
-            <div class="p-4 border-t border-green-700 text-xs text-green-300">
+            <div class="border-t border-green-700 text-xs text-green-300 p-3 sidebar-extra flex-shrink-0">
                 @php $layoutUpdated = cache()->get('dashboard_updated_at', '—'); @endphp
                 <p>Actualizado: <span class="font-mono text-white">{{ $layoutUpdated }}</span></p>
             </div>
@@ -137,8 +153,10 @@
         function toggleSidebar() {
             var sidebar = document.getElementById('sidebar');
             var overlay = document.getElementById('sidebar-overlay');
-            sidebar.classList.toggle('-translate-x-full');
-            overlay.classList.toggle('hidden');
+            sidebar.classList.toggle('expanded');
+            if (window.innerWidth < 1024) {
+                overlay.classList.toggle('hidden');
+            }
         }
 
         document.addEventListener('DOMContentLoaded', function () {
@@ -154,10 +172,10 @@
 
             document.querySelectorAll('.nav-link').forEach(function (link) {
                 link.addEventListener('click', function () {
-                    var sidebar = document.getElementById('sidebar');
-                    var overlay = document.getElementById('sidebar-overlay');
-                    if (!sidebar.classList.contains('-translate-x-full')) {
-                        sidebar.classList.add('-translate-x-full');
+                    if (window.innerWidth < 1024) {
+                        var sidebar = document.getElementById('sidebar');
+                        var overlay = document.getElementById('sidebar-overlay');
+                        sidebar.classList.remove('expanded');
                         overlay.classList.add('hidden');
                     }
                 });
