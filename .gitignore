@@ -25,3 +25,6 @@ Thumbs.db
 
 # Project rules (not versioned)
 AGENTS.md
+
+# Handoff files
+/handoff*
