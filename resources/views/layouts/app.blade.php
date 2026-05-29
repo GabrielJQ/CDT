@@ -63,7 +63,7 @@
                     @php
                         $isActive = $currentPath === $path || ($path !== '/' && str_starts_with($currentPath, $path));
                     @endphp
-                    <a href="/{{ $path === '/' ? '' : $path }}"
+                    <a href="{{ url($path === '/' ? '' : $path) }}"
                        title="{{ $item['label'] }}"
                        class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition
                               {{ $isActive ? 'bg-green-700 text-white' : 'text-green-100 hover:bg-green-700/50' }}">
@@ -87,7 +87,7 @@
                             @php
                                 $isChildActive = $currentPath === $childPath || str_starts_with($currentPath, $childPath);
                             @endphp
-                            <a href="/{{ $childPath }}"
+                            <a href="{{ url($childPath) }}"
                                title="{{ $child['label'] }}"
                                class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition
                                       {{ $isChildActive ? 'bg-green-700 text-white' : 'text-green-100 hover:bg-green-700/50' }}">
@@ -111,7 +111,7 @@
                 <h2 class="text-base lg:text-lg font-semibold text-gray-800 truncate flex-1">{{ $pageTitle ?? 'Dashboard' }}</h2>
                 <div class="flex items-center gap-2 w-full lg:w-auto">
                     @php $currentRegion = session('region_filter', ''); @endphp
-                    <form action="/set-region" method="POST" id="region-form" class="flex-1 lg:flex-none">
+                    <form action="{{ url('/set-region') }}" method="POST" id="region-form" class="flex-1 lg:flex-none">
                         @csrf
                         <select name="region" onchange="document.getElementById('region-form').submit()"
                                 class="w-full lg:w-auto border border-gray-300 rounded-lg px-2 lg:px-3 py-1.5 lg:py-2 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white">
@@ -121,7 +121,7 @@
                             <option value="U.O. MIXTECA" {{ $currentRegion === 'U.O. MIXTECA' ? 'selected' : '' }}>📍 Mixteca</option>
                         </select>
                     </form>
-                    <form action="/refresh" method="POST" class="flex-none">
+                    <form action="{{ url('/refresh') }}" method="POST" class="flex-none">
                         @csrf
                         <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg text-xs lg:text-sm shadow transition whitespace-nowrap">
                             ↻ Refrescar

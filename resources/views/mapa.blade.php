@@ -38,7 +38,7 @@
 
     {{-- Filters --}}
     <div class="bg-white rounded-xl shadow p-4 mb-6">
-        <form method="GET" action="/mapa" class="flex flex-wrap items-end gap-3">
+        <form method="GET" action="{{ url('/mapa') }}" class="flex flex-wrap items-end gap-3">
             <div class="flex-1 min-w-[160px]">
                 <label class="block text-xs text-gray-500 uppercase mb-1">Almacén</label>
                 <input type="text" name="almacen" value="{{ $filters['almacen'] }}"
@@ -56,7 +56,7 @@
             </div>
             <div class="flex gap-2">
                 <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Filtrar</button>
-                <a href="/mapa" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-semibold transition inline-block">Limpiar</a>
+                <a href="{{ url('/mapa') }}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-semibold transition inline-block">Limpiar</a>
             </div>
         </form>
     </div>

@@ -57,7 +57,7 @@
     {{-- Row 2 — Module Access Cards --}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-5 mb-6">
         {{-- Conectividad --}}
-        <a href="/conectividad" class="block bg-white rounded-xl shadow p-4 lg:p-5 hover:shadow-lg transition border-l-4 border-blue-500 group">
+        <a href="{{ url('/conectividad') }}" class="block bg-white rounded-xl shadow p-4 lg:p-5 hover:shadow-lg transition border-l-4 border-blue-500 group">
             <div class="flex items-center justify-between mb-2 lg:mb-3">
                 <h3 class="text-base lg:text-lg font-bold text-gray-800 group-hover:text-blue-600 transition">📡 Conectividad</h3>
                 <span class="text-xs text-blue-600 opacity-0 group-hover:opacity-100 transition">Ver más →</span>
@@ -80,7 +80,7 @@
         </a>
 
         {{-- Información de Tiendas --}}
-        <a href="/informacion-tiendas" class="block bg-white rounded-xl shadow p-4 lg:p-5 hover:shadow-lg transition border-l-4 border-red-500 group">
+        <a href="{{ url('/informacion-tiendas') }}" class="block bg-white rounded-xl shadow p-4 lg:p-5 hover:shadow-lg transition border-l-4 border-red-500 group">
             <div class="flex items-center justify-between mb-2 lg:mb-3">
                 <h3 class="text-base lg:text-lg font-bold text-gray-800 group-hover:text-red-600 transition">⚠️ Info. Tiendas</h3>
                 <span class="text-xs text-red-600 opacity-0 group-hover:opacity-100 transition">Ver más →</span>
@@ -106,7 +106,7 @@
         </a>
 
         {{-- Mapa --}}
-        <a href="/mapa" class="block bg-white rounded-xl shadow p-4 lg:p-5 hover:shadow-lg transition border-l-4 border-emerald-500 group">
+        <a href="{{ url('/mapa') }}" class="block bg-white rounded-xl shadow p-4 lg:p-5 hover:shadow-lg transition border-l-4 border-emerald-500 group">
             <div class="flex items-center justify-between mb-2 lg:mb-3">
                 <h3 class="text-base lg:text-lg font-bold text-gray-800 group-hover:text-emerald-600 transition">🗺️ Mapa</h3>
                 <span class="text-xs text-emerald-600 opacity-0 group-hover:opacity-100 transition">Ver más →</span>
@@ -128,7 +128,7 @@
         </a>
 
         {{-- Aperturas --}}
-        <a href="/aperturas" class="block bg-white rounded-xl shadow p-4 lg:p-5 hover:shadow-lg transition border-l-4 border-purple-500 group">
+        <a href="{{ url('/aperturas') }}" class="block bg-white rounded-xl shadow p-4 lg:p-5 hover:shadow-lg transition border-l-4 border-purple-500 group">
             <div class="flex items-center justify-between mb-2 lg:mb-3">
                 <h3 class="text-base lg:text-lg font-bold text-gray-800 group-hover:text-purple-600 transition">🏗️ Aperturas</h3>
                 <span class="text-xs text-purple-600 opacity-0 group-hover:opacity-100 transition">Ver más →</span>
@@ -150,7 +150,7 @@
         </a>
 
         {{-- Directorio --}}
-        <a href="/directorio" class="block bg-white rounded-xl shadow p-4 lg:p-5 hover:shadow-lg transition border-l-4 border-amber-500 group">
+        <a href="{{ url('/directorio') }}" class="block bg-white rounded-xl shadow p-4 lg:p-5 hover:shadow-lg transition border-l-4 border-amber-500 group">
             <div class="flex items-center justify-between mb-2 lg:mb-3">
                 <h3 class="text-base lg:text-lg font-bold text-gray-800 group-hover:text-amber-600 transition">📋 Directorio</h3>
                 <span class="text-xs text-amber-600 opacity-0 group-hover:opacity-100 transition">Ver más →</span>
@@ -172,7 +172,7 @@
         </a>
 
         {{-- Auditoría --}}
-        <a href="/auditoria" class="block bg-white rounded-xl shadow p-4 lg:p-5 hover:shadow-lg transition border-l-4 border-purple-500 group">
+        <a href="{{ url('/auditoria') }}" class="block bg-white rounded-xl shadow p-4 lg:p-5 hover:shadow-lg transition border-l-4 border-purple-500 group">
             <div class="flex items-center justify-between mb-2 lg:mb-3">
                 <h3 class="text-base lg:text-lg font-bold text-gray-800 group-hover:text-purple-600 transition">🔍 Auditoría</h3>
                 <span class="text-xs text-purple-600 opacity-0 group-hover:opacity-100 transition">Ver más →</span>

@@ -86,7 +86,7 @@ class DashboardController extends Controller
     public function fetchFromSheet(): ?array
     {
         $url = config('app.google_sheet_url');
-        $response = Http::timeout(30)->get($url);
+        $response = Http::withoutVerifying()->timeout(30)->get($url);
 
         if ($response->failed()) {
             return null;
