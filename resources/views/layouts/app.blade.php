@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="{{ request()->cookie('tema', '') === 'dark' ? 'dark' : '' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,10 +19,16 @@
             #sidebar:not(.expanded) .nav-label,
             #sidebar:not(.expanded) .sidebar-extra { display: block; }
         }
+        .dark #conn-table .cell-empty,
+        .dark #cs-table .cell-empty,
+        .dark #dir-table .cell-empty,
+        .dark #aper-table .cell-empty,
+        .dark #audit-table .cell-empty { background: #374151; color: #6b7280; }
+        .dark .page-btn.active { background: #22c55e; }
     </style>
     @stack('head')
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 dark:bg-gray-900">
     <div class="min-h-screen flex">
         @php
             $currentPath = request()->path();
@@ -106,9 +112,9 @@
 
         <main class="flex-1 flex flex-col min-w-0">
             {{-- Top bar --}}
-            <div class="bg-white border-b border-gray-200 px-4 lg:px-6 py-2 lg:py-3 flex flex-wrap items-center gap-2 lg:gap-3">
+            <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 lg:px-6 py-2 lg:py-3 flex flex-wrap items-center gap-2 lg:gap-3">
                 <button onclick="toggleSidebar()" class="text-gray-600 hover:text-gray-900 text-xl leading-none pr-2">☰</button>
-                <h2 class="text-base lg:text-lg font-semibold text-gray-800 truncate flex-1">{{ $pageTitle ?? 'Dashboard' }}</h2>
+                <h2 class="text-base lg:text-lg font-semibold text-gray-800 dark:text-gray-100 truncate flex-1">{{ $pageTitle ?? 'Dashboard' }}</h2>
                 <div class="flex items-center gap-2 w-full lg:w-auto">
                     @php $currentRegion = request()->cookie('region_filter', ''); @endphp
                     <form action="{{ url('/set-region') }}" method="POST" id="region-form" class="flex-1 lg:flex-none">
@@ -127,19 +133,20 @@
                             ↻ Refrescar
                         </button>
                     </form>
+                    <button id="tema-toggle" class="text-lg leading-none w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Cambiar tema">🌙</button>
                 </div>
             </div>
 
             {{-- Alerts --}}
             <div class="px-4 lg:px-6 pt-3 lg:pt-4">
                 @session('success')
-                    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4 text-sm">{{ $value }}</div>
+                    <div class="bg-green-100 dark:bg-green-900/50 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-300 px-4 py-3 rounded mb-4 text-sm">{{ $value }}</div>
                 @endsession
                 @session('error')
-                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 text-sm">{{ $value }}</div>
+                    <div class="bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-4 text-sm">{{ $value }}</div>
                 @endsession
                 @isset($error)
-                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 text-sm">{{ $error }}</div>
+                    <div class="bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-4 text-sm">{{ $error }}</div>
                 @endisset
             </div>
 
@@ -150,6 +157,17 @@
         </main>
     </div>
     <script>
+        function getCookie(name) {
+            var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+            return match ? decodeURIComponent(match[2]) : null;
+        }
+
+        function setCookie(name, value, days) {
+            var expires = new Date();
+            expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+            document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires.toUTCString() + '; path=/';
+        }
+
         function toggleSidebar() {
             var sidebar = document.getElementById('sidebar');
             var overlay = document.getElementById('sidebar-overlay');
@@ -157,6 +175,12 @@
             if (window.innerWidth < 1024) {
                 overlay.classList.toggle('hidden');
             }
+        }
+
+        function aplicarTema(dark) {
+            document.documentElement.classList.toggle('dark', dark);
+            document.getElementById('tema-toggle').textContent = dark ? '☀️' : '🌙';
+            setCookie('tema', dark ? 'dark' : 'light', 30);
         }
 
         document.addEventListener('DOMContentLoaded', function () {
@@ -180,6 +204,21 @@
                     }
                 });
             });
+
+            var temaBtn = document.getElementById('tema-toggle');
+            if (temaBtn) {
+                var temaCookie = getCookie('tema');
+                if (temaCookie === 'dark' || temaCookie === 'light') {
+                    var isDark = temaCookie === 'dark';
+                    document.documentElement.classList.toggle('dark', isDark);
+                    temaBtn.textContent = isDark ? '☀️' : '🌙';
+                } else {
+                    temaBtn.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
+                }
+                temaBtn.addEventListener('click', function () {
+                    aplicarTema(!document.documentElement.classList.contains('dark'));
+                });
+            }
         });
     </script>
     @stack('footer')
