@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Servicios\ServicioGoogleSheet;
+use App\Servicios\ServicioExportacion;
 use App\Servicios\ServicioGeo;
 use App\Servicios\ServicioFiltro;
 use Illuminate\Http\Request;
@@ -51,6 +52,19 @@ class MapaController extends Controller
         $criticales = collect($filtered)->filter(function ($s) {
             return ($s['_geo']['status'] ?? 'OK') !== 'OK';
         })->values()->all();
+
+        if ($request->query('export') === 'csv') {
+            return ServicioExportacion::csvResponse($filtered, [
+                'Nombre_Almacen' => 'Almacén',
+                'No_Tienda_Actual' => 'Tienda #',
+                'Municipio' => 'Municipio',
+                'Estado' => 'Estado',
+                '_geo.lat' => 'Latitud',
+                '_geo.lon' => 'Longitud',
+                '_geo.status' => 'Estatus Geo',
+                '_geo.mensaje' => 'Mensaje',
+            ], 'mapa.csv');
+        }
 
         return view('mapa', [
             'stores' => $filtered,

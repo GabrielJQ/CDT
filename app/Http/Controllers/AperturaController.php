@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Servicios\ServicioGoogleSheet;
+use App\Servicios\ServicioExportacion;
 use App\Servicios\ServicioFecha;
 use Illuminate\Http\Request;
 
@@ -33,7 +34,7 @@ class AperturaController extends Controller
             $fechaRaw = $store['Fecha_Apertura'] ?? '';
             $fecha = $this->fecha->parsear($fechaRaw);
             $store['_fecha_apertura'] = $fecha;
-            $store['_antiguedad'] = $fecha ? $fecha->diffInMonths(now()) . ' meses' : '—';
+            $store['_antiguedad'] = $fecha ? (int) round($fecha->diffInMonths(now())) . ' meses' : '—';
             return $store;
         });
 
@@ -58,6 +59,18 @@ class AperturaController extends Controller
         })->sortByDesc(function ($store) {
             return $store['_fecha_apertura']?->timestamp ?? 0;
         })->values()->all();
+
+        if ($request->query('export') === 'csv') {
+            return ServicioExportacion::csvResponse($filtered, [
+                'Nombre_Almacen' => 'Almacén',
+                'No_Tienda_Actual' => 'Tienda #',
+                'Localidad' => 'Localidad',
+                'Municipio' => 'Municipio',
+                'Fecha_Apertura' => 'Fecha Apertura',
+                '_fecha_apertura' => 'Apertura (parseada)',
+                '_antiguedad' => 'Antigüedad',
+            ], 'aperturas.csv');
+        }
 
         return view('aperturas', [
             'stores' => $filtered,

@@ -59,6 +59,7 @@
                     <button id="filter-clear" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-semibold transition">
                         Limpiar
                     </button>
+                    <a href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm font-semibold transition inline-block">⬇ CSV</a>
                 </div>
             </div>
         </div>

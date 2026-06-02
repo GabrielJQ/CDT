@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Servicios\ServicioGoogleSheet;
 use App\Servicios\ServicioConectividad;
+use App\Servicios\ServicioExportacion;
 use App\Servicios\ServicioFiltro;
 use Illuminate\Http\Request;
 
@@ -62,6 +63,18 @@ class ConnectivityController extends Controller
             }
             return true;
         })->values()->all();
+
+        if ($request->query('export') === 'csv') {
+            return ServicioExportacion::csvResponse($filtered, [
+                'Nombre_Almacen' => 'Almacén',
+                'No_Tienda_Actual' => 'Tienda #',
+                'Municipio' => 'Municipio',
+                'TELEFONIA' => 'Teléfono',
+                'Señal de celular' => 'Señal Celular',
+                'Compañía' => 'Compañía',
+                'INTERNET' => 'Internet',
+            ], 'conectividad.csv');
+        }
 
         return view('connectivity', [
             'kpis' => $this->conectividad->calcularKpis($filtered),

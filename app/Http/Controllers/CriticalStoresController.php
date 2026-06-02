@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Servicios\ServicioGoogleSheet;
 use App\Servicios\ServicioTiendaCritica;
+use App\Servicios\ServicioExportacion;
 use App\Servicios\ServicioFiltro;
 use Illuminate\Http\Request;
 
@@ -46,6 +47,31 @@ class CriticalStoresController extends Controller
             }
             return true;
         })->values()->all();
+
+        if ($request->query('export') === 'csv') {
+            $exportData = collect($filtered)->map(function ($store) {
+                $critico = $store['_critico'] ?? [];
+                $detalle = [];
+                foreach (($critico['conditions'] ?? []) as $key => $active) {
+                    if ($active) {
+                        $label = $critico['labels'][$key]['label'] ?? $key;
+                        $detail = $critico['labels'][$key]['detail'] ?? '';
+                        $detalle[] = $detail ? "$label ($detail)" : $label;
+                    }
+                }
+                $store['_detalle_factores'] = implode('; ', $detalle);
+                return $store;
+            })->all();
+
+            return ServicioExportacion::csvResponse($exportData, [
+                'Nombre_Almacen' => 'Almacén',
+                'No_Tienda_Actual' => 'Tienda #',
+                'Municipio' => 'Municipio',
+                '_critico.level' => 'Estado',
+                '_critico.count' => 'Factores Activos',
+                '_detalle_factores' => 'Detalle',
+            ], 'informacion-tiendas.csv');
+        }
 
         return view('critical-stores', [
             'stores' => $filtered,

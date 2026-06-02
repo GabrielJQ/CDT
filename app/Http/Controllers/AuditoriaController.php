@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Servicios\ServicioGoogleSheet;
 use App\Servicios\ServicioAuditoria;
+use App\Servicios\ServicioExportacion;
 use App\Servicios\ServicioFiltro;
 use Illuminate\Http\Request;
 
@@ -67,6 +68,22 @@ class AuditoriaController extends Controller
             }
             return true;
         })->values()->all();
+
+        if ($request->query('export') === 'csv') {
+            return ServicioExportacion::csvResponse($filtered, [
+                'Nombre_Almacen' => 'Almacén',
+                'No_Tienda_Actual' => 'Tienda #',
+                'Localidad' => 'Localidad',
+                'Municipio' => 'Municipio',
+                'Vigencia' => 'Vigencia',
+                '_audit.estadoComite' => 'Estado Comité',
+                '_audit.fchAudit' => 'Fch Auditoría',
+                '_audit.mesesSinAuditoria' => 'Meses Sin Auditoría',
+                '_audit.impuesto' => 'Impuesto',
+                '_audit.rotacion' => 'Rotación',
+                '_audit.level' => 'Nivel Riesgo',
+            ], 'auditoria.csv');
+        }
 
         return view('auditoria', [
             'stores' => $filtered,

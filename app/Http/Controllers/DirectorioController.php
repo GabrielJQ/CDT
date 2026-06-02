@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Servicios\ServicioGoogleSheet;
+use App\Servicios\ServicioExportacion;
+use Illuminate\Http\Request;
 
 class DirectorioController extends Controller
 {
@@ -19,7 +21,7 @@ class DirectorioController extends Controller
         private ServicioGoogleSheet $sheet,
     ) {}
 
-    public function index()
+    public function index(Request $request)
     {
         $stores = $this->sheet->obtenerTiendas();
         if ($stores === null) {
@@ -28,6 +30,44 @@ class DirectorioController extends Controller
 
         $stores = $this->applyRegionFilter($stores);
         $totalCount = count($stores);
+
+        if ($request->query('export') === 'csv') {
+            return ServicioExportacion::csvResponse($stores, [
+                'Nombre_Almacen' => 'Almacén',
+                'No_Tienda_Actual' => 'Tienda #',
+                'Municipio' => 'Municipio',
+                'Fecha_Apertura' => 'Apertura',
+                'TELEFONIA' => 'Teléfono',
+                'Señal de celular' => 'Señal Celular',
+                'Compañía' => 'Compañía',
+                'INTERNET' => 'Internet',
+                'CORREO' => 'Correo',
+                'Direccion' => 'Dirección',
+                'Vta_Mes' => 'Vta Mes',
+                'VtaNeta_Mes' => 'Vta Neta Mes',
+                'Vta_Acu' => 'Vta Acumulada',
+                'VtaNeta_Acu' => 'Vta Neta Acumulada',
+                'Bon_Mes' => 'Bon Mes',
+                'Cap_Tot' => 'Cap Total',
+                'Cap_Com' => 'Cap Com',
+                'Cap_Dic' => 'Cap Dic',
+                'Pagare_Monto' => 'Pagare Monto',
+                'Fec_CRA' => 'Fec CRA',
+                'Vigencia' => 'Vigencia',
+                'Fch_Audit' => 'Fch Audit',
+                'Imp_Res_Audi_Mes' => 'Impuesto',
+                'Audit_Realiza_Mes' => 'Auditoría Realizada',
+                'Latitud' => 'Latitud',
+                'Longitud' => 'Longitud',
+                'Nom_Pre_CRA' => 'Presidente',
+                'Nom_Pre_Sup_CRA' => 'Presidente Suplente',
+                'Nom_Sec_CRA' => 'Secretario',
+                'Nom_Sec_Sup_CRA' => 'Secretario Suplente',
+                'Nom_Tes_CRA' => 'Tesorero',
+                'Nom_Vcv_CRA' => 'Vocal',
+                'Nom_Voc_Gen_CRA' => 'Vocal General',
+            ], 'directorio.csv');
+        }
 
         return view('directorio', [
             'stores' => $stores,
