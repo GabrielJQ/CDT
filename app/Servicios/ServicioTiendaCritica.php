@@ -42,7 +42,7 @@ class ServicioTiendaCritica
         $pagareDate = $this->fecha->parsear($pagareFecha);
         $conditions['pagare_proximo'] = false;
         if ($pagareDate !== null) {
-            $conditions['pagare_proximo'] = $pagareDate->isPast() || $pagareDate->diffInMonths(now()) <= 3;
+            $conditions['pagare_proximo'] = $pagareDate->isPast() || abs($pagareDate->diffInMonths(now())) <= 3;
         }
         $labels['pagare_proximo'] = [
             'label' => 'Pagare próximo',
@@ -142,7 +142,7 @@ class ServicioTiendaCritica
             if ($impuesto > 500000) $count++;
 
             $pagareDate = $this->fecha->parsear($store['Pagare_Fecha'] ?? '');
-            if ($pagareDate !== null && ($pagareDate->isPast() || $pagareDate->diffInMonths(now()) <= 3)) $count++;
+            if ($pagareDate !== null && ($pagareDate->isPast() || abs($pagareDate->diffInMonths(now())) <= 3)) $count++;
 
             $gdomarg = strtoupper(trim($store['GDOMARG'] ?? ''));
             if ($gdomarg === 'BAJA') $count++;

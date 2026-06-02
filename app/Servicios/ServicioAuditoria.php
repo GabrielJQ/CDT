@@ -17,7 +17,7 @@ class ServicioAuditoria
         $rotacion = $capTot > 0 ? $vtaMes / $capTot : 0;
         $fchAuditRaw = trim($store['Fch_Audit'] ?? '');
         $fchAudit = $this->fecha->parsear($fchAuditRaw);
-        $mesesSinAuditoria = $fchAudit ? $fchAudit->diffInMonths(now()) : null;
+        $mesesSinAuditoria = $fchAudit ? abs($fchAudit->diffInMonths(now())) : null;
 
         $estadoComite = 'sin_fecha';
         if ($vigencia !== null) {
@@ -84,7 +84,7 @@ class ServicioAuditoria
             if ($rotacion < 1.5) $rotacionBaja++;
 
             $fchAudit = $this->fecha->parsear($store['Fch_Audit'] ?? '');
-            $mesesSinAuditoria = $fchAudit ? $fchAudit->diffInMonths(now()) : null;
+            $mesesSinAuditoria = $fchAudit ? abs($fchAudit->diffInMonths(now())) : null;
             if ($fchAudit === null || ($mesesSinAuditoria !== null && $mesesSinAuditoria >= 3)) $auditoriaPendiente++;
         }
 
