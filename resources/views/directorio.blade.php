@@ -70,27 +70,27 @@
  {{-- Column toggles --}}
  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 mb-4 flex flex-wrap gap-4">
  <span class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold self-center">Columnas:</span>
- <label class="col-toggle flex items-center gap-1.5 text-sm font-medium cursor-pointer" data-group="ID">
- <input type="checkbox" checked disabled class="opacity-50"> 🆔 ID
- </label>
- <label class="col-toggle flex items-center gap-1.5 text-sm cursor-pointer" data-group="Contacto">
- <input type="checkbox"> 📞 Contacto
- </label>
- <label class="col-toggle flex items-center gap-1.5 text-sm cursor-pointer" data-group="Ventas">
- <input type="checkbox"> 📊 Ventas
- </label>
- <label class="col-toggle flex items-center gap-1.5 text-sm cursor-pointer" data-group="Capital">
- <input type="checkbox"> 💰 Capital
- </label>
- <label class="col-toggle flex items-center gap-1.5 text-sm cursor-pointer" data-group="Comite">
- <input type="checkbox"> 🏛️ Comité
- </label>
- <label class="col-toggle flex items-center gap-1.5 text-sm cursor-pointer" data-group="Auditoria">
- <input type="checkbox"> 🔍 Auditoría
- </label>
- <label class="col-toggle flex items-center gap-1.5 text-sm cursor-pointer" data-group="Ubicacion">
- <input type="checkbox"> 🌐 Ubicación
- </label>
+  <label class="col-toggle flex items-center gap-1.5 text-sm font-medium cursor-pointer dark:text-gray-200" data-group="ID">
+  <input type="checkbox" checked disabled class="opacity-50"> 🆔 ID
+  </label>
+  <label class="col-toggle flex items-center gap-1.5 text-sm cursor-pointer dark:text-gray-200" data-group="Contacto">
+  <input type="checkbox"> 📞 Contacto
+  </label>
+  <label class="col-toggle flex items-center gap-1.5 text-sm cursor-pointer dark:text-gray-200" data-group="Ventas">
+  <input type="checkbox"> 📊 Ventas
+  </label>
+  <label class="col-toggle flex items-center gap-1.5 text-sm cursor-pointer dark:text-gray-200" data-group="Capital">
+  <input type="checkbox"> 💰 Capital
+  </label>
+  <label class="col-toggle flex items-center gap-1.5 text-sm cursor-pointer dark:text-gray-200" data-group="Comite">
+  <input type="checkbox"> 🏛️ Comité
+  </label>
+  <label class="col-toggle flex items-center gap-1.5 text-sm cursor-pointer dark:text-gray-200" data-group="Auditoria">
+  <input type="checkbox"> 🔍 Auditoría
+  </label>
+  <label class="col-toggle flex items-center gap-1.5 text-sm cursor-pointer dark:text-gray-200" data-group="Ubicacion">
+  <input type="checkbox"> 🌐 Ubicación
+  </label>
  </div>
 
  {{-- Count --}}
@@ -100,7 +100,7 @@
 
  {{-- Table wrapper --}}
  <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-x-auto">
- <table id="dir-table" class="w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+ <table id="dir-table" class="w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm dark:text-gray-200">
  <thead class="bg-gray-50 dark:bg-gray-800">
  <tr id="dir-header"></tr>
  </thead>

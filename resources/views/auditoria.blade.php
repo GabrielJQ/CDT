@@ -102,18 +102,18 @@
  {{-- Column toggles --}}
  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 mb-4 flex flex-wrap gap-4">
  <span class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold self-center">Columnas:</span>
- <label class="col-toggle flex items-center gap-1.5 text-sm font-medium cursor-pointer" data-group="General">
- <input type="checkbox" checked disabled class="opacity-50"> 📋 General
- </label>
- <label class="col-toggle flex items-center gap-1.5 text-sm cursor-pointer" data-group="Comite">
- <input type="checkbox" checked> 🏛️ Comité
- </label>
- <label class="col-toggle flex items-center gap-1.5 text-sm cursor-pointer" data-group="Auditoria">
- <input type="checkbox" checked> 🔍 Auditoría
- </label>
- <label class="col-toggle flex items-center gap-1.5 text-sm cursor-pointer" data-group="Rendimiento">
- <input type="checkbox" checked> 📊 Rendimiento
- </label>
+  <label class="col-toggle flex items-center gap-1.5 text-sm font-medium cursor-pointer dark:text-gray-200" data-group="General">
+  <input type="checkbox" checked disabled class="opacity-50"> 📋 General
+  </label>
+  <label class="col-toggle flex items-center gap-1.5 text-sm cursor-pointer dark:text-gray-200" data-group="Comite">
+  <input type="checkbox" checked> 🏛️ Comité
+  </label>
+  <label class="col-toggle flex items-center gap-1.5 text-sm cursor-pointer dark:text-gray-200" data-group="Auditoria">
+  <input type="checkbox" checked> 🔍 Auditoría
+  </label>
+  <label class="col-toggle flex items-center gap-1.5 text-sm cursor-pointer dark:text-gray-200" data-group="Rendimiento">
+  <input type="checkbox" checked> 📊 Rendimiento
+  </label>
  </div>
 
  {{-- Count --}}
@@ -126,7 +126,7 @@
 
  {{-- Table --}}
  <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-x-auto">
- <table id="audit-table" class="w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+ <table id="audit-table" class="w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm dark:text-gray-200">
  <thead class="bg-gray-50 dark:bg-gray-800">
  <tr id="audit-header"></tr>
  </thead>
