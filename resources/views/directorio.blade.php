@@ -4,7 +4,7 @@
 
 @push('head')
 <style>
-    #dir-table td, #dir-table th { white-space: nowrap; padding: 0.4rem 0.6rem; font-size: 0.8rem; }
+    #dir-table td, #dir-table th { padding: 0.4rem 0.6rem; font-size: 0.8rem; }
     #dir-table th { position: sticky; top: 0; z-index: 1; }
     .cell-empty { background: #fef2f2; color: #9ca3af; }
     .cell-empty::before { content: '—'; }

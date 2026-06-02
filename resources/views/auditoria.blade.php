@@ -4,7 +4,7 @@
 
 @push('head')
 <style>
-    #audit-table td, #audit-table th { white-space: nowrap; padding: 0.4rem 0.6rem; font-size: 0.8rem; }
+    #audit-table td, #audit-table th { padding: 0.4rem 0.6rem; font-size: 0.8rem; }
     #audit-table th { position: sticky; top: 0; z-index: 1; }
     .badge { display: inline-flex; padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; }
     .page-btn { min-width: 2rem; text-align: center; }

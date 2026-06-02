@@ -84,8 +84,8 @@
                         <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Tienda #</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Municipio</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Latitud</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Longitud</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Latitud</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Longitud</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Problema</th>
                     </tr>
                 </thead>
@@ -101,8 +101,8 @@
                             <td class="px-4 py-3 text-center font-mono text-gray-700">{{ $store['No_Tienda_Actual'] ?? '—' }}</td>
                             <td class="px-4 py-3 text-gray-500">{{ $store['Municipio'] ?? '—' }}</td>
                             <td class="px-4 py-3 text-gray-500">{{ $store['Estado'] ?? '—' }}</td>
-                            <td class="px-4 py-3 text-center font-mono text-xs text-gray-600">{{ $geo['lat'] ?? '—' }}</td>
-                            <td class="px-4 py-3 text-center font-mono text-xs text-gray-600">{{ $geo['lon'] ?? '—' }}</td>
+                            <td class="px-4 py-3 text-center font-mono text-xs text-gray-600 hidden md:table-cell">{{ $geo['lat'] ?? '—' }}</td>
+                            <td class="px-4 py-3 text-center font-mono text-xs text-gray-600 hidden md:table-cell">{{ $geo['lon'] ?? '—' }}</td>
                             <td class="px-4 py-3">
                                 <span class="geo-badge {{ $badgeClass }}">
                                     {{ $gLabel['icon'] ?? '' }} {{ $geo['mensaje'] ?? $geo['status'] ?? '—' }}

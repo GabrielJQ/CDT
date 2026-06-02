@@ -21,6 +21,5 @@ Route::get('/auditoria', [AuditoriaController::class, 'index']);
 
 Route::post('/set-region', function (Illuminate\Http\Request $r) {
     $region = $r->input('region', '');
-    $r->session()->put('region_filter', $region ?? '');
-    return back();
+    return back()->withCookie(cookie('region_filter', $region ?? '', 43800));
 })->middleware('web');

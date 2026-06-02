@@ -6,7 +6,7 @@ abstract class Controller
 {
     protected function applyRegionFilter(array $stores): array
     {
-        $uo = session('region_filter', '');
+        $uo = request()->cookie('region_filter', '');
         if ($uo === '' || $uo === null) return $stores;
 
         return collect($stores)->filter(function ($s) use ($uo) {

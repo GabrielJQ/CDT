@@ -4,7 +4,7 @@
 
 @push('head')
 <style>
-    #aper-table td, #aper-table th { white-space: nowrap; padding: 0.4rem 0.6rem; font-size: 0.8rem; }
+    #aper-table td, #aper-table th { padding: 0.4rem 0.6rem; font-size: 0.8rem; }
     #aper-table th { position: sticky; top: 0; z-index: 1; }
     .page-btn { min-width: 2rem; text-align: center; }
     .page-btn.active { background: #166534; color: white; border-color: #166534; }

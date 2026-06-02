@@ -4,7 +4,7 @@
 
 @push('head')
 <style>
-    #cs-table td, #cs-table th { white-space: nowrap; padding: 0.4rem 0.6rem; font-size: 0.8rem; }
+    #cs-table td, #cs-table th { padding: 0.4rem 0.6rem; font-size: 0.8rem; }
     #cs-table th { position: sticky; top: 0; z-index: 1; }
     .page-btn { min-width: 2rem; text-align: center; }
     .page-btn.active { background: #166534; color: white; border-color: #166534; }

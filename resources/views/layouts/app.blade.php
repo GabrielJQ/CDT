@@ -110,7 +110,7 @@
                 <button onclick="toggleSidebar()" class="text-gray-600 hover:text-gray-900 text-xl leading-none pr-2">☰</button>
                 <h2 class="text-base lg:text-lg font-semibold text-gray-800 truncate flex-1">{{ $pageTitle ?? 'Dashboard' }}</h2>
                 <div class="flex items-center gap-2 w-full lg:w-auto">
-                    @php $currentRegion = session('region_filter', ''); @endphp
+                    @php $currentRegion = request()->cookie('region_filter', ''); @endphp
                     <form action="{{ url('/set-region') }}" method="POST" id="region-form" class="flex-1 lg:flex-none">
                         @csrf
                         <select name="region" onchange="document.getElementById('region-form').submit()"
