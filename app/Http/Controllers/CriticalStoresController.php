@@ -66,7 +66,7 @@ class CriticalStoresController extends Controller
             'filteredCount' => 0,
             'summary' => ['rojo' => 0, 'amarillo' => 0, 'verde' => 0, 'desglose' => []],
             'filters' => $filters,
-            'error' => $message,
+            'error' => $this->sheet->getUltimoError() ?? $message,
             'updatedAt' => null,
         ]);
     }

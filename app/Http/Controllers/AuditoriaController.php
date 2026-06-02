@@ -87,7 +87,7 @@ class AuditoriaController extends Controller
             'filteredCount' => 0,
             'kpis' => ['comitesVencidos' => 0, 'auditoriaAlta' => 0, 'rotacionBaja' => 0, 'auditoriaPendiente' => 0],
             'filters' => $filters,
-            'error' => 'No se pudieron obtener los datos del Google Sheet.',
+            'error' => $this->sheet->getUltimoError() ?? 'No se pudieron obtener los datos del Google Sheet.',
             'updatedAt' => null,
         ]);
     }

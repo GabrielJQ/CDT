@@ -84,7 +84,7 @@ class ConnectivityController extends Controller
             'filteredCount' => 0,
             'filterOptions' => ['almacenes' => [], 'companias' => []],
             'filters' => $filters,
-            'error' => $message,
+            'error' => $this->sheet->getUltimoError() ?? $message,
             'updatedAt' => null,
         ]);
     }

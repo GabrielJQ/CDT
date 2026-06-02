@@ -74,7 +74,7 @@ class MapaController extends Controller
             'stats' => ['OK' => 0, 'SIN_COORDENADAS' => 0, 'FUERA_MEXICO' => 0, 'FUERA_ESTADO' => 0],
             'filters' => ['almacen' => '', 'estado_geo' => ''],
             'geoLabels' => ServicioGeo::GEO_LABELS,
-            'error' => 'No se pudieron obtener los datos del Google Sheet.',
+            'error' => $this->sheet->getUltimoError() ?? 'No se pudieron obtener los datos del Google Sheet.',
             'updatedAt' => null,
         ]);
     }

@@ -78,7 +78,7 @@ class AperturaController extends Controller
             'filteredCount' => 0,
             'kpis' => ['total' => 0, 'esteMes' => 0, 'esteAnio' => 0, 'sinFecha' => 0],
             'filters' => $filters,
-            'error' => $message,
+            'error' => $this->sheet->getUltimoError() ?? $message,
             'updatedAt' => null,
         ]);
     }

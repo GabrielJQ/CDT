@@ -34,7 +34,7 @@ class DashboardController extends Controller
                 'directorioStats' => ['completos' => 0, 'incompletos' => 0],
                 'auditoriaKpis' => ['comitesVencidos' => 0, 'auditoriaAlta' => 0, 'rotacionBaja' => 0, 'auditoriaPendiente' => 0],
                 'updatedAt' => null,
-                'error' => 'No se pudieron obtener los datos del Google Sheet.',
+                'error' => $this->sheet->getUltimoError() ?? 'No se pudieron obtener los datos del Google Sheet.',
             ]);
         }
 
@@ -60,7 +60,7 @@ class DashboardController extends Controller
         $stores = $this->sheet->refrescar();
 
         if ($stores === null) {
-            return back()->with('error', 'No se pudieron refrescar los datos desde el Google Sheet.');
+            return back()->with('error', $this->sheet->getUltimoError() ?? 'No se pudieron refrescar los datos desde el Google Sheet.');
         }
 
         return back()->with('success', 'Datos actualizados correctamente desde el Google Sheet.');

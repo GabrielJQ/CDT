@@ -43,7 +43,7 @@ class DirectorioController extends Controller
             'stores' => [],
             'totalCount' => 0,
             'globalStats' => ['incompletos' => 0, 'sinCapital' => 0],
-            'error' => 'No se pudieron obtener los datos del Google Sheet.',
+            'error' => $this->sheet->getUltimoError() ?? 'No se pudieron obtener los datos del Google Sheet.',
             'updatedAt' => null,
         ]);
     }
