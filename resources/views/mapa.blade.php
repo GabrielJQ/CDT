@@ -123,7 +123,12 @@
 @push('footer')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        var stores = @json($stores);
+        function initMap() {
+            if (typeof L.markerClusterGroup !== 'function') {
+                window.addEventListener('markercluster-ready', initMap);
+                return;
+            }
+            var stores = @json($stores);
         var hasMarkers = false;
 
         var map = L.map('map', { zoomControl: true });
@@ -210,7 +215,9 @@
         };
         legend.addTo(map);
 
-        setTimeout(function () { map.invalidateSize(); }, 300);
+            setTimeout(function () { map.invalidateSize(); }, 300);
+        }
+        initMap();
     });
 </script>
 @endpush
