@@ -167,7 +167,7 @@
  if (diffDias <= 0) { label = 'Hoy'; color = 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'; }
  else if (diffDias < 30) { label = diffDias + ' día' + (diffDias > 1 ? 's' : ''); color = 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'; }
  else if (diffMeses < 12) { label = diffMeses + ' mes' + (diffMeses > 1 ? 'es' : ''); color = diffMeses <= 3 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'; }
- else { var anos = Math.floor(diffMeses / 12); label = anos + ' año' + (anos > 1 ? 's' : ''); color = 'bg-gray-100 text-gray-600 dark:text-gray-300'; }
+  else { var anos = Math.floor(diffMeses / 12); label = anos + ' año' + (anos > 1 ? 's' : ''); color = 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-200'; }
  return '<div class="text-center"><span class="badge ' + color + '">' + label + '</span></div>';
  }
 
