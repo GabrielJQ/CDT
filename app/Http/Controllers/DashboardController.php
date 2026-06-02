@@ -119,13 +119,12 @@ class DashboardController extends Controller
 
     private function calcularDirectorioStats(array $stores): array
     {
-        $trackedColumns = ['TELEFONIA', 'CORREO', 'Cap_Tot', 'Direccion'];
         $incompletos = 0;
         $completos = 0;
 
         foreach ($stores as $store) {
             $hasEmpty = false;
-            foreach ($trackedColumns as $col) {
+            foreach (DirectorioController::TRACKED_COLUMNS as $col) {
                 $val = trim($store[$col] ?? '');
                 if ($val === '' || $val === '0') {
                     $hasEmpty = true;

@@ -56,7 +56,7 @@
         <div id="sidebar-overlay" class="fixed inset-0 bg-black/40 z-20 hidden lg:hidden" onclick="toggleSidebar()"></div>
 
         {{-- Sidebar --}}
-        <aside id="sidebar" class="flex-shrink-0 bg-[#166534] text-white flex flex-col z-30 overflow-hidden">
+        <aside id="sidebar" class="expanded flex-shrink-0 bg-[#166534] text-white flex flex-col z-30 overflow-hidden">
             <div class="border-b border-green-700 flex items-center justify-between flex-shrink-0" style="height:3.5rem">
                 <div class="px-4 flex items-center gap-2 overflow-hidden">
                     <span class="text-xl font-bold tracking-tight flex-shrink-0">CDT</span>
@@ -184,6 +184,10 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
+            if (window.innerWidth < 1024) {
+                document.getElementById('sidebar').classList.remove('expanded');
+            }
+
             var toggle = document.getElementById('presencia-toggle');
             var submenu = document.getElementById('presencia-submenu');
             var arrow = document.getElementById('presencia-arrow');

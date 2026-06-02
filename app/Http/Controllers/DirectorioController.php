@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 
 class DirectorioController extends Controller
 {
-    private array $trackedColumns = [
+    public const TRACKED_COLUMNS = [
         'TELEFONIA', 'CORREO', 'Señal de celular', 'Compañía', 'INTERNET',
         'Vta_Mes', 'VtaNeta_Mes', 'Cap_Tot', 'Cap_Com', 'Cap_Dic',
         'Pagare_Monto', 'Fec_CRA', 'Vigencia', 'Fch_Audit', 'Imp_Res_Audi_Mes',
@@ -16,6 +16,8 @@ class DirectorioController extends Controller
         'Nom_Pre_CRA', 'Nom_Pre_Sup_CRA', 'Nom_Sec_CRA', 'Nom_Sec_Sup_CRA',
         'Nom_Tes_CRA', 'Nom_Vcv_CRA', 'Nom_Voc_Gen_CRA',
     ];
+
+    private array $trackedColumns = self::TRACKED_COLUMNS;
 
     public function __construct(
         private ServicioGoogleSheet $sheet,
