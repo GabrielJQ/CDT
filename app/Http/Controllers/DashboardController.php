@@ -2,15 +2,25 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-use Carbon\Carbon;
+use App\Servicios\ServicioGoogleSheet;
+use App\Servicios\ServicioConectividad;
+use App\Servicios\ServicioTiendaCritica;
+use App\Servicios\ServicioAuditoria;
+use App\Servicios\ServicioFecha;
 
 class DashboardController extends Controller
 {
+    public function __construct(
+        private ServicioGoogleSheet $sheet,
+        private ServicioConectividad $conectividad,
+        private ServicioTiendaCritica $critica,
+        private ServicioAuditoria $auditoria,
+        private ServicioFecha $fecha,
+    ) {}
+
     public function index()
     {
-        $stores = $this->getCachedStores();
+        $stores = $this->sheet->obtenerTiendas();
 
         if ($stores === null) {
             return view('dashboard', [
@@ -29,194 +39,45 @@ class DashboardController extends Controller
         }
 
         $stores = $this->applyRegionFilter($stores);
-
         $totalCount = count($stores);
-
-        $connectivityKpis = $this->calculateConnectivityKpis($stores);
-        $criticalSummary = $this->calculateCriticalSummary($stores);
-        $sinConectividad = $this->calculateSinConectividad($stores);
-        $aperturasEsteMes = $this->calculateAperturasEsteMes($stores);
-        $geoStats = $this->calculateGeoStats($stores);
-        $aperturasKpi = $this->calculateAperturasKpi($stores);
-        $directorioStats = $this->calculateDirectorioStats($stores);
-        $auditoriaKpis = $this->calculateAuditoriaKpis($stores);
 
         return view('dashboard', [
             'totalCount' => $totalCount,
-            'connectivityKpis' => $connectivityKpis,
-            'criticalSummary' => $criticalSummary,
-            'sinConectividad' => $sinConectividad,
-            'aperturasEsteMes' => $aperturasEsteMes,
-            'geoStats' => $geoStats,
-            'aperturasKpi' => $aperturasKpi,
-            'directorioStats' => $directorioStats,
-            'auditoriaKpis' => $auditoriaKpis,
+            'connectivityKpis' => $this->conectividad->resumenSimple($stores),
+            'criticalSummary' => $this->critica->resumenSimple($stores),
+            'sinConectividad' => $this->conectividad->contarSinConectividad($stores),
+            'aperturasEsteMes' => $this->contarAperturasEsteMes($stores),
+            'geoStats' => $this->calcularGeoStats($stores),
+            'aperturasKpi' => $this->calcularAperturasKpi($stores),
+            'directorioStats' => $this->calcularDirectorioStats($stores),
+            'auditoriaKpis' => $this->auditoria->resumenSimple($stores),
             'updatedAt' => cache()->get('dashboard_updated_at'),
         ]);
     }
 
     public function refresh()
     {
-        $stores = $this->fetchFromSheet();
+        $stores = $this->sheet->refrescar();
 
         if ($stores === null) {
             return back()->with('error', 'No se pudieron refrescar los datos desde el Google Sheet.');
         }
 
-        $this->storeInCache($stores);
-
         return back()->with('success', 'Datos actualizados correctamente desde el Google Sheet.');
     }
 
-    private function getCachedStores(): ?array
-    {
-        $cached = cache()->get('dashboard_data');
-        if ($cached) {
-            return $cached;
-        }
-
-        $stores = $this->fetchFromSheet();
-        if ($stores !== null) {
-            $this->storeInCache($stores);
-        }
-
-        return $stores;
-    }
-
-    public function fetchFromSheet(): ?array
-    {
-        $url = config('app.google_sheet_url');
-        $response = Http::withoutVerifying()->timeout(30)->get($url);
-
-        if ($response->failed()) {
-            return null;
-        }
-
-        $csv = $response->body();
-        $lines = explode("\n", trim($csv));
-
-        if (isset($lines[0]) && str_starts_with($lines[0], "\xEF\xBB\xBF")) {
-            $lines[0] = substr($lines[0], 3);
-        }
-
-        if (count($lines) < 8) {
-            return null;
-        }
-
-        $headerLine = $lines[6] ?? '';
-        $rawHeaders = str_getcsv($headerLine);
-
-        $stores = [];
-        for ($i = 7; $i < count($lines); $i++) {
-            $line = trim($lines[$i]);
-            if ($line === '') continue;
-            $row = str_getcsv($line);
-            $store = [];
-            foreach ($rawHeaders as $idx => $header) {
-                $h = trim($header);
-                if ($h === '') continue;
-                $store[$h] = trim($row[$idx] ?? '');
-            }
-            $stores[] = $store;
-        }
-
-        return $stores;
-    }
-
-    public function storeInCache(array $stores): void
-    {
-        cache()->put('dashboard_data', $stores, now()->addHours(1));
-        cache()->put('dashboard_updated_at', now()->toDateTimeString(), now()->addHours(1));
-    }
-
-    private function calculateConnectivityKpis(array $stores): array
-    {
-        $total = count($stores);
-        $fields = [
-            'TELEFONIA' => ['label' => 'Teléfono', 'icon' => '📞'],
-            'INTERNET' => ['label' => 'Internet', 'icon' => '🌐'],
-            'Señal de celular' => ['label' => 'Señal Celular', 'icon' => '📱'],
-        ];
-
-        $kpis = [];
-        foreach ($fields as $col => $info) {
-            $yes = 0;
-            foreach ($stores as $store) {
-                $val = strtoupper(trim($store[$col] ?? ''));
-                if ($val === 'S') $yes++;
-            }
-            $kpis[$col] = [
-                'label' => $info['label'],
-                'icon' => $info['icon'],
-                'yes' => $yes,
-                'pctYes' => $total > 0 ? round($yes / $total * 100) : 0,
-            ];
-        }
-        $kpis['_total'] = $total;
-
-        return $kpis;
-    }
-
-    private function calculateCriticalSummary(array $stores): array
-    {
-        $rojo = 0;
-        $amarillo = 0;
-        $verde = 0;
-
-        foreach ($stores as $store) {
-            $count = 0;
-
-            $capTot = (float) str_replace([',', '$', ' '], '', $store['Cap_Tot'] ?? '0');
-            if ($capTot > 0 && $capTot < 100000) $count++;
-
-            $vigencia = $this->parseDate($store['Vigencia'] ?? '');
-            if ($vigencia !== null && $vigencia->isPast()) $count++;
-
-            $impuesto = (float) str_replace([',', '$', ' '], '', $store['Imp_Res_Audi_Mes'] ?? '0');
-            if ($impuesto > 500000) $count++;
-
-            $pagareDate = $this->parseDate($store['Pagare_Fecha'] ?? '');
-            if ($pagareDate !== null && ($pagareDate->isPast() || $pagareDate->diffInMonths(now()) <= 3)) $count++;
-
-            $gdomarg = strtoupper(trim($store['GDOMARG'] ?? ''));
-            if ($gdomarg === 'BAJA') $count++;
-
-            $asamProg = (int) ($store['Asam_Prog_Mes'] ?? 0);
-            $asamReal = (int) ($store['Asam_Real_Mes'] ?? 0);
-            if ($asamProg > 0 && $asamReal === 0) $count++;
-
-            if ($count >= 4) $rojo++;
-            elseif ($count >= 2) $amarillo++;
-            else $verde++;
-        }
-
-        return compact('rojo', 'amarillo', 'verde');
-    }
-
-    private function calculateSinConectividad(array $stores): int
-    {
-        $count = 0;
-        foreach ($stores as $store) {
-            $tel = strtoupper(trim($store['TELEFONIA'] ?? ''));
-            $int = strtoupper(trim($store['INTERNET'] ?? ''));
-            $cel = strtoupper(trim($store['Señal de celular'] ?? ''));
-            if ($tel !== 'S' && $int !== 'S' && $cel !== 'S') $count++;
-        }
-        return $count;
-    }
-
-    private function calculateAperturasEsteMes(array $stores): int
+    private function contarAperturasEsteMes(array $stores): int
     {
         $now = now();
         $count = 0;
         foreach ($stores as $store) {
-            $fecha = $this->parseDate($store['Fecha_Apertura'] ?? '');
+            $fecha = $this->fecha->parsear($store['Fecha_Apertura'] ?? '');
             if ($fecha && $fecha->year === $now->year && $fecha->month === $now->month) $count++;
         }
         return $count;
     }
 
-    private function calculateGeoStats(array $stores): array
+    private function calcularGeoStats(array $stores): array
     {
         $conCoordenadas = 0;
         $sinCoordenadas = 0;
@@ -232,13 +93,13 @@ class DashboardController extends Controller
         return compact('conCoordenadas', 'sinCoordenadas');
     }
 
-    private function calculateAperturasKpi(array $stores): array
+    private function calcularAperturasKpi(array $stores): array
     {
         $now = now();
         $total = 0;
         $esteAnio = 0;
         foreach ($stores as $store) {
-            $fecha = $this->parseDate($store['Fecha_Apertura'] ?? '');
+            $fecha = $this->fecha->parsear($store['Fecha_Apertura'] ?? '');
             if ($fecha) {
                 $total++;
                 if ($fecha->year === $now->year) $esteAnio++;
@@ -247,13 +108,12 @@ class DashboardController extends Controller
         return compact('total', 'esteAnio');
     }
 
-    private function calculateDirectorioStats(array $stores): array
+    private function calcularDirectorioStats(array $stores): array
     {
+        $trackedColumns = ['TELEFONIA', 'CORREO', 'Cap_Tot', 'Direccion'];
         $incompletos = 0;
         $completos = 0;
-        $trackedColumns = [
-            'TELEFONIA', 'CORREO', 'Cap_Tot', 'Direccion',
-        ];
+
         foreach ($stores as $store) {
             $hasEmpty = false;
             foreach ($trackedColumns as $col) {
@@ -267,50 +127,5 @@ class DashboardController extends Controller
             else $completos++;
         }
         return compact('incompletos', 'completos');
-    }
-
-    private function calculateAuditoriaKpis(array $stores): array
-    {
-        $comitesVencidos = 0;
-        $auditoriaAlta = 0;
-        $rotacionBaja = 0;
-        $auditoriaPendiente = 0;
-
-        foreach ($stores as $store) {
-            $vigencia = $this->parseDate($store['Vigencia'] ?? '');
-            if ($vigencia !== null && $vigencia->isPast()) $comitesVencidos++;
-
-            $impuesto = (float) str_replace([',', '$', ' '], '', $store['Imp_Res_Audi_Mes'] ?? '0');
-            if ($impuesto > 500000) $auditoriaAlta++;
-
-            $capTot = (float) str_replace([',', '$', ' '], '', $store['Cap_Tot'] ?? '0');
-            $vtaMes = (float) str_replace([',', '$', ' '], '', $store['Vta_Mes'] ?? '0');
-            $rotacion = $capTot > 0 ? $vtaMes / $capTot : 0;
-            if ($rotacion < 1.5) $rotacionBaja++;
-
-            $fchAudit = $this->parseDate($store['Fch_Audit'] ?? '');
-            $mesesSinAuditoria = $fchAudit ? $fchAudit->diffInMonths(now()) : null;
-            if ($fchAudit === null || ($mesesSinAuditoria !== null && $mesesSinAuditoria >= 3)) $auditoriaPendiente++;
-        }
-
-        return compact('comitesVencidos', 'auditoriaAlta', 'rotacionBaja', 'auditoriaPendiente');
-    }
-
-    private function parseDate(?string $value): ?Carbon
-    {
-        if ($value === null || trim($value) === '' || trim($value) === '0') return null;
-
-        $formats = ['Y-m-d', 'd/m/Y', 'm/d/Y', 'Y/m/d', 'd-m-Y', 'm-d-Y'];
-
-        foreach ($formats as $format) {
-            try {
-                $date = Carbon::createFromFormat($format, trim($value));
-                if ($date !== false) return $date;
-            } catch (\Exception $e) {
-                continue;
-            }
-        }
-
-        return null;
     }
 }

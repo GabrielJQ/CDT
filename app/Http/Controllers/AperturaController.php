@@ -2,14 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Servicios\ServicioGoogleSheet;
+use App\Servicios\ServicioFecha;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
 
 class AperturaController extends Controller
 {
+    public function __construct(
+        private ServicioGoogleSheet $sheet,
+        private ServicioFecha $fecha,
+    ) {}
+
     public function index(Request $request)
     {
-        $stores = $this->getStores();
+        $stores = $this->sheet->obtenerTiendas();
         if ($stores === null) {
             return $this->errorView('No se pudieron obtener los datos del Google Sheet.');
         }
@@ -25,7 +31,7 @@ class AperturaController extends Controller
 
         $evaluated = collect($stores)->map(function ($store) {
             $fechaRaw = $store['Fecha_Apertura'] ?? '';
-            $fecha = $this->parseDate($fechaRaw);
+            $fecha = $this->fecha->parsear($fechaRaw);
             $store['_fecha_apertura'] = $fecha;
             $store['_antiguedad'] = $fecha ? $fecha->diffInMonths(now()) . ' meses' : '—';
             return $store;
@@ -39,12 +45,12 @@ class AperturaController extends Controller
                 }
             }
             if ($filters['desde'] !== '') {
-                $desde = $this->parseDate($filters['desde']);
+                $desde = $this->fecha->parsear($filters['desde']);
                 $fecha = $store['_fecha_apertura'];
                 if ($desde && ($fecha === null || $fecha->lt($desde))) return false;
             }
             if ($filters['hasta'] !== '') {
-                $hasta = $this->parseDate($filters['hasta']);
+                $hasta = $this->fecha->parsear($filters['hasta']);
                 $fecha = $store['_fecha_apertura'];
                 if ($hasta && ($fecha === null || $fecha->gt($hasta))) return false;
             }
@@ -53,32 +59,14 @@ class AperturaController extends Controller
             return $store['_fecha_apertura']?->timestamp ?? 0;
         })->values()->all();
 
-        $filteredCount = count($filtered);
-
-        $kpis = $this->calculateKpis($evaluated->all(), $filtered);
-
         return view('aperturas', [
             'stores' => $filtered,
             'totalCount' => $totalCount,
-            'filteredCount' => $filteredCount,
-            'kpis' => $kpis,
+            'filteredCount' => count($filtered),
+            'kpis' => $this->calcularKpis($evaluated->all(), $filtered),
             'filters' => $filters,
             'updatedAt' => cache()->get('dashboard_updated_at'),
         ]);
-    }
-
-    private function getStores(): ?array
-    {
-        $cached = cache()->get('dashboard_data');
-        if ($cached) {
-            return $cached;
-        }
-        $controller = app(DashboardController::class);
-        $stores = $controller->fetchFromSheet();
-        if ($stores !== null) {
-            $controller->storeInCache($stores);
-        }
-        return $stores;
     }
 
     private function errorView(string $message)
@@ -95,32 +83,7 @@ class AperturaController extends Controller
         ]);
     }
 
-    private function parseDate(?string $value): ?Carbon
-    {
-        if ($value === null || trim($value) === '' || trim($value) === '0') return null;
-
-        $formats = ['d/m/Y', 'Y-m-d', 'm/d/Y', 'Y/m/d', 'd-m-Y', 'm-d-Y'];
-
-        foreach ($formats as $format) {
-            try {
-                $date = Carbon::createFromFormat($format, trim($value));
-                if ($date !== false) return $date;
-            } catch (\Exception $e) {
-                continue;
-            }
-        }
-
-        try {
-            $date = Carbon::parse(trim($value));
-            if ($date->year > 2000) return $date;
-        } catch (\Exception $e) {
-            return null;
-        }
-
-        return null;
-    }
-
-    private function calculateKpis(array $allStores, array $filtered): array
+    private function calcularKpis(array $allStores, array $filtered): array
     {
         $now = now();
         $esteMes = 0;
