@@ -4,363 +4,365 @@
 
 @push('head')
 <style>
-    #audit-table td, #audit-table th { padding: 0.4rem 0.6rem; font-size: 0.8rem; }
-    #audit-table th { position: sticky; top: 0; z-index: 1; }
-    .badge { display: inline-flex; padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; }
-    .page-btn { min-width: 2rem; text-align: center; }
-    .page-btn.active { background: #166534; color: white; border-color: #166534; }
-    .col-toggle { user-select: none; cursor: pointer; }
+ #audit-table td, #audit-table th { padding: 0.4rem 0.6rem; font-size: 0.8rem; }
+ #audit-table th { position: sticky; top: 0; z-index: 1; }
+ .badge { display: inline-flex; padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; }
+ .page-btn { min-width: 2rem; text-align: center; }
+ .page-btn.active { background: #166534; color: white; border-color: #166534; }
+ .col-toggle { user-select: none; cursor: pointer; }
     .col-toggle input { accent-color: #166534; }
+    .dark .page-btn.active { background: #14532d; border-color: #14532d; }
+    .dark .col-toggle input { accent-color: #4ade80; }
 </style>
 @endpush
 
 @section('content')
-    @isset($error)
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">{{ $error }}</div>
-    @endisset
+ @isset($error)
+ <div class="bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-6">{{ $error }}</div>
+ @endisset
 
-    <div id="app">
-        {{-- KPIs --}}
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            <div class="bg-white rounded-xl shadow p-4 border-l-4 border-red-500">
-                <p class="text-xs text-gray-500 uppercase tracking-wide">🏛️ Comités vencidos</p>
-                <p class="text-2xl font-bold text-red-600">{{ $kpis['comitesVencidos'] }}</p>
-            </div>
-            <div class="bg-white rounded-xl shadow p-4 border-l-4 border-orange-500">
-                <p class="text-xs text-gray-500 uppercase tracking-wide">🔍 Auditoría > $500k</p>
-                <p class="text-2xl font-bold text-orange-600">{{ $kpis['auditoriaAlta'] }}</p>
-            </div>
-            <div class="bg-white rounded-xl shadow p-4 border-l-4 border-amber-500">
-                <p class="text-xs text-gray-500 uppercase tracking-wide">📉 Rotación baja (&lt;1.5)</p>
-                <p class="text-2xl font-bold text-amber-600">{{ $kpis['rotacionBaja'] }}</p>
-            </div>
-            <div class="bg-white rounded-xl shadow p-4 border-l-4 border-gray-400">
-                <p class="text-xs text-gray-500 uppercase tracking-wide">📅 Aud. pendiente (&gt;3 meses)</p>
-                <p class="text-2xl font-bold text-gray-600">{{ $kpis['auditoriaPendiente'] }}</p>
-            </div>
-        </div>
+ <div id="app">
+ {{-- KPIs --}}
+ <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+ <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-red-500">
+ <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">🏛️ Comités vencidos</p>
+ <p class="text-2xl font-bold text-red-600">{{ $kpis['comitesVencidos'] }}</p>
+ </div>
+ <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-orange-500">
+ <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">🔍 Auditoría > $500k</p>
+ <p class="text-2xl font-bold text-orange-600">{{ $kpis['auditoriaAlta'] }}</p>
+ </div>
+ <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-amber-500">
+ <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">📉 Rotación baja (&lt;1.5)</p>
+ <p class="text-2xl font-bold text-amber-600">{{ $kpis['rotacionBaja'] }}</p>
+ </div>
+ <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-gray-400">
+ <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">📅 Aud. pendiente (&gt;3 meses)</p>
+ <p class="text-2xl font-bold text-gray-600 dark:text-gray-300">{{ $kpis['auditoriaPendiente'] }}</p>
+ </div>
+ </div>
 
-        {{-- Filters --}}
-        <div class="bg-white rounded-xl shadow p-4 mb-4">
-            <form method="GET" action="{{ url('/auditoria') }}" class="flex flex-wrap items-end gap-3">
-                <div class="flex-1 min-w-[160px]">
-                    <label class="block text-xs text-gray-500 uppercase mb-1">Almacén</label>
-                    <input type="text" name="almacen" value="{{ $filters['almacen'] }}"
-                           placeholder="Buscar..."
-                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
-                </div>
-                <div class="min-w-[140px]">
-                    <label class="block text-xs text-gray-500 uppercase mb-1">Nivel de riesgo</label>
-                    <select name="nivel"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white">
-                        <option value="">Todos</option>
-                        <option value="rojo" {{ $filters['nivel'] === 'rojo' ? 'selected' : '' }}>🔴 Crítico</option>
-                        <option value="amarillo" {{ $filters['nivel'] === 'amarillo' ? 'selected' : '' }}>🟡 Monitoreo</option>
-                        <option value="verde" {{ $filters['nivel'] === 'verde' ? 'selected' : '' }}>🟢 Normal</option>
-                    </select>
-                </div>
-                <div class="min-w-[150px]">
-                    <label class="block text-xs text-gray-500 uppercase mb-1">Estado del comité</label>
-                    <select name="estado_comite"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white">
-                        <option value="">Todos</option>
-                        <option value="vigente" {{ $filters['estado_comite'] === 'vigente' ? 'selected' : '' }}>🟢 Vigente</option>
-                        <option value="proximo_a_vencer" {{ $filters['estado_comite'] === 'proximo_a_vencer' ? 'selected' : '' }}>🟡 Próximo a vencer</option>
-                        <option value="vencido" {{ $filters['estado_comite'] === 'vencido' ? 'selected' : '' }}>🔴 Vencido</option>
-                        <option value="sin_fecha" {{ $filters['estado_comite'] === 'sin_fecha' ? 'selected' : '' }}>⚪ Sin fecha</option>
-                    </select>
-                </div>
-                <div class="min-w-[150px]">
-                    <label class="block text-xs text-gray-500 uppercase mb-1">Estado de auditoría</label>
-                    <select name="estado_auditoria"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white">
-                        <option value="">Todos</option>
-                        <option value="al_dia" {{ $filters['estado_auditoria'] === 'al_dia' ? 'selected' : '' }}>🟢 Al día</option>
-                        <option value="vencida" {{ $filters['estado_auditoria'] === 'vencida' ? 'selected' : '' }}>🔴 Vencida</option>
-                        <option value="sin_fecha" {{ $filters['estado_auditoria'] === 'sin_fecha' ? 'selected' : '' }}>⚪ Sin fecha</option>
-                    </select>
-                </div>
-                <div class="min-w-[140px]">
-                    <label class="block text-xs text-gray-500 uppercase mb-1">Aud. > $500k</label>
-                    <select name="filtro_500k"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white">
-                        <option value="">Todos</option>
-                        <option value="si" {{ $filters['filtro_500k'] === 'si' ? 'selected' : '' }}>🔴 Sí</option>
-                        <option value="no" {{ $filters['filtro_500k'] === 'no' ? 'selected' : '' }}>🟢 No</option>
-                    </select>
-                </div>
-                <div class="flex gap-2">
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Filtrar</button>
-                    <a href="{{ url('/auditoria') }}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-semibold transition inline-block">Limpiar</a>
-                    <a href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition inline-block">⬇ CSV</a>
-                </div>
-            </form>
-        </div>
+ {{-- Filters --}}
+ <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 mb-4">
+ <form method="GET" action="{{ url('/auditoria') }}" class="flex flex-wrap items-end gap-3">
+ <div class="flex-1 min-w-[160px]">
+ <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Almacén</label>
+ <input type="text" name="almacen" value="{{ $filters['almacen'] }}"
+ placeholder="Buscar..."
+ class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+ </div>
+ <div class="min-w-[140px]">
+ <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Nivel de riesgo</label>
+ <select name="nivel"
+ class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800">
+ <option value="">Todos</option>
+ <option value="rojo" {{ $filters['nivel'] === 'rojo' ? 'selected' : '' }}>🔴 Crítico</option>
+ <option value="amarillo" {{ $filters['nivel'] === 'amarillo' ? 'selected' : '' }}>🟡 Monitoreo</option>
+ <option value="verde" {{ $filters['nivel'] === 'verde' ? 'selected' : '' }}>🟢 Normal</option>
+ </select>
+ </div>
+ <div class="min-w-[150px]">
+ <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Estado del comité</label>
+ <select name="estado_comite"
+ class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800">
+ <option value="">Todos</option>
+ <option value="vigente" {{ $filters['estado_comite'] === 'vigente' ? 'selected' : '' }}>🟢 Vigente</option>
+ <option value="proximo_a_vencer" {{ $filters['estado_comite'] === 'proximo_a_vencer' ? 'selected' : '' }}>🟡 Próximo a vencer</option>
+ <option value="vencido" {{ $filters['estado_comite'] === 'vencido' ? 'selected' : '' }}>🔴 Vencido</option>
+ <option value="sin_fecha" {{ $filters['estado_comite'] === 'sin_fecha' ? 'selected' : '' }}>⚪ Sin fecha</option>
+ </select>
+ </div>
+ <div class="min-w-[150px]">
+ <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Estado de auditoría</label>
+ <select name="estado_auditoria"
+ class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800">
+ <option value="">Todos</option>
+ <option value="al_dia" {{ $filters['estado_auditoria'] === 'al_dia' ? 'selected' : '' }}>🟢 Al día</option>
+ <option value="vencida" {{ $filters['estado_auditoria'] === 'vencida' ? 'selected' : '' }}>🔴 Vencida</option>
+ <option value="sin_fecha" {{ $filters['estado_auditoria'] === 'sin_fecha' ? 'selected' : '' }}>⚪ Sin fecha</option>
+ </select>
+ </div>
+ <div class="min-w-[140px]">
+ <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Aud. > $500k</label>
+ <select name="filtro_500k"
+ class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800">
+ <option value="">Todos</option>
+ <option value="si" {{ $filters['filtro_500k'] === 'si' ? 'selected' : '' }}>🔴 Sí</option>
+ <option value="no" {{ $filters['filtro_500k'] === 'no' ? 'selected' : '' }}>🟢 No</option>
+ </select>
+ </div>
+ <div class="flex gap-2">
+ <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Filtrar</button>
+ <a href="{{ url('/auditoria') }}" class="bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-semibold transition inline-block">Limpiar</a>
+ <a href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition inline-block">⬇ CSV</a>
+ </div>
+ </form>
+ </div>
 
-        {{-- Column toggles --}}
-        <div class="bg-white rounded-xl shadow p-3 mb-4 flex flex-wrap gap-4">
-            <span class="text-xs text-gray-500 uppercase font-semibold self-center">Columnas:</span>
-            <label class="col-toggle flex items-center gap-1.5 text-sm font-medium cursor-pointer" data-group="General">
-                <input type="checkbox" checked disabled class="opacity-50"> 📋 General
-            </label>
-            <label class="col-toggle flex items-center gap-1.5 text-sm cursor-pointer" data-group="Comite">
-                <input type="checkbox" checked> 🏛️ Comité
-            </label>
-            <label class="col-toggle flex items-center gap-1.5 text-sm cursor-pointer" data-group="Auditoria">
-                <input type="checkbox" checked> 🔍 Auditoría
-            </label>
-            <label class="col-toggle flex items-center gap-1.5 text-sm cursor-pointer" data-group="Rendimiento">
-                <input type="checkbox" checked> 📊 Rendimiento
-            </label>
-        </div>
+ {{-- Column toggles --}}
+ <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 mb-4 flex flex-wrap gap-4">
+ <span class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold self-center">Columnas:</span>
+ <label class="col-toggle flex items-center gap-1.5 text-sm font-medium cursor-pointer" data-group="General">
+ <input type="checkbox" checked disabled class="opacity-50"> 📋 General
+ </label>
+ <label class="col-toggle flex items-center gap-1.5 text-sm cursor-pointer" data-group="Comite">
+ <input type="checkbox" checked> 🏛️ Comité
+ </label>
+ <label class="col-toggle flex items-center gap-1.5 text-sm cursor-pointer" data-group="Auditoria">
+ <input type="checkbox" checked> 🔍 Auditoría
+ </label>
+ <label class="col-toggle flex items-center gap-1.5 text-sm cursor-pointer" data-group="Rendimiento">
+ <input type="checkbox" checked> 📊 Rendimiento
+ </label>
+ </div>
 
-        {{-- Count --}}
-        <div class="text-sm text-gray-500 mb-2">
-            Mostrando <strong id="info-from">0</strong>–<strong id="info-to">0</strong> de <strong id="info-total">{{ count($stores) }}</strong> tiendas
-            @if($filteredCount !== $totalCount)
-                <span class="text-gray-400">(filtradas de {{ $totalCount }})</span>
-            @endif
-        </div>
+ {{-- Count --}}
+ <div class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+ Mostrando <strong id="info-from">0</strong>–<strong id="info-to">0</strong> de <strong id="info-total">{{ count($stores) }}</strong> tiendas
+ @if($filteredCount !== $totalCount)
+ <span class="text-gray-400 dark:text-gray-500">(filtradas de {{ $totalCount }})</span>
+ @endif
+ </div>
 
-        {{-- Table --}}
-        <div class="bg-white rounded-xl shadow overflow-x-auto">
-            <table id="audit-table" class="w-full divide-y divide-gray-200 text-sm">
-                <thead class="bg-gray-50">
-                    <tr id="audit-header"></tr>
-                </thead>
-                <tbody id="audit-body" class="divide-y divide-gray-200"></tbody>
-            </table>
-        </div>
+ {{-- Table --}}
+ <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-x-auto">
+ <table id="audit-table" class="w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+ <thead class="bg-gray-50 dark:bg-gray-800">
+ <tr id="audit-header"></tr>
+ </thead>
+ <tbody id="audit-body" class="divide-y divide-gray-200 dark:divide-gray-700"></tbody>
+ </table>
+ </div>
 
-        {{-- Pagination --}}
-        <div class="flex items-center justify-between mt-4">
-            <button id="page-prev" class="bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition">
-                ← Anterior
-            </button>
-            <div id="page-numbers" class="flex gap-1"></div>
-            <button id="page-next" class="bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition">
-                Siguiente →
-            </button>
-        </div>
-    </div>
+ {{-- Pagination --}}
+ <div class="flex items-center justify-between mt-4">
+ <button id="page-prev" class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/30 disabled:opacity-30 disabled:cursor-not-allowed transition">
+ ← Anterior
+ </button>
+ <div id="page-numbers" class="flex gap-1"></div>
+ <button id="page-next" class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/30 disabled:opacity-30 disabled:cursor-not-allowed transition">
+ Siguiente →
+ </button>
+ </div>
+ </div>
 @endsection
 
 @push('footer')
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        var PAGE_SIZE = 25;
-        var allStores = @json($stores);
-        var currentPage = 1;
+ document.addEventListener('DOMContentLoaded', function () {
+ var PAGE_SIZE = 25;
+ var allStores = @json($stores);
+ var currentPage = 1;
 
-        var columnGroups = {
-            General: ['Nombre_Almacen', 'Localidad', 'Municipio'],
-            Comite: ['Vigencia', 'Comite'],
-            Auditoria: ['Fch_Audit', 'Estado_Aud', 'Imp_Res_Audi_Mes'],
-            Rendimiento: ['Rotacion', 'Riesgo'],
-        };
+ var columnGroups = {
+ General: ['Nombre_Almacen', 'Localidad', 'Municipio'],
+ Comite: ['Vigencia', 'Comite'],
+ Auditoria: ['Fch_Audit', 'Estado_Aud', 'Imp_Res_Audi_Mes'],
+ Rendimiento: ['Rotacion', 'Riesgo'],
+ };
 
-        var columnLabels = {
-            Nombre_Almacen: 'Almacén',
-            Localidad: 'Localidad',
-            Municipio: 'Municipio',
-            Vigencia: 'Vigencia',
-            Comite: 'Comité',
-            Fch_Audit: 'Fch. Audit',
-            Estado_Aud: 'Estado Aud.',
-            Imp_Res_Audi_Mes: 'Imp. Res. Audi.',
-            Rotacion: 'Rotación',
-            Riesgo: 'Riesgo',
-        };
+ var columnLabels = {
+ Nombre_Almacen: 'Almacén',
+ Localidad: 'Localidad',
+ Municipio: 'Municipio',
+ Vigencia: 'Vigencia',
+ Comite: 'Comité',
+ Fch_Audit: 'Fch. Audit',
+ Estado_Aud: 'Estado Aud.',
+ Imp_Res_Audi_Mes: 'Imp. Res. Audi.',
+ Rotacion: 'Rotación',
+ Riesgo: 'Riesgo',
+ };
 
-        function formatMoney(val) {
-            var num = parseFloat(String(val).replace(/,/g, ''));
-            if (isNaN(num)) return null;
-            return '$' + num.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        }
+ function formatMoney(val) {
+ var num = parseFloat(String(val).replace(/,/g, ''));
+ if (isNaN(num)) return null;
+ return '$' + num.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+ }
 
-        function mesesLabel(meses) {
-            if (meses == null) return '';
-            var m = Math.round(meses);
-            if (m >= 12) {
-                var a = Math.floor(m / 12);
-                var r = m % 12;
-                var label = a + ' año' + (a > 1 ? 's' : '');
-                if (r > 0) label += ' ' + r + ' mes' + (r > 1 ? 'es' : '');
-                return label;
-            }
-            return m + ' mes' + (m > 1 ? 'es' : '');
-        }
+ function mesesLabel(meses) {
+ if (meses == null) return '';
+ var m = Math.round(meses);
+ if (m >= 12) {
+ var a = Math.floor(m / 12);
+ var r = m % 12;
+ var label = a + ' año' + (a > 1 ? 's' : '');
+ if (r > 0) label += ' ' + r + ' mes' + (r > 1 ? 'es' : '');
+ return label;
+ }
+ return m + ' mes' + (m > 1 ? 'es' : '');
+ }
 
-        function renderCell(col, store) {
-            var a = store._audit || {};
-            if (col === 'Nombre_Almacen') return '<strong>' + esc(store[col] || '—') + '</strong>';
-            if (col === 'Localidad' || col === 'Municipio') return esc(store[col] || '—');
+ function renderCell(col, store) {
+ var a = store._audit || {};
+ if (col === 'Nombre_Almacen') return '<strong>' + esc(store[col] || '—') + '</strong>';
+ if (col === 'Localidad' || col === 'Municipio') return esc(store[col] || '—');
 
-            if (col === 'Vigencia') {
-                var d = a.vigencia;
-                if (d) return '<span class="font-mono text-gray-700">' + d.substr(0, 10) + '</span>';
-                return '<span class="text-gray-400">—</span>';
-            }
+ if (col === 'Vigencia') {
+ var d = a.vigencia;
+ if (d) return '<span class="font-mono text-gray-700 dark:text-gray-300">' + d.substr(0, 10) + '</span>';
+ return '<span class="text-gray-400 dark:text-gray-500">—</span>';
+ }
 
-            if (col === 'Comite') {
-                var badges = { vigente: ['bg-green-100 text-green-800', '🟢 Vigente'], proximo_a_vencer: ['bg-yellow-100 text-yellow-800', '🟡 Próximo a vencer'], vencido: ['bg-red-100 text-red-800', '🔴 Vencido'] };
-                var ec = a.estadoComite || 'sin_fecha';
-                var b = badges[ec] || ['bg-gray-100 text-gray-500', '⚪ Sin fecha'];
-                return '<span class="badge ' + b[0] + '">' + b[1] + '</span>';
-            }
+ if (col === 'Comite') {
+ var badges = { vigente: ['bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300', '🟢 Vigente'], proximo_a_vencer: ['bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300', '🟡 Próximo a vencer'], vencido: ['bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300', '🔴 Vencido'] };
+ var ec = a.estadoComite || 'sin_fecha';
+ var b = badges[ec] || ['bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300', '⚪ Sin fecha'];
+ return '<span class="badge ' + b[0] + '">' + b[1] + '</span>';
+ }
 
-            if (col === 'Fch_Audit') {
-                var d = a.fchAudit;
-                if (d) return '<span class="font-mono text-gray-700">' + d.substr(0, 10) + '</span>';
-                return '<span class="text-gray-400">—</span>';
-            }
+ if (col === 'Fch_Audit') {
+ var d = a.fchAudit;
+ if (d) return '<span class="font-mono text-gray-700 dark:text-gray-300">' + d.substr(0, 10) + '</span>';
+ return '<span class="text-gray-400 dark:text-gray-500">—</span>';
+ }
 
-            if (col === 'Estado_Aud') {
-                var fch = a.fchAudit;
-                var meses = a.mesesSinAuditoria;
-                var color, label, sub;
-                if (!fch) { color = 'bg-gray-100 text-gray-500'; label = '⚪ Sin fecha'; sub = ''; }
-                else if (meses >= 3) { color = 'bg-red-100 text-red-800'; label = '🔴 Vencida'; sub = mesesLabel(meses); }
-                else { color = 'bg-green-100 text-green-800'; label = '🟢 Al día'; sub = mesesLabel(meses); }
-                var html = '<span class="badge ' + color + '">' + label + '</span>';
-                if (sub) html += '<br><span class="text-xs text-gray-400">' + sub + '</span>';
-                return html;
-            }
+ if (col === 'Estado_Aud') {
+ var fch = a.fchAudit;
+ var meses = a.mesesSinAuditoria;
+ var color, label, sub;
+ if (!fch) { color = 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300'; label = '⚪ Sin fecha'; sub = ''; }
+ else if (meses >= 3) { color = 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'; label = '🔴 Vencida'; sub = mesesLabel(meses); }
+ else { color = 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'; label = '🟢 Al día'; sub = mesesLabel(meses); }
+ var html = '<span class="badge ' + color + '">' + label + '</span>';
+ if (sub) html += '<br><span class="text-xs text-gray-400 dark:text-gray-500">' + sub + '</span>';
+ return html;
+ }
 
-            if (col === 'Imp_Res_Audi_Mes') {
-                var imp = a.impuesto || 0;
-                if (imp > 0) return '<span class="font-mono text-gray-700 text-right block">' + formatMoney(imp) + '</span>';
-                return '<span class="text-gray-400">—</span>';
-            }
+ if (col === 'Imp_Res_Audi_Mes') {
+ var imp = a.impuesto || 0;
+ if (imp > 0) return '<span class="font-mono text-gray-700 dark:text-gray-300 text-right block">' + formatMoney(imp) + '</span>';
+ return '<span class="text-gray-400 dark:text-gray-500">—</span>';
+ }
 
-            if (col === 'Rotacion') {
-                var r = a.rotacion || 0;
-                if (r > 0) return '<span class="font-mono text-gray-700">' + r.toFixed(2) + '</span>';
-                return '<span class="text-gray-400">—</span>';
-            }
+ if (col === 'Rotacion') {
+ var r = a.rotacion || 0;
+ if (r > 0) return '<span class="font-mono text-gray-700 dark:text-gray-300">' + r.toFixed(2) + '</span>';
+ return '<span class="text-gray-400 dark:text-gray-500">—</span>';
+ }
 
-            if (col === 'Riesgo') {
-                var level = a.level || 'verde';
-                var badges = { rojo: ['bg-red-100 text-red-800', '🔴 Crítico'], amarillo: ['bg-yellow-100 text-yellow-800', '🟡 Monitoreo'], verde: ['bg-green-100 text-green-800', '🟢 Normal'] };
-                var b = badges[level] || ['bg-green-100 text-green-800', '🟢 Normal'];
-                return '<span class="badge ' + b[0] + '">' + b[1] + '</span>';
-            }
+ if (col === 'Riesgo') {
+ var level = a.level || 'verde';
+ var badges = { rojo: ['bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300', '🔴 Crítico'], amarillo: ['bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300', '🟡 Monitoreo'], verde: ['bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300', '🟢 Normal'] };
+ var b = badges[level] || ['bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300', '🟢 Normal'];
+ return '<span class="badge ' + b[0] + '">' + b[1] + '</span>';
+ }
 
-            return esc(store[col] || '');
-        }
+ return esc(store[col] || '');
+ }
 
-        function esc(str) {
-            var d = document.createElement('div');
-            d.textContent = str;
-            return d.innerHTML;
-        }
+ function esc(str) {
+ var d = document.createElement('div');
+ d.textContent = str;
+ return d.innerHTML;
+ }
 
-        function getActiveCols() {
-            var cols = [];
-            document.querySelectorAll('[data-group] input').forEach(function (cb) {
-                var group = cb.closest('[data-group]').dataset.group;
-                if (cb.checked && columnGroups[group]) cols = cols.concat(columnGroups[group]);
-            });
-            return cols;
-        }
+ function getActiveCols() {
+ var cols = [];
+ document.querySelectorAll('[data-group] input').forEach(function (cb) {
+ var group = cb.closest('[data-group]').dataset.group;
+ if (cb.checked && columnGroups[group]) cols = cols.concat(columnGroups[group]);
+ });
+ return cols;
+ }
 
-        function renderTable() {
-            var cols = getActiveCols();
-            var total = allStores.length;
-            var totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-            if (currentPage > totalPages) currentPage = totalPages;
+ function renderTable() {
+ var cols = getActiveCols();
+ var total = allStores.length;
+ var totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+ if (currentPage > totalPages) currentPage = totalPages;
 
-            var start = (currentPage - 1) * PAGE_SIZE;
-            var end = Math.min(start + PAGE_SIZE, total);
-            var pageData = allStores.slice(start, end);
+ var start = (currentPage - 1) * PAGE_SIZE;
+ var end = Math.min(start + PAGE_SIZE, total);
+ var pageData = allStores.slice(start, end);
 
-            var headerRow = document.getElementById('audit-header');
-            headerRow.innerHTML = cols.map(function (c) {
-                return '<th class="text-left text-xs font-medium text-gray-500 uppercase bg-gray-50">' + (columnLabels[c] || c) + '</th>';
-            }).join('');
+ var headerRow = document.getElementById('audit-header');
+ headerRow.innerHTML = cols.map(function (c) {
+ return '<th class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase bg-gray-50 dark:bg-gray-800">' + (columnLabels[c] || c) + '</th>';
+ }).join('');
 
-            var body = document.getElementById('audit-body');
-            body.innerHTML = pageData.map(function (store) {
-                var level = (store._audit || {}).level || 'verde';
-                var rowClass = level === 'rojo' ? ' bg-red-50' : (level === 'amarillo' ? ' bg-amber-50' : '');
-                return '<tr class="hover:bg-gray-100' + rowClass + '">' +
-                    cols.map(function (c) {
-                        return '<td class="text-gray-700">' + renderCell(c, store) + '</td>';
-                    }).join('') +
-                    '</tr>';
-            }).join('');
+ var body = document.getElementById('audit-body');
+ body.innerHTML = pageData.map(function (store) {
+ var level = (store._audit || {}).level || 'verde';
+ var rowClass = level === 'rojo' ? ' bg-red-50 dark:bg-red-900/20' : (level === 'amarillo' ? ' bg-amber-50 dark:bg-amber-900/20' : '');
+ return '<tr class="hover:bg-gray-100 dark:hover:bg-gray-700/30' + rowClass + '">' +
+ cols.map(function (c) {
+ return '<td class="text-gray-700 dark:text-gray-300">' + renderCell(c, store) + '</td>';
+ }).join('') +
+ '</tr>';
+ }).join('');
 
-            document.getElementById('info-from').textContent = total > 0 ? start + 1 : 0;
-            document.getElementById('info-to').textContent = end;
-            document.getElementById('info-total').textContent = total;
+ document.getElementById('info-from').textContent = total > 0 ? start + 1 : 0;
+ document.getElementById('info-to').textContent = end;
+ document.getElementById('info-total').textContent = total;
 
-            renderPagination(totalPages);
-        }
+ renderPagination(totalPages);
+ }
 
-        function renderPagination(totalPages) {
-            var container = document.getElementById('page-numbers');
-            container.innerHTML = '';
-            if (totalPages <= 1) return;
+ function renderPagination(totalPages) {
+ var container = document.getElementById('page-numbers');
+ container.innerHTML = '';
+ if (totalPages <= 1) return;
 
-            var maxVisible = 7;
-            var pages = [];
-            var startP, endP;
+ var maxVisible = 7;
+ var pages = [];
+ var startP, endP;
 
-            if (totalPages <= maxVisible) {
-                startP = 1; endP = totalPages;
-            } else {
-                var half = Math.floor(maxVisible / 2);
-                startP = currentPage - half;
-                endP = currentPage + half;
-                if (startP < 1) { startP = 1; endP = maxVisible; }
-                if (endP > totalPages) { endP = totalPages; startP = totalPages - maxVisible + 1; }
-            }
+ if (totalPages <= maxVisible) {
+ startP = 1; endP = totalPages;
+ } else {
+ var half = Math.floor(maxVisible / 2);
+ startP = currentPage - half;
+ endP = currentPage + half;
+ if (startP < 1) { startP = 1; endP = maxVisible; }
+ if (endP > totalPages) { endP = totalPages; startP = totalPages - maxVisible + 1; }
+ }
 
-            if (startP > 1) {
-                pages.push(1);
-                if (startP > 2) pages.push('…');
-            }
-            for (var i = startP; i <= endP; i++) pages.push(i);
-            if (endP < totalPages) {
-                if (endP < totalPages - 1) pages.push('…');
-                pages.push(totalPages);
-            }
+ if (startP > 1) {
+ pages.push(1);
+ if (startP > 2) pages.push('…');
+ }
+ for (var i = startP; i <= endP; i++) pages.push(i);
+ if (endP < totalPages) {
+ if (endP < totalPages - 1) pages.push('…');
+ pages.push(totalPages);
+ }
 
-            pages.forEach(function (p) {
-                if (p === '…') {
-                    container.innerHTML += '<span class="text-gray-400 px-1 self-end">…</span>';
-                } else {
-                    container.innerHTML += '<button class="page-btn px-2.5 py-1 text-sm border border-gray-300 rounded-lg transition hover:bg-gray-100 ' + (p === currentPage ? 'active' : 'bg-white text-gray-700') + '" data-page="' + p + '">' + p + '</button>';
-                }
-            });
+ pages.forEach(function (p) {
+ if (p === '…') {
+ container.innerHTML += '<span class="text-gray-400 dark:text-gray-500 px-1 self-end">…</span>';
+ } else {
+ container.innerHTML += '<button class="page-btn px-2.5 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg transition hover:bg-gray-100 dark:hover:bg-gray-700/30 ' + (p === currentPage ? 'active' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300') + '" data-page="' + p + '">' + p + '</button>';
+ }
+ });
 
-            container.querySelectorAll('[data-page]').forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    currentPage = parseInt(this.dataset.page);
-                    renderTable();
-                });
-            });
+ container.querySelectorAll('[data-page]').forEach(function (btn) {
+ btn.addEventListener('click', function () {
+ currentPage = parseInt(this.dataset.page);
+ renderTable();
+ });
+ });
 
-            document.getElementById('page-prev').disabled = currentPage <= 1;
-            document.getElementById('page-next').disabled = currentPage >= totalPages;
-        }
+ document.getElementById('page-prev').disabled = currentPage <= 1;
+ document.getElementById('page-next').disabled = currentPage >= totalPages;
+ }
 
-        document.getElementById('page-prev').addEventListener('click', function () {
-            if (currentPage > 1) { currentPage--; renderTable(); }
-        });
-        document.getElementById('page-next').addEventListener('click', function () {
-            var total = Math.max(1, Math.ceil(allStores.length / PAGE_SIZE));
-            if (currentPage < total) { currentPage++; renderTable(); }
-        });
+ document.getElementById('page-prev').addEventListener('click', function () {
+ if (currentPage > 1) { currentPage--; renderTable(); }
+ });
+ document.getElementById('page-next').addEventListener('click', function () {
+ var total = Math.max(1, Math.ceil(allStores.length / PAGE_SIZE));
+ if (currentPage < total) { currentPage++; renderTable(); }
+ });
 
-        document.querySelectorAll('[data-group] input').forEach(function (cb) {
-            cb.addEventListener('change', function () {
-                currentPage = 1;
-                renderTable();
-            });
-        });
+ document.querySelectorAll('[data-group] input').forEach(function (cb) {
+ cb.addEventListener('change', function () {
+ currentPage = 1;
+ renderTable();
+ });
+ });
 
-        renderTable();
-    });
+ renderTable();
+ });
 </script>
 @endpush
