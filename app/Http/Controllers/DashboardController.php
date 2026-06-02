@@ -36,6 +36,7 @@ class DashboardController extends Controller
             'aperturasEsteMes' => $this->contarAperturasEsteMes($stores),
             'geoStats' => $this->calcularGeoStats($stores),
             'aperturasKpi' => $this->calcularAperturasKpi($stores),
+            'aperturasPorMes' => $this->calcularAperturasPorMes($stores),
             'directorioStats' => $this->calcularDirectorioStats($stores),
             'auditoriaKpis' => $this->auditoria->resumenSimple($stores),
             'updatedAt' => cache()->get('dashboard_updated_at'),
@@ -93,6 +94,27 @@ class DashboardController extends Controller
             }
         }
         return compact('total', 'esteAnio');
+    }
+
+    private function calcularAperturasPorMes(array $stores): array
+    {
+        $nombres = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        $meses = [];
+        $now = now();
+        for ($i = 11; $i >= 0; $i--) {
+            $date = (clone $now)->subMonths($i);
+            $meses[$date->format('Y-m')] = ['label' => $nombres[(int)$date->format('n') - 1], 'count' => 0];
+        }
+        foreach ($stores as $store) {
+            $fecha = $this->fecha->parsear($store['Fecha_Apertura'] ?? '');
+            if ($fecha) {
+                $key = $fecha->format('Y-m');
+                if (isset($meses[$key])) {
+                    $meses[$key]['count']++;
+                }
+            }
+        }
+        return array_values($meses);
     }
 
     private function calcularDirectorioStats(array $stores): array
