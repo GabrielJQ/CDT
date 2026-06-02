@@ -3,11 +3,7 @@
 @section('title', 'Mapa — Dashboard CDT')
 
 @push('head')
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+@vite('resources/js/mapa.js')
 <style>
     #map { height: 520px; border-radius: 0.75rem; z-index: 0; }
     .leaflet-popup-content { font-size: 0.85rem; line-height: 1.4; }
