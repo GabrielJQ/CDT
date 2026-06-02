@@ -23,7 +23,7 @@ class ServicioAuditoria
         if ($vigencia !== null) {
             if ($vigencia->isPast()) {
                 $estadoComite = 'vencido';
-            } elseif ($vigencia->diffInDays(now()) <= 30) {
+            } elseif (abs($vigencia->diffInDays(now())) <= 30) {
                 $estadoComite = 'proximo_a_vencer';
             } else {
                 $estadoComite = 'vigente';
