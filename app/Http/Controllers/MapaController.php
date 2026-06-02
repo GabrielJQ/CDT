@@ -20,7 +20,7 @@ class MapaController extends Controller
     {
         $stores = $this->sheet->obtenerTiendas();
         if ($stores === null) {
-            return $this->errorView();
+            abort(503, $this->sheet->getUltimoError() ?? 'No se pudieron obtener los datos del Google Sheet.');
         }
 
         $stores = $this->applyRegionFilter($stores);
@@ -78,18 +78,5 @@ class MapaController extends Controller
         ]);
     }
 
-    private function errorView()
-    {
-        return view('mapa', [
-            'stores' => [],
-            'criticales' => [],
-            'totalCount' => 0,
-            'filteredCount' => 0,
-            'stats' => ['OK' => 0, 'SIN_COORDENADAS' => 0, 'FUERA_MEXICO' => 0, 'FUERA_ESTADO' => 0],
-            'filters' => ['almacen' => '', 'estado_geo' => ''],
-            'geoLabels' => ServicioGeo::GEO_LABELS,
-            'error' => $this->sheet->getUltimoError() ?? 'No se pudieron obtener los datos del Google Sheet.',
-            'updatedAt' => null,
-        ]);
-    }
+
 }

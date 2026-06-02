@@ -25,7 +25,7 @@ class DirectorioController extends Controller
     {
         $stores = $this->sheet->obtenerTiendas();
         if ($stores === null) {
-            return $this->errorView();
+            abort(503, $this->sheet->getUltimoError() ?? 'No se pudieron obtener los datos del Google Sheet.');
         }
 
         $stores = $this->applyRegionFilter($stores);
@@ -77,16 +77,7 @@ class DirectorioController extends Controller
         ]);
     }
 
-    private function errorView()
-    {
-        return view('directorio', [
-            'stores' => [],
-            'totalCount' => 0,
-            'globalStats' => ['incompletos' => 0, 'sinCapital' => 0],
-            'error' => $this->sheet->getUltimoError() ?? 'No se pudieron obtener los datos del Google Sheet.',
-            'updatedAt' => null,
-        ]);
-    }
+
 
     private function calcularStats(array $stores): array
     {

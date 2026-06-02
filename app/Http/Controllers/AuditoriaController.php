@@ -20,7 +20,7 @@ class AuditoriaController extends Controller
     {
         $stores = $this->sheet->obtenerTiendas();
         if ($stores === null) {
-            return $this->errorView();
+            abort(503, $this->sheet->getUltimoError() ?? 'No se pudieron obtener los datos del Google Sheet.');
         }
 
         $stores = $this->applyRegionFilter($stores);
@@ -95,17 +95,5 @@ class AuditoriaController extends Controller
         ]);
     }
 
-    private function errorView()
-    {
-        $filters = ['almacen' => '', 'nivel' => '', 'estado_comite' => '', 'estado_auditoria' => '', 'filtro_500k' => ''];
-        return view('auditoria', [
-            'stores' => [],
-            'totalCount' => 0,
-            'filteredCount' => 0,
-            'kpis' => ['comitesVencidos' => 0, 'auditoriaAlta' => 0, 'rotacionBaja' => 0, 'auditoriaPendiente' => 0],
-            'filters' => $filters,
-            'error' => $this->sheet->getUltimoError() ?? 'No se pudieron obtener los datos del Google Sheet.',
-            'updatedAt' => null,
-        ]);
-    }
+
 }

@@ -18,7 +18,7 @@ class AperturaController extends Controller
     {
         $stores = $this->sheet->obtenerTiendas();
         if ($stores === null) {
-            return $this->errorView('No se pudieron obtener los datos del Google Sheet.');
+            abort(503, $this->sheet->getUltimoError() ?? 'No se pudieron obtener los datos del Google Sheet.');
         }
 
         $stores = $this->applyRegionFilter($stores);
@@ -82,19 +82,7 @@ class AperturaController extends Controller
         ]);
     }
 
-    private function errorView(string $message)
-    {
-        $filters = ['almacen' => '', 'desde' => '', 'hasta' => ''];
-        return view('aperturas', [
-            'stores' => [],
-            'totalCount' => 0,
-            'filteredCount' => 0,
-            'kpis' => ['total' => 0, 'esteMes' => 0, 'esteAnio' => 0, 'sinFecha' => 0],
-            'filters' => $filters,
-            'error' => $this->sheet->getUltimoError() ?? $message,
-            'updatedAt' => null,
-        ]);
-    }
+
 
     private function calcularKpis(array $allStores, array $filtered): array
     {

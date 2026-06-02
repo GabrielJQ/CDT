@@ -21,21 +21,8 @@ class DashboardController extends Controller
     public function index()
     {
         $stores = $this->sheet->obtenerTiendas();
-
         if ($stores === null) {
-            return view('dashboard', [
-                'totalCount' => 0,
-                'connectivityKpis' => [],
-                'criticalSummary' => ['rojo' => 0, 'amarillo' => 0, 'verde' => 0],
-                'sinConectividad' => 0,
-                'aperturasEsteMes' => 0,
-                'geoStats' => ['conCoordenadas' => 0, 'sinCoordenadas' => 0],
-                'aperturasKpi' => ['total' => 0, 'esteAnio' => 0],
-                'directorioStats' => ['completos' => 0, 'incompletos' => 0],
-                'auditoriaKpis' => ['comitesVencidos' => 0, 'auditoriaAlta' => 0, 'rotacionBaja' => 0, 'auditoriaPendiente' => 0],
-                'updatedAt' => null,
-                'error' => $this->sheet->getUltimoError() ?? 'No se pudieron obtener los datos del Google Sheet.',
-            ]);
+            abort(503, $this->sheet->getUltimoError() ?? 'No se pudieron obtener los datos del Google Sheet.');
         }
 
         $stores = $this->applyRegionFilter($stores);

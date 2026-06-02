@@ -20,7 +20,7 @@ class ConnectivityController extends Controller
     {
         $stores = $this->sheet->obtenerTiendas();
         if ($stores === null) {
-            return $this->errorView('No se pudieron obtener los datos del Google Sheet.');
+            abort(503, $this->sheet->getUltimoError() ?? 'No se pudieron obtener los datos del Google Sheet.');
         }
 
         $stores = $this->applyRegionFilter($stores);
@@ -87,18 +87,5 @@ class ConnectivityController extends Controller
         ]);
     }
 
-    private function errorView(string $message)
-    {
-        $filters = ['almacen' => '', 'telefono' => '', 'senial' => '', 'compania' => '', 'internet' => ''];
-        return view('connectivity', [
-            'kpis' => [],
-            'stores' => [],
-            'totalCount' => 0,
-            'filteredCount' => 0,
-            'filterOptions' => ['almacenes' => [], 'companias' => []],
-            'filters' => $filters,
-            'error' => $this->sheet->getUltimoError() ?? $message,
-            'updatedAt' => null,
-        ]);
-    }
+
 }

@@ -20,7 +20,7 @@ class CriticalStoresController extends Controller
     {
         $stores = $this->sheet->obtenerTiendas();
         if ($stores === null) {
-            return $this->errorView('No se pudieron obtener los datos del Google Sheet.');
+            abort(503, $this->sheet->getUltimoError() ?? 'No se pudieron obtener los datos del Google Sheet.');
         }
 
         $stores = $this->applyRegionFilter($stores);
@@ -83,17 +83,5 @@ class CriticalStoresController extends Controller
         ]);
     }
 
-    private function errorView(string $message)
-    {
-        $filters = ['almacen' => '', 'nivel' => ''];
-        return view('critical-stores', [
-            'stores' => [],
-            'totalCount' => 0,
-            'filteredCount' => 0,
-            'summary' => ['rojo' => 0, 'amarillo' => 0, 'verde' => 0, 'desglose' => []],
-            'filters' => $filters,
-            'error' => $this->sheet->getUltimoError() ?? $message,
-            'updatedAt' => null,
-        ]);
-    }
+
 }
