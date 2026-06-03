@@ -187,18 +187,22 @@ document.addEventListener('DOMContentLoaded', function () {
             options: { ...chartOpts, cutout: '55%', plugins: { ...chartOpts.plugins, legend: { display: true, position: 'bottom', labels: { font: { size: 10 } } } } },
         });
 
-        // 3. Mapa — doughnut (Válidas / Fuera de México / Sin coordenadas)
+        // 3. Mapa — doughnut con etiquetas en los arcos
         var geoOk = (geo.OK || 0) + (geo.FUERA_ESTADO || 0);
         var geoFuera = geo.FUERA_MEXICO || 0;
         var geoSin = geo.SIN_COORDENADAS || 0;
         var geoTotal = geoOk + geoFuera + geoSin;
+        var geoLabels = ['Válidas en México', 'Fuera de México', 'Sin coordenadas'];
+        var geoData = [geoOk, geoFuera, geoSin];
+        var geoColors = ['#10b981', '#ef4444', '#9ca3af'];
+
         new Chart(document.getElementById('chart-mapa'), {
             type: 'doughnut',
             data: {
-                labels: ['Válidas en México (' + geoOk + ')', 'Fuera de México (' + geoFuera + ')', 'Sin coordenadas (' + geoSin + ')'],
+                labels: geoLabels.map(function (l, i) { return l + ' (' + geoData[i] + ')'; }),
                 datasets: [{
-                    data: [geoOk, geoFuera, geoSin],
-                    backgroundColor: ['#10b981', '#ef4444', '#9ca3af'],
+                    data: geoData,
+                    backgroundColor: geoColors,
                     borderWidth: 3,
                     borderColor: '#ffffff',
                 }],
@@ -219,6 +223,51 @@ document.addEventListener('DOMContentLoaded', function () {
                     },
                 },
             },
+            plugins: [{
+                id: 'geoLabels',
+                afterDraw: function (chart) {
+                    var ctx = chart.ctx;
+                    var meta = chart.getDatasetMeta(0);
+                    var centerX = chart.width / 2;
+                    var centerY = chart.height / 2;
+                    var radius = (chart.innerRadius + chart.outerRadius) / 2;
+
+                    meta.data.forEach(function (arc, i) {
+                        var val = geoData[i];
+                        if (val === 0) return;
+
+                        var angle = (arc.startAngle + arc.endAngle) / 2;
+                        var dist = val < 10 ? chart.outerRadius + 12 : radius;
+                        var x = centerX + Math.cos(angle) * dist;
+                        var y = centerY + Math.sin(angle) * dist;
+
+                        ctx.save();
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.font = 'bold 13px "Instrument Sans", system-ui, sans-serif';
+
+                        if (val < 10) {
+                            ctx.fillStyle = '#6b7280';
+                            ctx.fillText(val, x, y);
+                            ctx.beginPath();
+                            var innerX = centerX + Math.cos(angle) * chart.outerRadius;
+                            var innerY = centerY + Math.sin(angle) * chart.outerRadius;
+                            ctx.moveTo(innerX, innerY);
+                            ctx.lineTo(x - Math.cos(angle) * 8, y);
+                            ctx.strokeStyle = '#9ca3af';
+                            ctx.lineWidth = 1;
+                            ctx.stroke();
+                        } else {
+                            ctx.fillStyle = '#ffffff';
+                            ctx.font = 'bold 14px "Instrument Sans", system-ui, sans-serif';
+                            ctx.shadowColor = 'rgba(0,0,0,0.3)';
+                            ctx.shadowBlur = 3;
+                            ctx.fillText(val, x, y);
+                        }
+                        ctx.restore();
+                    });
+                },
+            }],
         });
 
         // 4. Aperturas — bar (12 months)
