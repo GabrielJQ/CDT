@@ -58,7 +58,7 @@
                 <h3 class="text-sm lg:text-base font-bold text-gray-800 dark:text-gray-100 group-hover:text-emerald-600 transition">🗺️ Mapa</h3>
                 <span class="text-xs text-gray-400 group-hover:text-emerald-600 transition">Ver más →</span>
             </div>
-            @if($geoStats && (($geoStats['OK'] ?? 0) + ($geoStats['FUERA_ESTADO'] ?? 0) + ($geoStats['FUERA_MEXICO'] ?? 0) + ($geoStats['SIN_COORDENADAS'] ?? 0)) > 0)
+            @if($geoStats && ($geoStats['conCoordenadas'] + $geoStats['sinCoordenadas']) > 0)
                 <canvas id="chart-mapa" class="w-full max-h-52"></canvas>
             @else
                 <p class="text-sm text-gray-400 dark:text-gray-500 py-8 text-center">Sin datos</p>
@@ -187,26 +187,19 @@ document.addEventListener('DOMContentLoaded', function () {
             options: { ...chartOpts, cutout: '55%', plugins: { ...chartOpts.plugins, legend: { display: true, position: 'bottom', labels: { font: { size: 10 } } } } },
         });
 
-        // 3. Mapa — horizontal bar (Válidas / Fuera de México / Sin coordenadas)
+        // 3. Mapa — doughnut (Con/Sin coordenadas)
         new Chart(document.getElementById('chart-mapa'), {
-            type: 'bar',
+            type: 'doughnut',
             data: {
-                labels: ['Válidas en México', 'Fuera de México', 'Sin coordenadas'],
+                labels: ['Con coordenadas', 'Sin coordenadas'],
                 datasets: [{
-                    label: 'Tiendas',
-                    data: [(geo.OK || 0) + (geo.FUERA_ESTADO || 0), geo.FUERA_MEXICO || 0, geo.SIN_COORDENADAS || 0],
-                    backgroundColor: ['#10b981', '#ef4444', '#9ca3af'],
-                    borderRadius: 3,
+                    data: [geo.conCoordenadas, geo.sinCoordenadas],
+                    backgroundColor: ['#10b981', '#9ca3af'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff',
                 }],
             },
-            options: {
-                ...chartOpts,
-                indexAxis: 'y',
-                scales: {
-                    x: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 9 } } },
-                    y: { grid: { display: false }, ticks: { font: { size: 10 } } },
-                },
-            },
+            options: { ...chartOpts, cutout: '55%', plugins: { ...chartOpts.plugins, legend: { display: true, position: 'bottom', labels: { font: { size: 10 } } } } },
         });
 
         // 4. Aperturas — bar (12 months)
