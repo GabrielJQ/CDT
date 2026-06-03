@@ -78,14 +78,15 @@
  <option value="verde" {{ $filters['nivel'] === 'verde' ? 'selected' : '' }}>🟢 Normal</option>
  </select>
  </div>
-  <div class="min-w-[150px]">
-  <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Cap. Bienestar ≤ $20k</label>
-  <select name="cap_dic_bajo" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800">
-  <option value="">Todas</option>
-  <option value="si" {{ ($filters['cap_dic_bajo'] ?? '') === 'si' ? 'selected' : '' }}>🔴 Sí</option>
-  <option value="no" {{ ($filters['cap_dic_bajo'] ?? '') === 'no' ? 'selected' : '' }}>🟢 No</option>
-  </select>
-  </div>
+   <div class="min-w-[190px]">
+   <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Indicador</label>
+   <select name="indicador" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800">
+   <option value="">Todos</option>
+   @foreach($indicadores as $key => $label)
+   <option value="{{ $key }}" {{ ($filters['indicador'] ?? '') === $key ? 'selected' : '' }}>{{ $label }}</option>
+   @endforeach
+   </select>
+   </div>
   <div class="flex gap-2">
   <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Filtrar</button>
   <a href="{{ url('/informacion-tiendas') }}" class="bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-semibold transition inline-block">Limpiar</a>

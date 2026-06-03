@@ -29,7 +29,7 @@ class CriticalStoresController extends Controller
         $filters = [
             'almacen' => trim($request->query('almacen', '')),
             'nivel' => $request->query('nivel', ''),
-            'cap_dic_bajo' => $request->query('cap_dic_bajo', ''),
+            'indicador' => $request->query('indicador', ''),
         ];
 
         $evaluated = collect($stores)->map(function ($store) {
@@ -46,9 +46,9 @@ class CriticalStoresController extends Controller
             if ($filters['nivel'] !== '' && $store['_critico']['level'] !== $filters['nivel']) {
                 return false;
             }
-            if ($filters['cap_dic_bajo'] !== '') {
-                $active = $store['_critico']['conditions']['capital_dictaminado_bajo'] ?? false;
-                if (($filters['cap_dic_bajo'] === 'si' && !$active) || ($filters['cap_dic_bajo'] === 'no' && $active)) {
+            if ($filters['indicador'] !== '') {
+                $active = $store['_critico']['conditions'][$filters['indicador']] ?? false;
+                if (!$active) {
                     return false;
                 }
             }
@@ -80,12 +80,23 @@ class CriticalStoresController extends Controller
             ], 'informacion-tiendas.csv');
         }
 
+        $indicadores = [
+            'capital_bajo' => '💰 Capital bajo',
+            'capital_dictaminado_bajo' => '🏛️ Capital Bienestar bajo',
+            'comite_vencido' => '📅 Comité vencido',
+            'auditoria_elevada' => '🔍 Auditoría > $500k',
+            'pagare_proximo' => '📄 Pagare próximo',
+            'rotacion_baja' => '📉 Rotación baja',
+            'asamblea_pendiente' => '🗳️ Asamblea pendiente',
+        ];
+
         return view('critical-stores', [
             'stores' => $filtered,
             'totalCount' => $totalCount,
             'filteredCount' => count($filtered),
             'summary' => $this->critica->calcularResumen($evaluated->all()),
             'filters' => $filters,
+            'indicadores' => $indicadores,
             'updatedAt' => cache()->get('dashboard_updated_at'),
         ]);
     }
