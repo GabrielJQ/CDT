@@ -188,18 +188,37 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         // 3. Mapa — doughnut (Válidas / Fuera de México / Sin coordenadas)
+        var geoOk = (geo.OK || 0) + (geo.FUERA_ESTADO || 0);
+        var geoFuera = geo.FUERA_MEXICO || 0;
+        var geoSin = geo.SIN_COORDENADAS || 0;
+        var geoTotal = geoOk + geoFuera + geoSin;
         new Chart(document.getElementById('chart-mapa'), {
             type: 'doughnut',
             data: {
-                labels: ['Válidas en México', 'Fuera de México', 'Sin coordenadas'],
+                labels: ['Válidas en México (' + geoOk + ')', 'Fuera de México (' + geoFuera + ')', 'Sin coordenadas (' + geoSin + ')'],
                 datasets: [{
-                    data: [(geo.OK || 0) + (geo.FUERA_ESTADO || 0), geo.FUERA_MEXICO || 0, geo.SIN_COORDENADAS || 0],
+                    data: [geoOk, geoFuera, geoSin],
                     backgroundColor: ['#10b981', '#ef4444', '#9ca3af'],
-                    borderWidth: 2,
+                    borderWidth: 3,
                     borderColor: '#ffffff',
                 }],
             },
-            options: { ...chartOpts, cutout: '55%', plugins: { ...chartOpts.plugins, legend: { display: true, position: 'bottom', labels: { font: { size: 10 } } } } },
+            options: {
+                ...chartOpts,
+                cutout: '55%',
+                plugins: {
+                    ...chartOpts.plugins,
+                    legend: { display: true, position: 'bottom', labels: { font: { size: 10 } } },
+                    tooltip: {
+                        callbacks: {
+                            label: function (ctx) {
+                                var pct = geoTotal > 0 ? (ctx.raw / geoTotal * 100).toFixed(1) : 0;
+                                return ctx.label + ': ' + ctx.raw + ' (' + pct + '%)';
+                            },
+                        },
+                    },
+                },
+            },
         });
 
         // 4. Aperturas — bar (12 months)
