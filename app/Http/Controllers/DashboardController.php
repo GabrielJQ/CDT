@@ -7,6 +7,7 @@ use App\Servicios\ServicioConectividad;
 use App\Servicios\ServicioTiendaCritica;
 use App\Servicios\ServicioAuditoria;
 use App\Servicios\ServicioFecha;
+use App\Servicios\ServicioGeo;
 
 class DashboardController extends Controller
 {
@@ -16,6 +17,7 @@ class DashboardController extends Controller
         private ServicioTiendaCritica $critica,
         private ServicioAuditoria $auditoria,
         private ServicioFecha $fecha,
+        private ServicioGeo $geo,
     ) {}
 
     public function index()
@@ -67,18 +69,12 @@ class DashboardController extends Controller
 
     private function calcularGeoStats(array $stores): array
     {
-        $conCoordenadas = 0;
-        $sinCoordenadas = 0;
-        foreach ($stores as $store) {
-            $lat = trim($store['Latitud'] ?? '');
-            $lon = trim($store['Longitud'] ?? '');
-            if ($lat !== '' && $lat !== '0' && $lon !== '' && $lon !== '0') {
-                $conCoordenadas++;
-            } else {
-                $sinCoordenadas++;
-            }
-        }
-        return compact('conCoordenadas', 'sinCoordenadas');
+        $evaluated = collect($stores)->map(function ($store) {
+            $store['_geo'] = $this->geo->evaluarGeo($store);
+            return $store;
+        })->all();
+
+        return $this->geo->calcularStats($evaluated);
     }
 
     private function calcularAperturasKpi(array $stores): array

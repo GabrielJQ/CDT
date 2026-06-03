@@ -187,14 +187,14 @@ document.addEventListener('DOMContentLoaded', function () {
             options: { ...chartOpts, cutout: '55%', plugins: { ...chartOpts.plugins, legend: { display: true, position: 'bottom', labels: { font: { size: 10 } } } } },
         });
 
-        // 3. Mapa — doughnut (Con/Sin coordenadas)
+        // 3. Mapa — doughnut (Válidas / Fuera de México / Sin coordenadas)
         new Chart(document.getElementById('chart-mapa'), {
             type: 'doughnut',
             data: {
-                labels: ['Con coordenadas', 'Sin coordenadas'],
+                labels: ['Válidas en México', 'Fuera de México', 'Sin coordenadas'],
                 datasets: [{
-                    data: [geo.conCoordenadas, geo.sinCoordenadas],
-                    backgroundColor: ['#10b981', '#9ca3af'],
+                    data: [(geo.OK || 0) + (geo.FUERA_ESTADO || 0), geo.FUERA_MEXICO || 0, geo.SIN_COORDENADAS || 0],
+                    backgroundColor: ['#10b981', '#ef4444', '#9ca3af'],
                     borderWidth: 2,
                     borderColor: '#ffffff',
                 }],
