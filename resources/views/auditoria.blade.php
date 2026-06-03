@@ -23,7 +23,7 @@
 
  <div id="app">
  {{-- KPIs --}}
- <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+ <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-red-500">
  <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">🏛️ Comités vencidos</p>
  <p class="text-2xl font-bold text-red-600">{{ $kpis['comitesVencidos'] }}</p>
@@ -40,6 +40,48 @@
  <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">📅 Aud. pendiente (&gt;3 meses)</p>
  <p class="text-2xl font-bold text-gray-600 dark:text-gray-300">{{ $kpis['auditoriaPendiente'] }}</p>
  </div>
+ </div>
+
+ {{-- Rotación Desglose --}}
+ <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">Desglose de Rotación</h3>
+ <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-red-500">
+        <p class="text-xs text-gray-500 dark:text-gray-400">Rotación Cero</p>
+        <p class="text-xl font-bold text-red-600">{{ $kpis['rotacionCero'] ?? 0 }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-orange-500">
+        <p class="text-xs text-gray-500 dark:text-gray-400">0.01 a 0.99</p>
+        <p class="text-xl font-bold text-orange-600">{{ $kpis['rotacionMenor1'] ?? 0 }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-amber-500">
+        <p class="text-xs text-gray-500 dark:text-gray-400">1.0 a 1.49</p>
+        <p class="text-xl font-bold text-amber-600">{{ $kpis['rotacionMenor15'] ?? 0 }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-green-500">
+        <p class="text-xs text-gray-500 dark:text-gray-400">&gt; 1.5</p>
+        <p class="text-xl font-bold text-green-600">{{ $kpis['rotacionMayor15'] ?? 0 }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-emerald-500">
+        <p class="text-xs text-gray-500 dark:text-gray-400">&ge; 2.0</p>
+        <p class="text-xl font-bold text-emerald-600">{{ $kpis['rotacionMayor2'] ?? 0 }}</p>
+    </div>
+ </div>
+
+ {{-- Auditorías Desglose --}}
+ <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">Tiempos de Auditoría</h3>
+ <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-blue-500">
+        <p class="text-xs text-gray-500 dark:text-gray-400">Realizadas este mes</p>
+        <p class="text-xl font-bold text-blue-600">{{ $kpis['auditoriasMes'] ?? 0 }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-orange-500">
+        <p class="text-xs text-gray-500 dark:text-gray-400">Sin aud. > 3 meses (Trimestre)</p>
+        <p class="text-xl font-bold text-orange-600">{{ $kpis['sinAuditoriaTrimestre'] ?? 0 }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-red-500">
+        <p class="text-xs text-gray-500 dark:text-gray-400">Sin aud. > 1 año</p>
+        <p class="text-xl font-bold text-red-600">{{ $kpis['sinAuditoriaAnio'] ?? 0 }}</p>
+    </div>
  </div>
 
  {{-- Filters --}}
@@ -89,6 +131,37 @@
  <option value="">Todos</option>
  <option value="si" {{ $filters['filtro_500k'] === 'si' ? 'selected' : '' }}>🔴 Sí</option>
  <option value="no" {{ $filters['filtro_500k'] === 'no' ? 'selected' : '' }}>🟢 No</option>
+ </select>
+ </div>
+ <div class="min-w-[150px]">
+ <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Rango Rotación</label>
+ <select name="rango_rotacion"
+ class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800">
+ <option value="">Todos</option>
+ <option value="cero" {{ $filters['rango_rotacion'] === 'cero' ? 'selected' : '' }}>Cero</option>
+ <option value="bajo_1" {{ $filters['rango_rotacion'] === 'bajo_1' ? 'selected' : '' }}>0.01 a 0.99</option>
+ <option value="bajo_1_5" {{ $filters['rango_rotacion'] === 'bajo_1_5' ? 'selected' : '' }}>1.0 a 1.49</option>
+ <option value="mayor_1_5" {{ $filters['rango_rotacion'] === 'mayor_1_5' ? 'selected' : '' }}>> 1.5</option>
+ <option value="mayor_2" {{ $filters['rango_rotacion'] === 'mayor_2' ? 'selected' : '' }}>&ge; 2.0</option>
+ </select>
+ </div>
+ <div class="min-w-[150px]">
+ <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Tiempo Auditoría</label>
+ <select name="tiempo_auditoria"
+ class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800">
+ <option value="">Todos</option>
+ <option value="mes" {{ $filters['tiempo_auditoria'] === 'mes' ? 'selected' : '' }}>Realizada en mes</option>
+ <option value="trimestre" {{ $filters['tiempo_auditoria'] === 'trimestre' ? 'selected' : '' }}>Sin aud. > 3 meses</option>
+ <option value="anio" {{ $filters['tiempo_auditoria'] === 'anio' ? 'selected' : '' }}>Sin aud. > 1 año</option>
+ </select>
+ </div>
+ <div class="min-w-[150px]">
+ <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Asambleas (Mes)</label>
+ <select name="asambleas_mes"
+ class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800">
+ <option value="">Todas</option>
+ <option value="si" {{ $filters['asambleas_mes'] === 'si' ? 'selected' : '' }}>Con asambleas</option>
+ <option value="no" {{ $filters['asambleas_mes'] === 'no' ? 'selected' : '' }}>Sin asambleas</option>
  </select>
  </div>
  <div class="flex gap-2">
@@ -155,18 +228,21 @@
  var currentPage = 1;
 
  var columnGroups = {
- General: ['Nombre_Almacen', 'Localidad', 'Municipio'],
- Comite: ['Vigencia', 'Comite'],
+ General: ['Nombre_Almacen', 'No_Tienda_Actual', 'Localidad', 'Municipio'],
+ Comite: ['Vigencia', 'Comite', 'Fec_CRA', 'Asam_Real_Mes'],
  Auditoria: ['Fch_Audit', 'Estado_Aud', 'Imp_Res_Audi_Mes'],
  Rendimiento: ['Rotacion', 'Riesgo'],
  };
 
  var columnLabels = {
  Nombre_Almacen: 'Almacén',
+ No_Tienda_Actual: 'Tienda #',
  Localidad: 'Localidad',
  Municipio: 'Municipio',
  Vigencia: 'Vigencia',
  Comite: 'Comité',
+ Fec_CRA: 'Fecha CRA',
+ Asam_Real_Mes: 'Asam. Mes',
  Fch_Audit: 'Fch. Audit',
  Estado_Aud: 'Estado Aud.',
  Imp_Res_Audi_Mes: 'Imp. Res. Audi.',
@@ -197,6 +273,10 @@
  var a = store._audit || {};
  if (col === 'Nombre_Almacen') return '<strong>' + esc(store[col] || '—') + '</strong>';
  if (col === 'Localidad' || col === 'Municipio') return esc(store[col] || '—');
+ if (col === 'No_Tienda_Actual') {
+ var n = store[col];
+ return '<span class="font-mono text-gray-700 dark:text-gray-300 block text-center">' + (n || '—') + '</span>';
+ }
 
  if (col === 'Vigencia') {
  var d = a.vigencia;
@@ -209,6 +289,28 @@
  var ec = a.estadoComite || 'sin_fecha';
  var b = badges[ec] || ['bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300', '⚪ Sin fecha'];
  return '<span class="badge ' + b[0] + '">' + b[1] + '</span>';
+ }
+
+ if (col === 'Fec_CRA') {
+ var d = store[col];
+ if (d) return '<span class="font-mono text-gray-700 dark:text-gray-300">' + String(d).substr(0, 10) + '</span>';
+ return '<span class="text-gray-400 dark:text-gray-500">—</span>';
+ }
+
+ if (col === 'Asam_Real_Mes') {
+ var v = parseInt(store[col]) || 0;
+ var dateAsam = store['Asam_Fch_'] || '';
+ var html = '';
+ if (v > 0) {
+ html = '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">' + v + ' asamblea(s)</span>';
+ } else {
+ html = '<span class="text-gray-400 dark:text-gray-500">0</span>';
+ }
+ if (dateAsam && dateAsam !== '0' && dateAsam !== '#N/A') {
+ var d = String(dateAsam).substr(0, 10);
+ html += '<br><span class="text-xs text-gray-500 dark:text-gray-400">📅 ' + d + '</span>';
+ }
+ return html;
  }
 
  if (col === 'Fch_Audit') {
@@ -355,14 +457,43 @@
  if (currentPage < total) { currentPage++; renderTable(); }
  });
 
- document.querySelectorAll('[data-group] input').forEach(function (cb) {
- cb.addEventListener('change', function () {
- currentPage = 1;
- renderTable();
- });
- });
+  var storageKey = 'col_prefs_auditoria';
+  function saveColPrefs() {
+    var prefs = {};
+    document.querySelectorAll('[data-group] input').forEach(function (cb) {
+      if (!cb.disabled) {
+        prefs[cb.closest('[data-group]').dataset.group] = cb.checked;
+      }
+    });
+    localStorage.setItem(storageKey, JSON.stringify(prefs));
+  }
+  function loadColPrefs() {
+    var saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        var prefs = JSON.parse(saved);
+        document.querySelectorAll('[data-group] input').forEach(function (cb) {
+          if (!cb.disabled) {
+            var group = cb.closest('[data-group]').dataset.group;
+            if (prefs[group] !== undefined) {
+              cb.checked = prefs[group];
+            }
+          }
+        });
+      } catch(e) {}
+    }
+  }
 
- renderTable();
+  document.querySelectorAll('[data-group] input').forEach(function (cb) {
+    cb.addEventListener('change', function () {
+      currentPage = 1;
+      saveColPrefs();
+      renderTable();
+    });
+  });
+
+  loadColPrefs();
+  renderTable();
  });
 </script>
 @endpush

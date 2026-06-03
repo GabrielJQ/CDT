@@ -297,14 +297,43 @@
  if (currentPage < total) { currentPage++; renderTable(); }
  });
 
- document.querySelectorAll('[data-group] input').forEach(function (cb) {
- cb.addEventListener('change', function () {
- currentPage = 1;
- renderTable();
- });
- });
+  var storageKey = 'col_prefs_connectivity';
+  function saveColPrefs() {
+    var prefs = {};
+    document.querySelectorAll('[data-group] input').forEach(function (cb) {
+      if (!cb.disabled) {
+        prefs[cb.closest('[data-group]').dataset.group] = cb.checked;
+      }
+    });
+    localStorage.setItem(storageKey, JSON.stringify(prefs));
+  }
+  function loadColPrefs() {
+    var saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        var prefs = JSON.parse(saved);
+        document.querySelectorAll('[data-group] input').forEach(function (cb) {
+          if (!cb.disabled) {
+            var group = cb.closest('[data-group]').dataset.group;
+            if (prefs[group] !== undefined) {
+              cb.checked = prefs[group];
+            }
+          }
+        });
+      } catch(e) {}
+    }
+  }
 
- renderTable();
+  document.querySelectorAll('[data-group] input').forEach(function (cb) {
+  cb.addEventListener('change', function () {
+  currentPage = 1;
+  saveColPrefs();
+  renderTable();
+  });
+  });
+
+  loadColPrefs();
+  renderTable();
  });
 </script>
 @endpush

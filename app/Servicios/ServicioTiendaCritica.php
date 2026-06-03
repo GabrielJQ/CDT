@@ -14,7 +14,7 @@ class ServicioTiendaCritica
         $labels = [];
 
         $capTot = $this->limpiarMonto($store['Cap_Tot'] ?? '0');
-        $conditions['capital_bajo'] = $capTot > 0 && $capTot < 100000;
+        $conditions['capital_bajo'] = $capTot > 0 && $capTot <= 20000;
         $labels['capital_bajo'] = [
             'label' => 'Capital bajo',
             'detail' => '$' . number_format($capTot, 2),
@@ -133,7 +133,7 @@ class ServicioTiendaCritica
             $count = 0;
 
             $capTot = $this->limpiarMonto($store['Cap_Tot'] ?? '0');
-            if ($capTot > 0 && $capTot < 100000) $count++;
+            if ($capTot > 0 && $capTot <= 20000) $count++;
 
             $vigencia = $this->fecha->parsear($store['Vigencia'] ?? '');
             if ($vigencia !== null && $vigencia->isPast()) $count++;

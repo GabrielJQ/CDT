@@ -32,6 +32,9 @@ class AuditoriaController extends Controller
             'estado_comite' => $request->query('estado_comite', ''),
             'estado_auditoria' => $request->query('estado_auditoria', ''),
             'filtro_500k' => $request->query('filtro_500k', ''),
+            'rango_rotacion' => $request->query('rango_rotacion', ''),
+            'tiempo_auditoria' => $request->query('tiempo_auditoria', ''),
+            'asambleas_mes' => $request->query('asambleas_mes', ''),
         ];
 
         $evaluated = collect($stores)->map(function ($store) {
@@ -65,6 +68,28 @@ class AuditoriaController extends Controller
                 if (($filters['filtro_500k'] === 'si' && !$esAlto) || ($filters['filtro_500k'] === 'no' && $esAlto)) {
                     return false;
                 }
+            }
+            if ($filters['rango_rotacion'] !== '') {
+                $rango = $store['_audit']['rangoRotacion'] ?? '';
+                if ($rango !== $filters['rango_rotacion']) {
+                    return false;
+                }
+            }
+            if ($filters['tiempo_auditoria'] !== '') {
+                $auditRealizada = $store['_audit']['auditRealizada'] ?? 0;
+                $sinAuditoriaAnio = $store['_audit']['sinAuditoriaAnio'] ?? false;
+                $fchAudit = $store['_audit']['fchAudit'] ?? null;
+                $mesesSinAuditoria = $store['_audit']['mesesSinAuditoria'] ?? null;
+                $sinAuditoriaTrimestre = $fchAudit === null || ($mesesSinAuditoria !== null && $mesesSinAuditoria >= 3);
+
+                if ($filters['tiempo_auditoria'] === 'mes' && $auditRealizada == 0) return false;
+                if ($filters['tiempo_auditoria'] === 'trimestre' && !$sinAuditoriaTrimestre) return false;
+                if ($filters['tiempo_auditoria'] === 'anio' && !$sinAuditoriaAnio) return false;
+            }
+            if ($filters['asambleas_mes'] !== '') {
+                $asambleas = (int)($store['Asam_Real_Mes'] ?? 0);
+                if ($filters['asambleas_mes'] === 'si' && $asambleas == 0) return false;
+                if ($filters['asambleas_mes'] === 'no' && $asambleas > 0) return false;
             }
             return true;
         })->values()->all();

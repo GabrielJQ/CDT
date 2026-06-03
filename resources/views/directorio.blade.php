@@ -44,6 +44,21 @@
  </div>
  </div>
 
+ <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+ <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-purple-500">
+ <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">🏛️ Comités Incomp.</p>
+ <p class="text-2xl font-bold text-purple-600">{{ $globalStats['comitesIncompletos'] ?? 0 }}</p>
+ </div>
+ <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-indigo-500">
+ <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">🗳️ Asambleas Mes</p>
+ <p class="text-2xl font-bold text-indigo-600">{{ $globalStats['asambleasMes'] ?? 0 }}</p>
+ </div>
+ <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-pink-500">
+ <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">💸 Faltante Cap.</p>
+ <p class="text-2xl font-bold text-pink-600">{{ $globalStats['tiendasFaltante'] ?? 0 }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">(${{ number_format($globalStats['importeFaltante'] ?? 0, 2) }})</span></p>
+ </div>
+ </div>
+
  {{-- Filters --}}
  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 mb-4">
  <div class="flex flex-wrap items-end gap-3">
@@ -337,8 +352,36 @@
  if (currentPage < total) { currentPage++; renderTable(); }
  });
 
+ var storageKey = 'col_prefs_directorio';
+ function saveColPrefs() {
+ var prefs = {};
+ document.querySelectorAll('[data-group] input').forEach(function (cb) {
+ if (!cb.disabled) {
+ prefs[cb.closest('[data-group]').dataset.group] = cb.checked;
+ }
+ });
+ localStorage.setItem(storageKey, JSON.stringify(prefs));
+ }
+ function loadColPrefs() {
+ var saved = localStorage.getItem(storageKey);
+ if (saved) {
+ try {
+ var prefs = JSON.parse(saved);
+ document.querySelectorAll('[data-group] input').forEach(function (cb) {
+ if (!cb.disabled) {
+ var group = cb.closest('[data-group]').dataset.group;
+ if (prefs[group] !== undefined) {
+ cb.checked = prefs[group];
+ }
+ }
+ });
+ } catch(e) {}
+ }
+ }
+
  document.querySelectorAll('[data-group] input').forEach(function (cb) {
  cb.addEventListener('change', function () {
+ saveColPrefs();
  renderTable();
  });
  });
@@ -354,6 +397,7 @@
  });
 
  filtered = allStores.slice();
+ loadColPrefs();
  renderTable();
  });
 </script>

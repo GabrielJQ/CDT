@@ -85,6 +85,10 @@ class DirectorioController extends Controller
     {
         $incompletos = 0;
         $sinCapital = 0;
+        $comitesIncompletos = 0;
+        $asambleasMes = 0;
+        $tiendasFaltante = 0;
+        $importeFaltante = 0.0;
 
         foreach ($stores as $store) {
             $hasEmpty = false;
@@ -97,12 +101,35 @@ class DirectorioController extends Controller
             }
             if ($hasEmpty) $incompletos++;
 
-            $capTot = trim($store['Cap_Tot'] ?? '');
-            if ($capTot === '' || $capTot === '0' || (float) str_replace(',', '', $capTot) === 0.0) {
+            $capTotStr = trim($store['Cap_Tot'] ?? '');
+            $capTot = (float) str_replace([',', '$', ' '], '', $capTotStr);
+            if ($capTotStr === '' || $capTotStr === '0' || $capTot === 0.0) {
                 $sinCapital++;
+            }
+
+            // Comité Incompleto (evaluamos Presidente, Secretario y Tesorero como mínimos)
+            $p = trim($store['Nom_Pre_CRA'] ?? '');
+            $s = trim($store['Nom_Sec_CRA'] ?? '');
+            $t = trim($store['Nom_Tes_CRA'] ?? '');
+            if ($p === '' || $p === '0' || $s === '' || $s === '0' || $t === '' || $t === '0') {
+                $comitesIncompletos++;
+            }
+
+            // Asambleas realizadas en el mes
+            $asamReal = (int) ($store['Asam_Real_Mes'] ?? 0);
+            if ($asamReal > 0) {
+                $asambleasMes++;
+            }
+
+            // Faltante de capital (Fórmula PROVISIONAL: Capital Dictaminado - Capital Total)
+            $capDic = (float) str_replace([',', '$', ' '], '', trim($store['Cap_Dic'] ?? '0'));
+            $faltante = $capDic - $capTot;
+            if ($faltante > 0) {
+                $tiendasFaltante++;
+                $importeFaltante += $faltante;
             }
         }
 
-        return compact('incompletos', 'sinCapital');
+        return compact('incompletos', 'sinCapital', 'comitesIncompletos', 'asambleasMes', 'tiendasFaltante', 'importeFaltante');
     }
 }
