@@ -58,7 +58,7 @@
                 <h3 class="text-sm lg:text-base font-bold text-gray-800 dark:text-gray-100 group-hover:text-emerald-600 transition">🗺️ Mapa</h3>
                 <span class="text-xs text-gray-400 group-hover:text-emerald-600 transition">Ver más →</span>
             </div>
-            @if($geoStats && ($geoStats['conCoordenadas'] + $geoStats['sinCoordenadas']) > 0)
+            @if($geoStats && (($geoStats['OK'] ?? 0) + ($geoStats['FUERA_ESTADO'] ?? 0) + ($geoStats['FUERA_MEXICO'] ?? 0) + ($geoStats['SIN_COORDENADAS'] ?? 0)) > 0)
                 <canvas id="chart-mapa" class="w-full max-h-52"></canvas>
             @else
                 <p class="text-sm text-gray-400 dark:text-gray-500 py-8 text-center">Sin datos</p>
