@@ -157,19 +157,20 @@
   asamblea_pendiente: 'Asamblea pendiente',
   };
 
- var columnGroups = {
- General: ['Estado', 'Nombre_Almacen', 'Municipio'],
- Factores: ['Factores'],
- Detalle: ['Detalle'],
- };
-
- var columnLabels = {
- Estado: 'Estado',
- Nombre_Almacen: 'Almacén',
- Municipio: 'Municipio',
- Factores: 'Factores',
- Detalle: 'Detalle',
- };
+  var columnGroups = {
+  General: ['Estado', 'Nombre_Almacen', 'No_Tienda_Actual', 'Municipio'],
+  Factores: ['Factores'],
+  Detalle: ['Detalle'],
+  };
+ 
+  var columnLabels = {
+  Estado: 'Estado',
+  Nombre_Almacen: 'Almacén',
+  No_Tienda_Actual: 'Tienda #',
+  Municipio: 'Municipio',
+  Factores: 'Factores',
+  Detalle: 'Detalle',
+  };
 
  function renderCell(col, store) {
  var e = store._critico || {};
@@ -184,8 +185,12 @@
  return '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ' + cfg[0] + '">' + cfg[1] + '</span>';
  }
 
- if (col === 'Nombre_Almacen') return '<strong class="text-gray-900 dark:text-gray-100">' + esc(store[col] || '—') + '</strong>';
- if (col === 'Municipio') return esc(store[col] || '—');
+  if (col === 'Nombre_Almacen') return '<strong class="text-gray-900 dark:text-gray-100">' + esc(store[col] || '—') + '</strong>';
+  if (col === 'No_Tienda_Actual') {
+  var n = store[col];
+  return '<span class="font-mono text-gray-700 dark:text-gray-300 block text-center">' + (n || '—') + '</span>';
+  }
+  if (col === 'Municipio') return esc(store[col] || '—');
 
  if (col === 'Factores') {
  return FACTOR_KEYS.map(function (key) {
