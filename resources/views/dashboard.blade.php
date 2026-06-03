@@ -187,87 +187,26 @@ document.addEventListener('DOMContentLoaded', function () {
             options: { ...chartOpts, cutout: '55%', plugins: { ...chartOpts.plugins, legend: { display: true, position: 'bottom', labels: { font: { size: 10 } } } } },
         });
 
-        // 3. Mapa — doughnut con etiquetas en los arcos
-        var geoOk = (geo.OK || 0) + (geo.FUERA_ESTADO || 0);
-        var geoFuera = geo.FUERA_MEXICO || 0;
-        var geoSin = geo.SIN_COORDENADAS || 0;
-        var geoTotal = geoOk + geoFuera + geoSin;
-        var geoLabels = ['Válidas en México', 'Fuera de México', 'Sin coordenadas'];
-        var geoData = [geoOk, geoFuera, geoSin];
-        var geoColors = ['#10b981', '#ef4444', '#9ca3af'];
-
+        // 3. Mapa — horizontal bar (Válidas / Fuera de México / Sin coordenadas)
         new Chart(document.getElementById('chart-mapa'), {
-            type: 'doughnut',
+            type: 'bar',
             data: {
-                labels: geoLabels.map(function (l, i) { return l + ' (' + geoData[i] + ')'; }),
+                labels: ['Válidas en México', 'Fuera de México', 'Sin coordenadas'],
                 datasets: [{
-                    data: geoData,
-                    backgroundColor: geoColors,
-                    borderWidth: 3,
-                    borderColor: '#ffffff',
+                    label: 'Tiendas',
+                    data: [(geo.OK || 0) + (geo.FUERA_ESTADO || 0), geo.FUERA_MEXICO || 0, geo.SIN_COORDENADAS || 0],
+                    backgroundColor: ['#10b981', '#ef4444', '#9ca3af'],
+                    borderRadius: 3,
                 }],
             },
             options: {
                 ...chartOpts,
-                cutout: '55%',
-                plugins: {
-                    ...chartOpts.plugins,
-                    legend: { display: true, position: 'bottom', labels: { font: { size: 10 } } },
-                    tooltip: {
-                        callbacks: {
-                            label: function (ctx) {
-                                var pct = geoTotal > 0 ? (ctx.raw / geoTotal * 100).toFixed(1) : 0;
-                                return ctx.label + ': ' + ctx.raw + ' (' + pct + '%)';
-                            },
-                        },
-                    },
+                indexAxis: 'y',
+                scales: {
+                    x: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 9 } } },
+                    y: { grid: { display: false }, ticks: { font: { size: 10 } } },
                 },
             },
-            plugins: [{
-                id: 'geoLabels',
-                afterDraw: function (chart) {
-                    var ctx = chart.ctx;
-                    var meta = chart.getDatasetMeta(0);
-                    var centerX = chart.width / 2;
-                    var centerY = chart.height / 2;
-                    var radius = (chart.innerRadius + chart.outerRadius) / 2;
-
-                    meta.data.forEach(function (arc, i) {
-                        var val = geoData[i];
-                        if (val === 0) return;
-
-                        var angle = (arc.startAngle + arc.endAngle) / 2;
-                        var dist = val < 10 ? chart.outerRadius + 12 : radius;
-                        var x = centerX + Math.cos(angle) * dist;
-                        var y = centerY + Math.sin(angle) * dist;
-
-                        ctx.save();
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'middle';
-                        ctx.font = 'bold 13px "Instrument Sans", system-ui, sans-serif';
-
-                        if (val < 10) {
-                            ctx.fillStyle = '#6b7280';
-                            ctx.fillText(val, x, y);
-                            ctx.beginPath();
-                            var innerX = centerX + Math.cos(angle) * chart.outerRadius;
-                            var innerY = centerY + Math.sin(angle) * chart.outerRadius;
-                            ctx.moveTo(innerX, innerY);
-                            ctx.lineTo(x - Math.cos(angle) * 8, y);
-                            ctx.strokeStyle = '#9ca3af';
-                            ctx.lineWidth = 1;
-                            ctx.stroke();
-                        } else {
-                            ctx.fillStyle = '#ffffff';
-                            ctx.font = 'bold 14px "Instrument Sans", system-ui, sans-serif';
-                            ctx.shadowColor = 'rgba(0,0,0,0.3)';
-                            ctx.shadowBlur = 3;
-                            ctx.fillText(val, x, y);
-                        }
-                        ctx.restore();
-                    });
-                },
-            }],
         });
 
         // 4. Aperturas — bar (12 months)
