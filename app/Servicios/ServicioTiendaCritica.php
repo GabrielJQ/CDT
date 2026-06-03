@@ -21,6 +21,14 @@ class ServicioTiendaCritica
             'icon' => '💰',
         ];
 
+        $capDic = $this->limpiarMonto($store['Cap_Dic'] ?? '0');
+        $conditions['capital_dictaminado_bajo'] = $capDic > 0 && $capDic <= 20000;
+        $labels['capital_dictaminado_bajo'] = [
+            'label' => 'Capital Bienestar bajo',
+            'detail' => '$' . number_format($capDic, 2),
+            'icon' => '🏛️',
+        ];
+
         $vigencia = $store['Vigencia'] ?? '';
         $vigenciaDate = $this->fecha->parsear($vigencia);
         $conditions['comite_vencido'] = $vigenciaDate !== null && $vigenciaDate->isPast();
@@ -104,6 +112,7 @@ class ServicioTiendaCritica
 
         $condLabels = [
             'capital_bajo' => '💰 Capital bajo',
+            'capital_dictaminado_bajo' => '🏛️ Capital Bienestar bajo',
             'comite_vencido' => '📅 Comité vencido',
             'auditoria_elevada' => '🔍 Auditoría > $500k',
             'pagare_proximo' => '📄 Pagare próximo',
@@ -134,6 +143,9 @@ class ServicioTiendaCritica
 
             $capTot = $this->limpiarMonto($store['Cap_Tot'] ?? '0');
             if ($capTot > 0 && $capTot <= 20000) $count++;
+
+            $capDic = $this->limpiarMonto($store['Cap_Dic'] ?? '0');
+            if ($capDic > 0 && $capDic <= 20000) $count++;
 
             $vigencia = $this->fecha->parsear($store['Vigencia'] ?? '');
             if ($vigencia !== null && $vigencia->isPast()) $count++;

@@ -29,6 +29,7 @@ class CriticalStoresController extends Controller
         $filters = [
             'almacen' => trim($request->query('almacen', '')),
             'nivel' => $request->query('nivel', ''),
+            'cap_dic_bajo' => $request->query('cap_dic_bajo', ''),
         ];
 
         $evaluated = collect($stores)->map(function ($store) {
@@ -44,6 +45,12 @@ class CriticalStoresController extends Controller
             }
             if ($filters['nivel'] !== '' && $store['_critico']['level'] !== $filters['nivel']) {
                 return false;
+            }
+            if ($filters['cap_dic_bajo'] !== '') {
+                $active = $store['_critico']['conditions']['capital_dictaminado_bajo'] ?? false;
+                if (($filters['cap_dic_bajo'] === 'si' && !$active) || ($filters['cap_dic_bajo'] === 'no' && $active)) {
+                    return false;
+                }
             }
             return true;
         })->values()->all();

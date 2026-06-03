@@ -78,12 +78,20 @@
  <option value="verde" {{ $filters['nivel'] === 'verde' ? 'selected' : '' }}>🟢 Normal</option>
  </select>
  </div>
- <div class="flex gap-2">
- <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Filtrar</button>
- <a href="{{ url('/informacion-tiendas') }}" class="bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-semibold transition inline-block">Limpiar</a>
- <a href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition inline-block">⬇ CSV</a>
- </div>
- </form>
+  <div class="min-w-[150px]">
+  <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Cap. Bienestar ≤ $20k</label>
+  <select name="cap_dic_bajo" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800">
+  <option value="">Todas</option>
+  <option value="si" {{ ($filters['cap_dic_bajo'] ?? '') === 'si' ? 'selected' : '' }}>🔴 Sí</option>
+  <option value="no" {{ ($filters['cap_dic_bajo'] ?? '') === 'no' ? 'selected' : '' }}>🟢 No</option>
+  </select>
+  </div>
+  <div class="flex gap-2">
+  <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Filtrar</button>
+  <a href="{{ url('/informacion-tiendas') }}" class="bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-semibold transition inline-block">Limpiar</a>
+  <a href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition inline-block">⬇ CSV</a>
+  </div>
+  </form>
  </div>
 
  {{-- Column toggles --}}
@@ -138,15 +146,16 @@
  var allStores = @json($stores);
  var currentPage = 1;
 
- var FACTOR_KEYS = ['capital_bajo', 'comite_vencido', 'auditoria_elevada', 'pagare_proximo', 'rotacion_baja', 'asamblea_pendiente'];
- var FACTOR_LABELS = {
- capital_bajo: 'Capital bajo',
- comite_vencido: 'Comité vencido',
- auditoria_elevada: 'Auditoría > $500k',
- pagare_proximo: 'Pagare próximo',
- rotacion_baja: 'Rotación baja',
- asamblea_pendiente: 'Asamblea pendiente',
- };
+  var FACTOR_KEYS = ['capital_bajo', 'capital_dictaminado_bajo', 'comite_vencido', 'auditoria_elevada', 'pagare_proximo', 'rotacion_baja', 'asamblea_pendiente'];
+  var FACTOR_LABELS = {
+  capital_bajo: 'Capital bajo',
+  capital_dictaminado_bajo: 'Capital Bienestar bajo',
+  comite_vencido: 'Comité vencido',
+  auditoria_elevada: 'Auditoría > $500k',
+  pagare_proximo: 'Pagare próximo',
+  rotacion_baja: 'Rotación baja',
+  asamblea_pendiente: 'Asamblea pendiente',
+  };
 
  var columnGroups = {
  General: ['Estado', 'Nombre_Almacen', 'Municipio'],
@@ -192,9 +201,10 @@
  if (!e.conditions || !e.labels) return '<span class="text-gray-400 dark:text-gray-500 text-xs">Sin incidencias</span>';
  var active = FACTOR_KEYS.filter(function (k) { return e.conditions[k]; });
  if (active.length === 0) return '<span class="text-gray-400 dark:text-gray-500 text-xs">Sin incidencias</span>';
- var factorStyles = {
- capital_bajo: ['bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700', '💰'],
- comite_vencido: ['bg-red-100 text-red-800 border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700', '📅'],
+  var factorStyles = {
+  capital_bajo: ['bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700', '💰'],
+  capital_dictaminado_bajo: ['bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-700', '🏛️'],
+  comite_vencido: ['bg-red-100 text-red-800 border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700', '📅'],
  auditoria_elevada: ['bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700', '🔍'],
  pagare_proximo: ['bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700', '📄'],
  rotacion_baja: ['bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700', '📉'],
