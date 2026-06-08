@@ -22,6 +22,7 @@ class ServicioAuditoriaTest extends TestCase
             'Vigencia' => '2030-01-01',
             'Imp_Res_Audi_Mes' => '100000',
             'Cap_Tot' => '100000',
+            'Cap_Dic' => '100000',
             'Vta_Mes' => '200000',
             'Fch_Audit' => now()->subMonth()->format('Y-m-d'),
         ];
@@ -38,6 +39,7 @@ class ServicioAuditoriaTest extends TestCase
             'Vigencia' => '2020-01-01',
             'Imp_Res_Audi_Mes' => '100000',
             'Cap_Tot' => '100000',
+            'Cap_Dic' => '100000',
             'Vta_Mes' => '200000',
             'Fch_Audit' => now()->subMonth()->format('Y-m-d'),
         ];
@@ -53,6 +55,7 @@ class ServicioAuditoriaTest extends TestCase
             'Vigencia' => '2030-01-01',
             'Imp_Res_Audi_Mes' => '600000',
             'Cap_Tot' => '100000',
+            'Cap_Dic' => '100000',
             'Vta_Mes' => '200000',
             'Fch_Audit' => now()->subMonth()->format('Y-m-d'),
         ];
@@ -68,7 +71,8 @@ class ServicioAuditoriaTest extends TestCase
             'Vigencia' => '2030-01-01',
             'Imp_Res_Audi_Mes' => '100000',
             'Cap_Tot' => '100000',
-            'Vta_Mes' => '100000',
+            'Cap_Dic' => '100000',
+            'Vta_Mes' => '40000',
             'Fch_Audit' => now()->subMonth()->format('Y-m-d'),
         ];
 
@@ -83,6 +87,7 @@ class ServicioAuditoriaTest extends TestCase
             'Vigencia' => '2030-01-01',
             'Imp_Res_Audi_Mes' => '100000',
             'Cap_Tot' => '100000',
+            'Cap_Dic' => '100000',
             'Vta_Mes' => '200000',
             'Fch_Audit' => '',
         ];
@@ -98,6 +103,7 @@ class ServicioAuditoriaTest extends TestCase
             'Vigencia' => '2030-01-01',
             'Imp_Res_Audi_Mes' => '100000',
             'Cap_Tot' => '100000',
+            'Cap_Dic' => '100000',
             'Vta_Mes' => '200000',
             'Fch_Audit' => now()->subMonths(6)->format('Y-m-d'),
         ];
@@ -113,6 +119,7 @@ class ServicioAuditoriaTest extends TestCase
             'Vigencia' => '2030-01-01',
             'Imp_Res_Audi_Mes' => '100000',
             'Cap_Tot' => '100000',
+            'Cap_Dic' => '100000',
             'Vta_Mes' => '200000',
             'Fch_Audit' => now()->subMonth()->format('Y-m-d'),
         ];
@@ -128,6 +135,7 @@ class ServicioAuditoriaTest extends TestCase
             'Vigencia' => '2030-01-01',
             'Imp_Res_Audi_Mes' => '100000',
             'Cap_Tot' => '100000',
+            'Cap_Dic' => '100000',
             'Vta_Mes' => '200000',
             'Fch_Audit' => '',
         ];
@@ -143,6 +151,7 @@ class ServicioAuditoriaTest extends TestCase
             'Vigencia' => now()->addDays(15)->format('Y-m-d'),
             'Imp_Res_Audi_Mes' => '100000',
             'Cap_Tot' => '100000',
+            'Cap_Dic' => '100000',
             'Vta_Mes' => '200000',
             'Fch_Audit' => '',
         ];
@@ -158,6 +167,7 @@ class ServicioAuditoriaTest extends TestCase
             'Vigencia' => '',
             'Imp_Res_Audi_Mes' => '100000',
             'Cap_Tot' => '100000',
+            'Cap_Dic' => '100000',
             'Vta_Mes' => '200000',
             'Fch_Audit' => '',
         ];
@@ -173,6 +183,7 @@ class ServicioAuditoriaTest extends TestCase
             'Vigencia' => '2020-01-01',
             'Imp_Res_Audi_Mes' => '600000',
             'Cap_Tot' => '100000',
+            'Cap_Dic' => '100000',
             'Vta_Mes' => '100000',
             'Fch_Audit' => now()->subYears(2)->format('Y-m-d'),
         ];
@@ -188,6 +199,7 @@ class ServicioAuditoriaTest extends TestCase
             'Vigencia' => '2020-01-01',
             'Imp_Res_Audi_Mes' => '100000',
             'Cap_Tot' => '100000',
+            'Cap_Dic' => '100000',
             'Vta_Mes' => '200000',
             'Fch_Audit' => now()->subMonth()->format('Y-m-d'),
         ];

@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Servicios\ServicioGoogleSheet;
 use App\Servicios\ServicioConectividad;
 use App\Servicios\ServicioExportacion;
 use App\Servicios\ServicioFiltro;
+use App\Servicios\ServicioGoogleSheet;
 use Illuminate\Http\Request;
 
 class ConnectivityController extends Controller
@@ -42,25 +42,40 @@ class ConnectivityController extends Controller
         $filtered = collect($stores)->filter(function ($store) use ($filters) {
             if ($filters['almacen'] !== '') {
                 $nombre = $store['Nombre_Almacen'] ?? '';
-                if (!str_contains(mb_strtoupper($nombre), mb_strtoupper($filters['almacen']))) {
+                if (! str_contains(mb_strtoupper($nombre), mb_strtoupper($filters['almacen']))) {
                     return false;
                 }
             }
-            if ($filters['telefono'] === 'si' && (strtoupper(trim($store['TELEFONIA'] ?? '')) !== 'S')) return false;
-            if ($filters['telefono'] === 'no' && (strtoupper(trim($store['TELEFONIA'] ?? '')) !== 'N')) return false;
-            if ($filters['senial'] === 'si' && (strtoupper(trim($store['Señal de celular'] ?? '')) !== 'S')) return false;
-            if ($filters['senial'] === 'no' && (strtoupper(trim($store['Señal de celular'] ?? '')) !== 'N')) return false;
-            if ($filters['internet'] === 'si' && (strtoupper(trim($store['INTERNET'] ?? '')) !== 'S')) return false;
-            if ($filters['internet'] === 'no' && (strtoupper(trim($store['INTERNET'] ?? '')) !== 'N')) return false;
+            if ($filters['telefono'] === 'si' && (strtoupper(trim($store['TELEFONIA'] ?? '')) !== 'S')) {
+                return false;
+            }
+            if ($filters['telefono'] === 'no' && (strtoupper(trim($store['TELEFONIA'] ?? '')) !== 'N')) {
+                return false;
+            }
+            if ($filters['senial'] === 'si' && (strtoupper(trim($store['Señal de celular'] ?? '')) !== 'S')) {
+                return false;
+            }
+            if ($filters['senial'] === 'no' && (strtoupper(trim($store['Señal de celular'] ?? '')) !== 'N')) {
+                return false;
+            }
+            if ($filters['internet'] === 'si' && (strtoupper(trim($store['INTERNET'] ?? '')) !== 'S')) {
+                return false;
+            }
+            if ($filters['internet'] === 'no' && (strtoupper(trim($store['INTERNET'] ?? '')) !== 'N')) {
+                return false;
+            }
             if ($filters['compania'] !== '') {
                 $comp = strtoupper(trim($store['Compañía'] ?? ''));
                 $filterComp = strtoupper(trim($filters['compania']));
                 if ($filterComp === 'SIN DATO' || $filterComp === 'SIN_DATO') {
-                    if ($comp !== '' && $comp !== 'SIN DATO' && $comp !== 'NINGUNO') return false;
+                    if ($comp !== '' && $comp !== 'SIN DATO' && $comp !== 'NINGUNO') {
+                        return false;
+                    }
                 } elseif ($comp !== $filterComp) {
                     return false;
                 }
             }
+
             return true;
         })->values()->all();
 
@@ -86,6 +101,4 @@ class ConnectivityController extends Controller
             'updatedAt' => cache()->get('dashboard_updated_at'),
         ]);
     }
-
-
 }

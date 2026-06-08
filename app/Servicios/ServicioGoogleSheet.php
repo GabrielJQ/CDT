@@ -26,10 +26,12 @@ class ServicioGoogleSheet
         try {
             $stores = $this->fetchDesdeSheet();
             $this->guardarEnCache($stores);
+
             return $stores;
         } catch (\RuntimeException $e) {
             $this->ultimoError = $e->getMessage();
-            Log::error('[GoogleSheet] ' . $e->getMessage());
+            Log::error('[GoogleSheet] '.$e->getMessage());
+
             return null;
         }
     }
@@ -45,13 +47,13 @@ class ServicioGoogleSheet
         try {
             $response = Http::withoutVerifying()->timeout(30)->get($url);
         } catch (\Exception $e) {
-            throw new \RuntimeException('No se pudo conectar con Google Sheets: ' . $e->getMessage());
+            throw new \RuntimeException('No se pudo conectar con Google Sheets: '.$e->getMessage());
         }
 
         if ($response->failed()) {
             throw new \RuntimeException(
-                'Google Sheets respondió con código ' . $response->status()
-                . ' al descargar el archivo CSV'
+                'Google Sheets respondió con código '.$response->status()
+                .' al descargar el archivo CSV'
             );
         }
 
@@ -70,8 +72,8 @@ class ServicioGoogleSheet
 
         if (count($lines) < 8) {
             throw new \RuntimeException(
-                'El archivo CSV tiene solo ' . count($lines)
-                . ' líneas; se requieren al menos 8 (6 metadatos + 1 encabezados + 1 datos)'
+                'El archivo CSV tiene solo '.count($lines)
+                .' líneas; se requieren al menos 8 (6 metadatos + 1 encabezados + 1 datos)'
             );
         }
 
@@ -81,8 +83,8 @@ class ServicioGoogleSheet
         $headerCount = count(array_filter(array_map('trim', $rawHeaders)));
         if ($headerCount < 5) {
             throw new \RuntimeException(
-                'La fila de encabezados (fila 7) tiene solo ' . $headerCount
-                . ' columnas válidas; se esperaban ~135'
+                'La fila de encabezados (fila 7) tiene solo '.$headerCount
+                .' columnas válidas; se esperaban ~135'
             );
         }
 
@@ -90,19 +92,24 @@ class ServicioGoogleSheet
         $omisiones = 0;
         for ($i = 7; $i < count($lines); $i++) {
             $line = trim($lines[$i]);
-            if ($line === '') continue;
+            if ($line === '') {
+                continue;
+            }
 
             $row = str_getcsv($line);
 
             if (count($row) < count($rawHeaders) * 0.5) {
                 $omisiones++;
+
                 continue;
             }
 
             $store = [];
             foreach ($rawHeaders as $idx => $header) {
                 $h = trim($header);
-                if ($h === '') continue;
+                if ($h === '') {
+                    continue;
+                }
                 $store[$h] = trim($row[$idx] ?? '');
             }
             $stores[] = $store;
@@ -132,10 +139,12 @@ class ServicioGoogleSheet
         try {
             $stores = $this->fetchDesdeSheet();
             $this->guardarEnCache($stores);
+
             return $stores;
         } catch (\RuntimeException $e) {
             $this->ultimoError = $e->getMessage();
-            Log::error('[GoogleSheet] Refrescar: ' . $e->getMessage());
+            Log::error('[GoogleSheet] Refrescar: '.$e->getMessage());
+
             return null;
         }
     }

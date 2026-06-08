@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Servicios\ServicioGoogleSheet;
-use App\Servicios\ServicioConectividad;
-use App\Servicios\ServicioTiendaCritica;
 use App\Servicios\ServicioAuditoria;
+use App\Servicios\ServicioConectividad;
 use App\Servicios\ServicioFecha;
+use App\Servicios\ServicioGoogleSheet;
+use App\Servicios\ServicioTiendaCritica;
 
 class DashboardController extends Controller
 {
@@ -60,8 +60,11 @@ class DashboardController extends Controller
         $count = 0;
         foreach ($stores as $store) {
             $fecha = $this->fecha->parsear($store['Fecha_Apertura'] ?? '');
-            if ($fecha && $fecha->year === $now->year && $fecha->month === $now->month) $count++;
+            if ($fecha && $fecha->year === $now->year && $fecha->month === $now->month) {
+                $count++;
+            }
         }
+
         return $count;
     }
 
@@ -78,6 +81,7 @@ class DashboardController extends Controller
                 $sinCoordenadas++;
             }
         }
+
         return compact('conCoordenadas', 'sinCoordenadas');
     }
 
@@ -90,9 +94,12 @@ class DashboardController extends Controller
             $fecha = $this->fecha->parsear($store['Fecha_Apertura'] ?? '');
             if ($fecha) {
                 $total++;
-                if ($fecha->year === $now->year) $esteAnio++;
+                if ($fecha->year === $now->year) {
+                    $esteAnio++;
+                }
             }
         }
+
         return compact('total', 'esteAnio');
     }
 
@@ -103,7 +110,7 @@ class DashboardController extends Controller
         $now = now();
         for ($i = 11; $i >= 0; $i--) {
             $date = (clone $now)->subMonths($i);
-            $meses[$date->format('Y-m')] = ['label' => $nombres[(int)$date->format('n') - 1], 'count' => 0];
+            $meses[$date->format('Y-m')] = ['label' => $nombres[(int) $date->format('n') - 1], 'count' => 0];
         }
         foreach ($stores as $store) {
             $fecha = $this->fecha->parsear($store['Fecha_Apertura'] ?? '');
@@ -114,6 +121,7 @@ class DashboardController extends Controller
                 }
             }
         }
+
         return array_values($meses);
     }
 
@@ -131,9 +139,13 @@ class DashboardController extends Controller
                     break;
                 }
             }
-            if ($hasEmpty) $incompletos++;
-            else $completos++;
+            if ($hasEmpty) {
+                $incompletos++;
+            } else {
+                $completos++;
+            }
         }
+
         return compact('incompletos', 'completos');
     }
 }

@@ -30,7 +30,7 @@ class ServicioFechaTest extends TestCase
         $this->assertNull($this->servicio->parsear('0'));
     }
 
-    public function test_formato_Y_m_d(): void
+    public function test_formato_y_m_d(): void
     {
         $fecha = $this->servicio->parsear('2026-01-15');
         $this->assertNotNull($fecha);
@@ -39,7 +39,7 @@ class ServicioFechaTest extends TestCase
         $this->assertSame(15, $fecha->day);
     }
 
-    public function test_formato_d_m_Y(): void
+    public function test_formato_d_m_y(): void
     {
         $fecha = $this->servicio->parsear('15/01/2026');
         $this->assertNotNull($fecha);
@@ -48,7 +48,7 @@ class ServicioFechaTest extends TestCase
         $this->assertSame(15, $fecha->day);
     }
 
-    public function test_formato_Y_m_d_barra(): void
+    public function test_formato_y_m_d_barra(): void
     {
         $fecha = $this->servicio->parsear('2026/01/15');
         $this->assertNotNull($fecha);
@@ -57,7 +57,7 @@ class ServicioFechaTest extends TestCase
         $this->assertSame(15, $fecha->day);
     }
 
-    public function test_formato_d_m_Y_guion(): void
+    public function test_formato_d_m_y_guion(): void
     {
         $fecha = $this->servicio->parsear('15-01-2026');
         $this->assertNotNull($fecha);

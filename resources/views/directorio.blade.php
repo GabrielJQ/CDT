@@ -44,20 +44,24 @@
  </div>
  </div>
 
- <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
- <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-purple-500">
- <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">🏛️ Comités Incomp.</p>
- <p class="text-2xl font-bold text-purple-600">{{ $globalStats['comitesIncompletos'] ?? 0 }}</p>
- </div>
- <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-indigo-500">
- <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">🗳️ Asambleas Mes</p>
- <p class="text-2xl font-bold text-indigo-600">{{ $globalStats['asambleasMes'] ?? 0 }}</p>
- </div>
- <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-pink-500">
- <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">💸 Faltante Cap.</p>
- <p class="text-2xl font-bold text-pink-600">{{ $globalStats['tiendasFaltante'] ?? 0 }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">(${{ number_format($globalStats['importeFaltante'] ?? 0, 2) }})</span></p>
- </div>
- </div>
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-purple-500">
+  <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">🏛️ Comités Incomp.</p>
+  <p class="text-2xl font-bold text-purple-600">{{ $globalStats['comitesIncompletos'] ?? 0 }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-indigo-500">
+  <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">🗳️ Asambleas Mes</p>
+  <p class="text-2xl font-bold text-indigo-600">{{ $globalStats['asambleasMes'] ?? 0 }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-pink-500">
+  <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">💸 Faltante Cap.</p>
+  <p class="text-2xl font-bold text-pink-600">{{ $globalStats['tiendasFaltante'] ?? 0 }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">(${{ number_format($globalStats['importeFaltante'] ?? 0, 2) }})</span></p>
+  </div>
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-blue-500">
+  <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">📄 Pagarés vencidos</p>
+  <p class="text-2xl font-bold text-blue-600">{{ $globalStats['pagaresVencidos'] ?? 0 }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">(${{ number_format($globalStats['importePagaresVencidos'] ?? 0, 2) }})</span></p>
+  </div>
+  </div>
 
  {{-- Filters --}}
  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 mb-4">
@@ -140,15 +144,17 @@
 <script>
  document.addEventListener('DOMContentLoaded', function () {
  var PAGE_SIZE = 25;
- var allStores = @json($stores);
- var filtered = [];
- var currentPage = 1;
+  var allStores = @json($stores);
+  var filtered = [];
+  var currentPage = 1;
+  var sortColumn = null;
+  var sortDirection = 'asc';
 
  var columnGroups = {
  ID: ['Nombre_Almacen', 'No_Tienda_Actual', 'Municipio', 'Fecha_Apertura'],
  Contacto: ['TELEFONIA', 'Señal de celular', 'Compañía', 'INTERNET'],
  Ventas: ['Vta_Mes', 'VtaNeta_Mes', 'Vta_Acu', 'VtaNeta_Acu', 'Bon_Mes'],
- Capital: ['Cap_Tot', 'Cap_Com', 'Cap_Dic', 'Pagare_Monto'],
+  Capital: ['Cap_Tot', 'Cap_Com', 'Cap_Dic', 'Pagare_Monto', 'Pagare_Fecha'],
  Comite: ['Fec_CRA', 'Vigencia', 'Nom_Pre_CRA', 'Nom_Pre_Sup_CRA', 'Nom_Sec_CRA', 'Nom_Sec_Sup_CRA', 'Nom_Tes_CRA', 'Nom_Vcv_CRA', 'Nom_Voc_Gen_CRA'],
  Auditoria: ['Fch_Audit', 'Imp_Res_Audi_Mes', 'Audit_Realiza_Mes'],
  Ubicacion: ['Latitud', 'Longitud'],
@@ -162,7 +168,7 @@
  'Vta_Mes': 'Vta Mes', 'VtaNeta_Mes': 'Vta Neta', 'Vta_Acu': 'Vta Acum',
  'VtaNeta_Acu': 'Vta Neta Acum', 'Bon_Mes': 'Bon Mes',
  'Cap_Tot': 'Cap Total', 'Cap_Com': 'Cap Com', 'Cap_Dic': 'Cap Dic',
- 'Pagare_Monto': 'Pagare', 'Fec_CRA': 'Fec CRA', 'Vigencia': 'Vigencia',
+  'Pagare_Monto': 'Pagare', 'Pagare_Fecha': 'Pagare Fecha', 'Fec_CRA': 'Fec CRA', 'Vigencia': 'Vigencia',
  'Nom_Pre_CRA': 'Presidente', 'Nom_Pre_Sup_CRA': 'Pres. Suplente',
  'Nom_Sec_CRA': 'Secretario', 'Nom_Sec_Sup_CRA': 'Sec. Suplente',
  'Nom_Tes_CRA': 'Tesorero', 'Nom_Vcv_CRA': 'Vocal', 'Nom_Voc_Gen_CRA': 'Vocal General',
@@ -172,7 +178,7 @@
  };
 
  var moneyColumns = {
- Cap_Tot: true, Cap_Com: true, Cap_Dic: true, Pagare_Monto: true,
+  Cap_Tot: true, Cap_Com: true, Cap_Dic: true, Pagare_Monto: true, Pagare_Fecha: true,
  Vta_Mes: true, VtaNeta_Mes: true, Vta_Acu: true, VtaNeta_Acu: true, Bon_Mes: true,
  Imp_Res_Audi_Mes: true,
  };
@@ -180,7 +186,7 @@
  var trackedColumns = [
  'TELEFONIA', 'CORREO', 'Señal de celular', 'Compañía', 'INTERNET',
  'Vta_Mes', 'VtaNeta_Mes', 'Cap_Tot', 'Cap_Com', 'Cap_Dic',
- 'Pagare_Monto', 'Fec_CRA', 'Vigencia', 'Fch_Audit', 'Imp_Res_Audi_Mes',
+  'Pagare_Monto', 'Pagare_Fecha', 'Fec_CRA', 'Vigencia', 'Fch_Audit', 'Imp_Res_Audi_Mes',
  'Audit_Realiza_Mes', 'Latitud', 'Longitud', 'Direccion',
  'Nom_Pre_CRA', 'Nom_Pre_Sup_CRA', 'Nom_Sec_CRA', 'Nom_Sec_Sup_CRA',
  'Nom_Tes_CRA', 'Nom_Vcv_CRA', 'Nom_Voc_Gen_CRA',
@@ -237,16 +243,18 @@
  var totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
  if (currentPage > totalPages) currentPage = totalPages;
 
- var start = (currentPage - 1) * PAGE_SIZE;
- var end = Math.min(start + PAGE_SIZE, filtered.length);
- var pageData = filtered.slice(start, end);
+  var sorted = sortData(filtered);
+  var start = (currentPage - 1) * PAGE_SIZE;
+  var end = Math.min(start + PAGE_SIZE, sorted.length);
+  var pageData = sorted.slice(start, end);
 
  var header = document.getElementById('dir-header');
  var body = document.getElementById('dir-body');
 
- header.innerHTML = cols.map(function (c) {
- return '<th class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase bg-gray-50 dark:bg-gray-800">' + (columnLabels[c] || c) + '</th>';
- }).join('');
+  header.innerHTML = cols.map(function (c) {
+  var arrow = c === sortColumn ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : '';
+  return '<th data-col="' + c + '" class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase bg-gray-50 dark:bg-gray-800 cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-200">' + (columnLabels[c] || c) + arrow + '</th>';
+  }).join('');
 
  body.innerHTML = pageData.map(function (store) {
  var noCapital = isEmpty(getValue(store, 'Cap_Tot'));
@@ -288,11 +296,29 @@
  return '$' + num.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
  }
 
- function escapeHtml(str) {
- var d = document.createElement('div');
- d.textContent = str;
- return d.innerHTML;
- }
+  function sortData(arr) {
+  if (!sortColumn) return arr;
+  var sorted = arr.slice().sort(function (a, b) {
+  var va = getValue(a, sortColumn);
+  var vb = getValue(b, sortColumn);
+  if (isEmpty(va) && isEmpty(vb)) return 0;
+  if (isEmpty(va)) return 1;
+  if (isEmpty(vb)) return -1;
+  if (moneyColumns[sortColumn]) {
+  var na = parseFloat(String(va).replace(/,/g, '')) || 0;
+  var nb = parseFloat(String(vb).replace(/,/g, '')) || 0;
+  return sortDirection === 'asc' ? na - nb : nb - na;
+  }
+  return sortDirection === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+  });
+  return sorted;
+  }
+
+  function escapeHtml(str) {
+  var d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+  }
 
  function renderPagination(totalPages) {
  var container = document.getElementById('page-numbers');
@@ -352,8 +378,22 @@
  if (currentPage < total) { currentPage++; renderTable(); }
  });
 
- var storageKey = 'col_prefs_directorio';
- function saveColPrefs() {
+  document.getElementById('dir-header').addEventListener('click', function (e) {
+  var th = e.target.closest('th[data-col]');
+  if (!th) return;
+  var col = th.dataset.col;
+  if (sortColumn === col) {
+  sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+  } else {
+  sortColumn = col;
+  sortDirection = 'asc';
+  }
+  currentPage = 1;
+  renderTable();
+  });
+
+  var storageKey = 'col_prefs_directorio';
+  function saveColPrefs() {
  var prefs = {};
  document.querySelectorAll('[data-group] input').forEach(function (cb) {
  if (!cb.disabled) {

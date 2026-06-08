@@ -12,9 +12,9 @@ class ServicioAuditoria
     {
         $vigencia = $this->fecha->parsear($store['Vigencia'] ?? '');
         $impuesto = $this->limpiarMonto($store['Imp_Res_Audi_Mes'] ?? '0');
-        $capTot = $this->limpiarMonto($store['Cap_Tot'] ?? '0');
+        $capDic = $this->limpiarMonto($store['Cap_Dic'] ?? '0');
         $vtaMes = $this->limpiarMonto($store['Vta_Mes'] ?? '0');
-        $rotacion = $capTot > 0 ? $vtaMes / $capTot : 0;
+        $rotacion = $capDic > 0 ? $vtaMes / $capDic : 0;
         $fchAuditRaw = trim($store['Fch_Audit'] ?? '');
         $fchAudit = $this->fecha->parsear($fchAuditRaw);
         $mesesSinAuditoria = $fchAudit ? abs($fchAudit->diffInMonths(now())) : null;
@@ -31,24 +31,40 @@ class ServicioAuditoria
         }
 
         $conditions = [];
-        if ($vigencia !== null && $vigencia->isPast()) $conditions[] = 'comite_vencido';
-        if ($impuesto > 500000) $conditions[] = 'auditoria_alta';
-        if ($rotacion < 1.5) $conditions[] = 'rotacion_baja';
+        if ($vigencia !== null && $vigencia->isPast()) {
+            $conditions[] = 'comite_vencido';
+        }
+        if ($impuesto > 500000) {
+            $conditions[] = 'auditoria_alta';
+        }
+        if ($rotacion < 0.5) {
+            $conditions[] = 'rotacion_baja';
+        }
         $auditoriaPendiente = ($fchAudit === null) || ($mesesSinAuditoria !== null && $mesesSinAuditoria >= 3);
-        if ($auditoriaPendiente) $conditions[] = 'auditoria_pendiente';
+        if ($auditoriaPendiente) {
+            $conditions[] = 'auditoria_pendiente';
+        }
 
         $count = count($conditions);
-        if ($count >= 2) $level = 'rojo';
-        elseif ($count >= 1) $level = 'amarillo';
-        else $level = 'verde';
+        if ($count >= 2) {
+            $level = 'rojo';
+        } elseif ($count >= 1) {
+            $level = 'amarillo';
+        } else {
+            $level = 'verde';
+        }
 
         // Determinar rango de rotacion
         $rangoRotacion = '';
-        if ($rotacion == 0) $rangoRotacion = 'cero';
-        elseif ($rotacion >= 0.01 && $rotacion < 1) $rangoRotacion = 'bajo_1';
-        elseif ($rotacion >= 1 && $rotacion < 1.5) $rangoRotacion = 'bajo_1_5';
-        elseif ($rotacion >= 1.5 && $rotacion < 2) $rangoRotacion = 'mayor_1_5';
-        elseif ($rotacion >= 2) $rangoRotacion = 'mayor_2';
+        if ($rotacion == 0) {
+            $rangoRotacion = 'cero';
+        } elseif ($rotacion < 0.5) {
+            $rangoRotacion = 'critico';
+        } elseif ($rotacion < 1) {
+            $rangoRotacion = 'amarillo';
+        } else {
+            $rangoRotacion = 'optimo';
+        }
 
         $auditRealizada = (int) ($store['Audit_Realiza_Mes'] ?? 0);
         $sinAuditoriaAnio = ($fchAudit === null) || ($mesesSinAuditoria !== null && $mesesSinAuditoria >= 12);
@@ -64,10 +80,9 @@ class ServicioAuditoria
         $auditoriaPendiente = 0;
 
         $rotacionCero = 0;
-        $rotacionMenor1 = 0;
-        $rotacionMenor15 = 0;
-        $rotacionMayor15 = 0;
-        $rotacionMayor2 = 0;
+        $rotacionCritico = 0;
+        $rotacionAmarillo = 0;
+        $rotacionOptimo = 0;
 
         $auditoriasMes = 0;
         $sinAuditoriaTrimestre = 0;
@@ -76,27 +91,41 @@ class ServicioAuditoria
         foreach ($stores as $store) {
             $a = $store['_audit'] ?? [];
             $conds = $a['conditions'] ?? [];
-            if (in_array('comite_vencido', $conds)) $comitesVencidos++;
-            if (in_array('auditoria_alta', $conds)) $auditoriaAlta++;
-            if (in_array('rotacion_baja', $conds)) $rotacionBaja++;
+            if (in_array('comite_vencido', $conds)) {
+                $comitesVencidos++;
+            }
+            if (in_array('auditoria_alta', $conds)) {
+                $auditoriaAlta++;
+            }
+            if (in_array('rotacion_baja', $conds)) {
+                $rotacionBaja++;
+            }
             if (in_array('auditoria_pendiente', $conds)) {
                 $auditoriaPendiente++;
                 $sinAuditoriaTrimestre++;
             }
 
-            if (($a['rangoRotacion'] ?? '') === 'cero') $rotacionCero++;
-            elseif (($a['rangoRotacion'] ?? '') === 'bajo_1') $rotacionMenor1++;
-            elseif (($a['rangoRotacion'] ?? '') === 'bajo_1_5') $rotacionMenor15++;
-            elseif (($a['rangoRotacion'] ?? '') === 'mayor_1_5') $rotacionMayor15++;
-            elseif (($a['rangoRotacion'] ?? '') === 'mayor_2') $rotacionMayor2++;
+            if (($a['rangoRotacion'] ?? '') === 'cero') {
+                $rotacionCero++;
+            } elseif (($a['rangoRotacion'] ?? '') === 'critico') {
+                $rotacionCritico++;
+            } elseif (($a['rangoRotacion'] ?? '') === 'amarillo') {
+                $rotacionAmarillo++;
+            } elseif (($a['rangoRotacion'] ?? '') === 'optimo') {
+                $rotacionOptimo++;
+            }
 
-            if (($a['auditRealizada'] ?? 0) > 0) $auditoriasMes++;
-            if ($a['sinAuditoriaAnio'] ?? false) $sinAuditoriaAnio++;
+            if (($a['auditRealizada'] ?? 0) > 0) {
+                $auditoriasMes++;
+            }
+            if ($a['sinAuditoriaAnio'] ?? false) {
+                $sinAuditoriaAnio++;
+            }
         }
 
         return compact(
             'comitesVencidos', 'auditoriaAlta', 'rotacionBaja', 'auditoriaPendiente',
-            'rotacionCero', 'rotacionMenor1', 'rotacionMenor15', 'rotacionMayor15', 'rotacionMayor2',
+            'rotacionCero', 'rotacionCritico', 'rotacionAmarillo', 'rotacionOptimo',
             'auditoriasMes', 'sinAuditoriaTrimestre', 'sinAuditoriaAnio'
         );
     }
@@ -110,19 +139,27 @@ class ServicioAuditoria
 
         foreach ($stores as $store) {
             $vigencia = $this->fecha->parsear($store['Vigencia'] ?? '');
-            if ($vigencia !== null && $vigencia->isPast()) $comitesVencidos++;
+            if ($vigencia !== null && $vigencia->isPast()) {
+                $comitesVencidos++;
+            }
 
             $impuesto = $this->limpiarMonto($store['Imp_Res_Audi_Mes'] ?? '0');
-            if ($impuesto > 500000) $auditoriaAlta++;
+            if ($impuesto > 500000) {
+                $auditoriaAlta++;
+            }
 
-            $capTot = $this->limpiarMonto($store['Cap_Tot'] ?? '0');
+            $capDic = $this->limpiarMonto($store['Cap_Dic'] ?? '0');
             $vtaMes = $this->limpiarMonto($store['Vta_Mes'] ?? '0');
-            $rotacion = $capTot > 0 ? $vtaMes / $capTot : 0;
-            if ($rotacion < 1.5) $rotacionBaja++;
+            $rotacion = $capDic > 0 ? $vtaMes / $capDic : 0;
+            if ($rotacion < 0.5) {
+                $rotacionBaja++;
+            }
 
             $fchAudit = $this->fecha->parsear($store['Fch_Audit'] ?? '');
             $mesesSinAuditoria = $fchAudit ? abs($fchAudit->diffInMonths(now())) : null;
-            if ($fchAudit === null || ($mesesSinAuditoria !== null && $mesesSinAuditoria >= 3)) $auditoriaPendiente++;
+            if ($fchAudit === null || ($mesesSinAuditoria !== null && $mesesSinAuditoria >= 3)) {
+                $auditoriaPendiente++;
+            }
         }
 
         return compact('comitesVencidos', 'auditoriaAlta', 'rotacionBaja', 'auditoriaPendiente');

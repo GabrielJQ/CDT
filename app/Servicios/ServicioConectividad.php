@@ -42,9 +42,13 @@ class ServicioConectividad
         $companiaCount = [];
         foreach ($stores as $store) {
             $senial = strtoupper(trim($store['Señal de celular'] ?? ''));
-            if ($senial !== 'S') continue;
+            if ($senial !== 'S') {
+                continue;
+            }
             $comp = trim($store['Compañía'] ?? 'Sin dato');
-            if ($comp === '') $comp = 'Sin dato';
+            if ($comp === '') {
+                $comp = 'Sin dato';
+            }
             $companiaCount[$comp] = ($companiaCount[$comp] ?? 0) + 1;
         }
         arsort($companiaCount);
@@ -72,7 +76,9 @@ class ServicioConectividad
             $yes = 0;
             foreach ($stores as $store) {
                 $val = strtoupper(trim($store[$col] ?? ''));
-                if ($val === 'S') $yes++;
+                if ($val === 'S') {
+                    $yes++;
+                }
             }
             $kpis[$col] = [
                 'label' => $info['label'],
@@ -93,8 +99,11 @@ class ServicioConectividad
             $tel = strtoupper(trim($store['TELEFONIA'] ?? ''));
             $int = strtoupper(trim($store['INTERNET'] ?? ''));
             $cel = strtoupper(trim($store['Señal de celular'] ?? ''));
-            if ($tel !== 'S' && $int !== 'S' && $cel !== 'S') $count++;
+            if ($tel !== 'S' && $int !== 'S' && $cel !== 'S') {
+                $count++;
+            }
         }
+
         return $count;
     }
 }

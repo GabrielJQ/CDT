@@ -25,7 +25,7 @@ class ServicioConectividadTest extends TestCase
         $this->assertSame(0, $kpis['TELEFONIA']['undef']);
     }
 
-    public function test_calcular_kpis_todo_S(): void
+    public function test_calcular_kpis_todo_s(): void
     {
         $stores = [[
             'TELEFONIA' => 'S',

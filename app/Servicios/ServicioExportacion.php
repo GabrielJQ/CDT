@@ -10,7 +10,7 @@ class ServicioExportacion
     {
         $callback = function () use ($data, $columns) {
             $output = fopen('php://output', 'w');
-            fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+            fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
 
             fputcsv($output, array_values($columns));
 
@@ -48,6 +48,7 @@ class ServicioExportacion
             array_walk_recursive($val, function ($v) use (&$flattened) {
                 $flattened[] = $v;
             });
+
             return implode('; ', $flattened);
         }
 
@@ -58,6 +59,7 @@ class ServicioExportacion
             if (method_exists($val, '__toString')) {
                 return (string) $val;
             }
+
             return '';
         }
 

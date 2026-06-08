@@ -8,7 +8,9 @@ class ServicioFecha
 {
     public function parsear(?string $value): ?Carbon
     {
-        if ($value === null || trim($value) === '' || trim($value) === '0') return null;
+        if ($value === null || trim($value) === '' || trim($value) === '0') {
+            return null;
+        }
 
         $formats = ['d/m/Y', 'Y-m-d', 'm/d/Y', 'Y/m/d', 'd-m-Y', 'm-d-Y'];
 
@@ -25,7 +27,9 @@ class ServicioFecha
 
         try {
             $date = Carbon::parse(trim($value));
-            if ($date->year > 2000) return $date;
+            if ($date->year > 2000) {
+                return $date;
+            }
         } catch (\Exception $e) {
             return null;
         }

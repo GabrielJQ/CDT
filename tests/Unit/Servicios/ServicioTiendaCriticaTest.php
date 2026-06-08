@@ -20,6 +20,7 @@ class ServicioTiendaCriticaTest extends TestCase
     {
         $store = [
             'Cap_Tot' => '200000',
+            'Cap_Dic' => '200000',
             'Vigencia' => '2030-01-01',
             'Imp_Res_Audi_Mes' => '100000',
             'Pagare_Fecha' => '2030-01-01',
@@ -38,7 +39,7 @@ class ServicioTiendaCriticaTest extends TestCase
     public function test_capital_bajo(): void
     {
         $store = [
-            'Cap_Tot' => '50000',
+            'Cap_Tot' => '20000',
             'Vigencia' => '2030-01-01',
             'Imp_Res_Audi_Mes' => '100000',
             'Pagare_Fecha' => '2030-01-01',
@@ -125,13 +126,13 @@ class ServicioTiendaCriticaTest extends TestCase
         $this->assertTrue($result['conditions']['auditoria_elevada']);
     }
 
-    public function test_pagare_proximo(): void
+    public function test_pagare_vencido(): void
     {
         $store = [
             'Cap_Tot' => '200000',
             'Vigencia' => '2030-01-01',
             'Imp_Res_Audi_Mes' => '100000',
-            'Pagare_Fecha' => now()->addMonth()->format('Y-m-d'),
+            'Pagare_Fecha' => now()->subYears(2)->format('Y-m-d'),
             'Vta_Mes' => '500000',
             'GDOMARG' => '',
             'Asam_Prog_Mes' => '0',
@@ -140,10 +141,10 @@ class ServicioTiendaCriticaTest extends TestCase
 
         $result = $this->servicio->evaluarTienda($store);
 
-        $this->assertTrue($result['conditions']['pagare_proximo']);
+        $this->assertTrue($result['conditions']['pagare_vencido']);
     }
 
-    public function test_pagare_lejano_no_activa(): void
+    public function test_pagare_no_vencido(): void
     {
         $store = [
             'Cap_Tot' => '200000',
@@ -158,17 +159,18 @@ class ServicioTiendaCriticaTest extends TestCase
 
         $result = $this->servicio->evaluarTienda($store);
 
-        $this->assertFalse($result['conditions']['pagare_proximo']);
+        $this->assertFalse($result['conditions']['pagare_vencido']);
     }
 
     public function test_rotacion_baja(): void
     {
         $store = [
             'Cap_Tot' => '100000',
+            'Cap_Dic' => '100000',
             'Vigencia' => '2030-01-01',
             'Imp_Res_Audi_Mes' => '100000',
             'Pagare_Fecha' => '2030-01-01',
-            'Vta_Mes' => '100000',
+            'Vta_Mes' => '40000',
             'GDOMARG' => '',
             'Asam_Prog_Mes' => '0',
             'Asam_Real_Mes' => '0',
@@ -183,6 +185,7 @@ class ServicioTiendaCriticaTest extends TestCase
     {
         $store = [
             'Cap_Tot' => '100000',
+            'Cap_Dic' => '100000',
             'Vigencia' => '2030-01-01',
             'Imp_Res_Audi_Mes' => '100000',
             'Pagare_Fecha' => '2030-01-01',

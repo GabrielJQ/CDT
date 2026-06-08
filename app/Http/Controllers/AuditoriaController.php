@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Servicios\ServicioGoogleSheet;
 use App\Servicios\ServicioAuditoria;
 use App\Servicios\ServicioExportacion;
 use App\Servicios\ServicioFiltro;
+use App\Servicios\ServicioGoogleSheet;
 use Illuminate\Http\Request;
 
 class AuditoriaController extends Controller
@@ -44,7 +44,7 @@ class AuditoriaController extends Controller
         $filtered = $evaluated->filter(function ($store) use ($filters) {
             if ($filters['almacen'] !== '') {
                 $nombre = $store['Nombre_Almacen'] ?? '';
-                if (!str_contains(mb_strtoupper($nombre), mb_strtoupper($filters['almacen']))) {
+                if (! str_contains(mb_strtoupper($nombre), mb_strtoupper($filters['almacen']))) {
                     return false;
                 }
             }
@@ -65,7 +65,7 @@ class AuditoriaController extends Controller
             if ($filters['filtro_500k'] !== '') {
                 $impuesto = $store['_audit']['impuesto'] ?? 0;
                 $esAlto = $impuesto > 500000;
-                if (($filters['filtro_500k'] === 'si' && !$esAlto) || ($filters['filtro_500k'] === 'no' && $esAlto)) {
+                if (($filters['filtro_500k'] === 'si' && ! $esAlto) || ($filters['filtro_500k'] === 'no' && $esAlto)) {
                     return false;
                 }
             }
@@ -82,15 +82,26 @@ class AuditoriaController extends Controller
                 $mesesSinAuditoria = $store['_audit']['mesesSinAuditoria'] ?? null;
                 $sinAuditoriaTrimestre = $fchAudit === null || ($mesesSinAuditoria !== null && $mesesSinAuditoria >= 3);
 
-                if ($filters['tiempo_auditoria'] === 'mes' && $auditRealizada == 0) return false;
-                if ($filters['tiempo_auditoria'] === 'trimestre' && !$sinAuditoriaTrimestre) return false;
-                if ($filters['tiempo_auditoria'] === 'anio' && !$sinAuditoriaAnio) return false;
+                if ($filters['tiempo_auditoria'] === 'mes' && $auditRealizada == 0) {
+                    return false;
+                }
+                if ($filters['tiempo_auditoria'] === 'trimestre' && ! $sinAuditoriaTrimestre) {
+                    return false;
+                }
+                if ($filters['tiempo_auditoria'] === 'anio' && ! $sinAuditoriaAnio) {
+                    return false;
+                }
             }
             if ($filters['asambleas_mes'] !== '') {
-                $asambleas = (int)($store['Asam_Real_Mes'] ?? 0);
-                if ($filters['asambleas_mes'] === 'si' && $asambleas == 0) return false;
-                if ($filters['asambleas_mes'] === 'no' && $asambleas > 0) return false;
+                $asambleas = (int) ($store['Asam_Real_Mes'] ?? 0);
+                if ($filters['asambleas_mes'] === 'si' && $asambleas == 0) {
+                    return false;
+                }
+                if ($filters['asambleas_mes'] === 'no' && $asambleas > 0) {
+                    return false;
+                }
             }
+
             return true;
         })->values()->all();
 
@@ -119,6 +130,4 @@ class AuditoriaController extends Controller
             'updatedAt' => cache()->get('dashboard_updated_at'),
         ]);
     }
-
-
 }

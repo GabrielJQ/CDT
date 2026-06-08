@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Servicios\ServicioGoogleSheet;
 use App\Servicios\ServicioExportacion;
 use App\Servicios\ServicioFecha;
+use App\Servicios\ServicioGoogleSheet;
 use Illuminate\Http\Request;
 
 class AperturaController extends Controller
@@ -34,27 +34,33 @@ class AperturaController extends Controller
             $fechaRaw = $store['Fecha_Apertura'] ?? '';
             $fecha = $this->fecha->parsear($fechaRaw);
             $store['_fecha_apertura'] = $fecha;
-            $store['_antiguedad'] = $fecha ? (int) round($fecha->diffInMonths(now())) . ' meses' : '—';
+            $store['_antiguedad'] = $fecha ? (int) round($fecha->diffInMonths(now())).' meses' : '—';
+
             return $store;
         });
 
         $filtered = $evaluated->filter(function ($store) use ($filters) {
             if ($filters['almacen'] !== '') {
                 $nombre = $store['Nombre_Almacen'] ?? '';
-                if (!str_contains(mb_strtoupper($nombre), mb_strtoupper($filters['almacen']))) {
+                if (! str_contains(mb_strtoupper($nombre), mb_strtoupper($filters['almacen']))) {
                     return false;
                 }
             }
             if ($filters['desde'] !== '') {
                 $desde = $this->fecha->parsear($filters['desde']);
                 $fecha = $store['_fecha_apertura'];
-                if ($desde && ($fecha === null || $fecha->lt($desde))) return false;
+                if ($desde && ($fecha === null || $fecha->lt($desde))) {
+                    return false;
+                }
             }
             if ($filters['hasta'] !== '') {
                 $hasta = $this->fecha->parsear($filters['hasta']);
                 $fecha = $store['_fecha_apertura'];
-                if ($hasta && ($fecha === null || $fecha->gt($hasta))) return false;
+                if ($hasta && ($fecha === null || $fecha->gt($hasta))) {
+                    return false;
+                }
             }
+
             return true;
         })->sortByDesc(function ($store) {
             return $store['_fecha_apertura']?->timestamp ?? 0;
@@ -82,8 +88,6 @@ class AperturaController extends Controller
         ]);
     }
 
-
-
     private function calcularKpis(array $allStores, array $filtered): array
     {
         $now = now();
@@ -96,10 +100,15 @@ class AperturaController extends Controller
             $fecha = $store['_fecha_apertura'] ?? null;
             if ($fecha === null) {
                 $sinFecha++;
+
                 continue;
             }
-            if ($fecha->year === $now->year && $fecha->month === $now->month) $esteMes++;
-            if ($fecha->year === $now->year) $esteAnio++;
+            if ($fecha->year === $now->year && $fecha->month === $now->month) {
+                $esteMes++;
+            }
+            if ($fecha->year === $now->year) {
+                $esteAnio++;
+            }
         }
 
         return [

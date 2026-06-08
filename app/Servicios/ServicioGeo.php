@@ -5,6 +5,7 @@ namespace App\Servicios;
 class ServicioGeo
 {
     const MEXICO_BBOX = ['latMin' => 14.5, 'latMax' => 32.7, 'lonMin' => -118.4, 'lonMax' => -86.7];
+
     const OAXACA_BBOX = ['latMin' => 15.3, 'latMax' => 18.8, 'lonMin' => -98.8, 'lonMax' => -93.7];
 
     const GEO_LABELS = [
@@ -17,12 +18,16 @@ class ServicioGeo
     public function parsearCoordenada(string $value): ?float
     {
         $value = trim($value);
-        if ($value === '' || $value === '0') return null;
+        if ($value === '' || $value === '0') {
+            return null;
+        }
 
         $upper = strtoupper($value);
 
         $sign = 1;
-        if (str_contains($upper, 'S') || str_contains($upper, 'W')) $sign = -1;
+        if (str_contains($upper, 'S') || str_contains($upper, 'W')) {
+            $sign = -1;
+        }
 
         $clean = preg_replace('/[NSEWnsew]/u', ' ', $value);
         $clean = str_replace(['°', '\'', '"', '′', '″', '´', '¨'], ' ', $clean);
@@ -33,7 +38,9 @@ class ServicioGeo
             return $p !== '' && is_numeric(str_replace('.', '', $p));
         }));
 
-        if (count($parts) === 0) return null;
+        if (count($parts) === 0) {
+            return null;
+        }
 
         if (count($parts) === 1) {
             $raw = $parts[0];
@@ -42,8 +49,10 @@ class ServicioGeo
                 $intVal = (int) str_replace('.', '', $raw);
                 $digits = strlen((string) abs($intVal));
                 $scale = $digits - 2;
+
                 return ($scale > 0) ? ($intVal / pow(10, $scale)) * $sign : (float) $raw * $sign;
             }
+
             return (float) $raw * $sign;
         }
 
@@ -109,6 +118,7 @@ class ServicioGeo
             $status = $store['_geo']['status'] ?? 'OK';
             $stats[$status] = ($stats[$status] ?? 0) + 1;
         }
+
         return $stats;
     }
 }

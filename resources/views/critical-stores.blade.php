@@ -147,13 +147,13 @@
  var allStores = @json($stores);
  var currentPage = 1;
 
-  var FACTOR_KEYS = ['capital_bajo', 'capital_dictaminado_bajo', 'comite_vencido', 'auditoria_elevada', 'pagare_proximo', 'rotacion_baja', 'asamblea_pendiente'];
+  var FACTOR_KEYS = ['capital_bajo', 'capital_dictaminado_bajo', 'comite_vencido', 'auditoria_elevada', 'pagare_vencido', 'rotacion_baja', 'asamblea_pendiente'];
   var FACTOR_LABELS = {
-  capital_bajo: 'Capital bajo',
+  capital_bajo: 'Capital total bajo',
   capital_dictaminado_bajo: 'Capital Bienestar bajo',
   comite_vencido: 'Comité vencido',
   auditoria_elevada: 'Auditoría > $500k',
-  pagare_proximo: 'Pagare próximo',
+  pagare_vencido: 'Pagare vencido',
   rotacion_baja: 'Rotación baja',
   asamblea_pendiente: 'Asamblea pendiente',
   };
@@ -212,7 +212,7 @@
   capital_dictaminado_bajo: ['bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-700', '🏛️'],
   comite_vencido: ['bg-red-100 text-red-800 border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700', '📅'],
  auditoria_elevada: ['bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700', '🔍'],
- pagare_proximo: ['bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700', '📄'],
+  pagare_vencido: ['bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700', '📄'],
  rotacion_baja: ['bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700', '📉'],
  asamblea_pendiente: ['bg-cyan-100 text-cyan-800 border-cyan-300 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-700', '🗳️'],
  };

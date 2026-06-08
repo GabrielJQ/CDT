@@ -93,6 +93,8 @@ return [
 
         'failover' => [
             'driver' => 'failover',
+            'serializable_classes' => env('CACHE_SERIALIZABLE_CLASSES', false),
+
             'stores' => [
                 'database',
                 'array',

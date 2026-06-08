@@ -33,7 +33,7 @@
  <p class="text-2xl font-bold text-orange-600">{{ $kpis['auditoriaAlta'] }}</p>
  </div>
  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-amber-500">
- <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">📉 Rotación baja (&lt;1.5)</p>
+  <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">📉 Rotación baja (&lt;0.5)</p>
  <p class="text-2xl font-bold text-amber-600">{{ $kpis['rotacionBaja'] }}</p>
  </div>
  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-gray-400">
@@ -42,30 +42,26 @@
  </div>
  </div>
 
- {{-- Rotación Desglose --}}
- <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">Desglose de Rotación</h3>
- <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-red-500">
-        <p class="text-xs text-gray-500 dark:text-gray-400">Rotación Cero</p>
-        <p class="text-xl font-bold text-red-600">{{ $kpis['rotacionCero'] ?? 0 }}</p>
-    </div>
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-orange-500">
-        <p class="text-xs text-gray-500 dark:text-gray-400">0.01 a 0.99</p>
-        <p class="text-xl font-bold text-orange-600">{{ $kpis['rotacionMenor1'] ?? 0 }}</p>
-    </div>
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-amber-500">
-        <p class="text-xs text-gray-500 dark:text-gray-400">1.0 a 1.49</p>
-        <p class="text-xl font-bold text-amber-600">{{ $kpis['rotacionMenor15'] ?? 0 }}</p>
-    </div>
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-green-500">
-        <p class="text-xs text-gray-500 dark:text-gray-400">&gt; 1.5</p>
-        <p class="text-xl font-bold text-green-600">{{ $kpis['rotacionMayor15'] ?? 0 }}</p>
-    </div>
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-emerald-500">
-        <p class="text-xs text-gray-500 dark:text-gray-400">&ge; 2.0</p>
-        <p class="text-xl font-bold text-emerald-600">{{ $kpis['rotacionMayor2'] ?? 0 }}</p>
-    </div>
- </div>
+  {{-- Rotación Desglose --}}
+  <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">Desglose de Rotación</h3>
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+     <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-gray-500">
+         <p class="text-xs text-gray-500 dark:text-gray-400">Cero</p>
+         <p class="text-xl font-bold text-gray-600">{{ $kpis['rotacionCero'] ?? 0 }}</p>
+     </div>
+     <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-red-500">
+         <p class="text-xs text-gray-500 dark:text-gray-400">Crítico (&lt;0.5)</p>
+         <p class="text-xl font-bold text-red-600">{{ $kpis['rotacionCritico'] ?? 0 }}</p>
+     </div>
+     <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-amber-500">
+         <p class="text-xs text-gray-500 dark:text-gray-400">Amarillo (0.5 a 0.99)</p>
+         <p class="text-xl font-bold text-amber-600">{{ $kpis['rotacionAmarillo'] ?? 0 }}</p>
+     </div>
+     <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-green-500">
+         <p class="text-xs text-gray-500 dark:text-gray-400">Óptimo (&ge;1)</p>
+         <p class="text-xl font-bold text-green-600">{{ $kpis['rotacionOptimo'] ?? 0 }}</p>
+     </div>
+  </div>
 
  {{-- Auditorías Desglose --}}
  <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">Tiempos de Auditoría</h3>
@@ -137,12 +133,11 @@
  <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Rango Rotación</label>
  <select name="rango_rotacion"
  class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800">
- <option value="">Todos</option>
- <option value="cero" {{ $filters['rango_rotacion'] === 'cero' ? 'selected' : '' }}>Cero</option>
- <option value="bajo_1" {{ $filters['rango_rotacion'] === 'bajo_1' ? 'selected' : '' }}>0.01 a 0.99</option>
- <option value="bajo_1_5" {{ $filters['rango_rotacion'] === 'bajo_1_5' ? 'selected' : '' }}>1.0 a 1.49</option>
- <option value="mayor_1_5" {{ $filters['rango_rotacion'] === 'mayor_1_5' ? 'selected' : '' }}>> 1.5</option>
- <option value="mayor_2" {{ $filters['rango_rotacion'] === 'mayor_2' ? 'selected' : '' }}>&ge; 2.0</option>
+  <option value="">Todos</option>
+  <option value="cero" {{ $filters['rango_rotacion'] === 'cero' ? 'selected' : '' }}>Cero</option>
+  <option value="critico" {{ $filters['rango_rotacion'] === 'critico' ? 'selected' : '' }}>Crítico (&lt;0.5)</option>
+  <option value="amarillo" {{ $filters['rango_rotacion'] === 'amarillo' ? 'selected' : '' }}>Amarillo (0.5 a 0.99)</option>
+  <option value="optimo" {{ $filters['rango_rotacion'] === 'optimo' ? 'selected' : '' }}>Óptimo (&ge;1)</option>
  </select>
  </div>
  <div class="min-w-[150px]">

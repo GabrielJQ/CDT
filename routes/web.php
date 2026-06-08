@@ -1,13 +1,14 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\ConnectivityController;
-use App\Http\Controllers\CriticalStoresController;
-use App\Http\Controllers\MapaController;
-use App\Http\Controllers\DirectorioController;
 use App\Http\Controllers\AperturaController;
 use App\Http\Controllers\AuditoriaController;
+use App\Http\Controllers\ConnectivityController;
+use App\Http\Controllers\CriticalStoresController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DirectorioController;
+use App\Http\Controllers\MapaController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', [DashboardController::class, 'index']);
 Route::post('/refresh', [DashboardController::class, 'refresh']);
@@ -19,7 +20,8 @@ Route::get('/directorio', [DirectorioController::class, 'index']);
 Route::get('/aperturas', [AperturaController::class, 'index']);
 Route::get('/auditoria', [AuditoriaController::class, 'index']);
 
-Route::post('/set-region', function (Illuminate\Http\Request $r) {
+Route::post('/set-region', function (Request $r) {
     $region = $r->input('region', '');
+
     return back()->withCookie(cookie('region_filter', $region ?? '', 43800));
 })->middleware('web');

@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Servicios\ServicioGoogleSheet;
 use App\Servicios\ServicioExportacion;
-use App\Servicios\ServicioGeo;
 use App\Servicios\ServicioFiltro;
+use App\Servicios\ServicioGeo;
+use App\Servicios\ServicioGoogleSheet;
 use Illuminate\Http\Request;
 
 class MapaController extends Controller
@@ -28,6 +28,7 @@ class MapaController extends Controller
 
         $evaluated = collect($stores)->map(function ($store) {
             $store['_geo'] = $this->geo->evaluarGeo($store);
+
             return $store;
         });
 
@@ -39,13 +40,14 @@ class MapaController extends Controller
         $filtered = $evaluated->filter(function ($store) use ($filters) {
             if ($filters['almacen'] !== '') {
                 $nombre = $store['Nombre_Almacen'] ?? '';
-                if (!str_contains(mb_strtoupper($nombre), mb_strtoupper($filters['almacen']))) {
+                if (! str_contains(mb_strtoupper($nombre), mb_strtoupper($filters['almacen']))) {
                     return false;
                 }
             }
             if ($filters['estado_geo'] !== '' && ($store['_geo']['status'] ?? '') !== $filters['estado_geo']) {
                 return false;
             }
+
             return true;
         })->values()->all();
 
@@ -77,6 +79,4 @@ class MapaController extends Controller
             'updatedAt' => cache()->get('dashboard_updated_at'),
         ]);
     }
-
-
 }

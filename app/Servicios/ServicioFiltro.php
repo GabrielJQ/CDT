@@ -6,10 +6,13 @@ class ServicioFiltro
 {
     public function porAlmacen(array $stores, string $almacen): array
     {
-        if ($almacen === '') return $stores;
+        if ($almacen === '') {
+            return $stores;
+        }
 
         return collect($stores)->filter(function ($store) use ($almacen) {
             $nombre = $store['Nombre_Almacen'] ?? '';
+
             return str_contains(mb_strtoupper($nombre), mb_strtoupper($almacen));
         })->values()->all();
     }
@@ -28,7 +31,9 @@ class ServicioFiltro
     {
         return collect($stores)
             ->pluck('Compañía')
-            ->map(function ($v) { return trim($v) ?: 'Sin dato'; })
+            ->map(function ($v) {
+                return trim($v) ?: 'Sin dato';
+            })
             ->unique()
             ->sort()
             ->values()

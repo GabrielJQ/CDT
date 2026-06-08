@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Servicios\ServicioGoogleSheet;
-use App\Servicios\ServicioTiendaCritica;
 use App\Servicios\ServicioExportacion;
 use App\Servicios\ServicioFiltro;
+use App\Servicios\ServicioGoogleSheet;
+use App\Servicios\ServicioTiendaCritica;
 use Illuminate\Http\Request;
 
 class CriticalStoresController extends Controller
@@ -39,7 +39,7 @@ class CriticalStoresController extends Controller
         $filtered = $evaluated->filter(function ($store) use ($filters) {
             if ($filters['almacen'] !== '') {
                 $nombre = $store['Nombre_Almacen'] ?? '';
-                if (!str_contains(mb_strtoupper($nombre), mb_strtoupper($filters['almacen']))) {
+                if (! str_contains(mb_strtoupper($nombre), mb_strtoupper($filters['almacen']))) {
                     return false;
                 }
             }
@@ -48,10 +48,11 @@ class CriticalStoresController extends Controller
             }
             if ($filters['indicador'] !== '') {
                 $active = $store['_critico']['conditions'][$filters['indicador']] ?? false;
-                if (!$active) {
+                if (! $active) {
                     return false;
                 }
             }
+
             return true;
         })->values()->all();
 
@@ -67,6 +68,7 @@ class CriticalStoresController extends Controller
                     }
                 }
                 $store['_detalle_factores'] = implode('; ', $detalle);
+
                 return $store;
             })->all();
 
@@ -81,11 +83,11 @@ class CriticalStoresController extends Controller
         }
 
         $indicadores = [
-            'capital_bajo' => '💰 Capital bajo',
+            'capital_bajo' => '💰 Capital total bajo',
             'capital_dictaminado_bajo' => '🏛️ Capital Bienestar bajo',
             'comite_vencido' => '📅 Comité vencido',
             'auditoria_elevada' => '🔍 Auditoría > $500k',
-            'pagare_proximo' => '📄 Pagare próximo',
+            'pagare_vencido' => '📄 Pagaré vencido',
             'rotacion_baja' => '📉 Rotación baja',
             'asamblea_pendiente' => '🗳️ Asamblea pendiente',
         ];
@@ -100,6 +102,4 @@ class CriticalStoresController extends Controller
             'updatedAt' => cache()->get('dashboard_updated_at'),
         ]);
     }
-
-
 }

@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Servicios\ServicioGoogleSheet;
 use App\Servicios\ServicioExportacion;
+use App\Servicios\ServicioGoogleSheet;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class DirectorioController extends Controller
@@ -11,7 +12,7 @@ class DirectorioController extends Controller
     public const TRACKED_COLUMNS = [
         'TELEFONIA', 'CORREO', 'Señal de celular', 'Compañía', 'INTERNET',
         'Vta_Mes', 'VtaNeta_Mes', 'Cap_Tot', 'Cap_Com', 'Cap_Dic',
-        'Pagare_Monto', 'Fec_CRA', 'Vigencia', 'Fch_Audit', 'Imp_Res_Audi_Mes',
+        'Pagare_Monto', 'Pagare_Fecha', 'Fec_CRA', 'Vigencia', 'Fch_Audit', 'Imp_Res_Audi_Mes',
         'Audit_Realiza_Mes', 'Latitud', 'Longitud', 'Direccion',
         'Nom_Pre_CRA', 'Nom_Pre_Sup_CRA', 'Nom_Sec_CRA', 'Nom_Sec_Sup_CRA',
         'Nom_Tes_CRA', 'Nom_Vcv_CRA', 'Nom_Voc_Gen_CRA',
@@ -54,6 +55,7 @@ class DirectorioController extends Controller
                 'Cap_Com' => 'Cap Com',
                 'Cap_Dic' => 'Cap Dic',
                 'Pagare_Monto' => 'Pagare Monto',
+                'Pagare_Fecha' => 'Pagare Fecha',
                 'Fec_CRA' => 'Fec CRA',
                 'Vigencia' => 'Vigencia',
                 'Fch_Audit' => 'Fch Audit',
@@ -79,8 +81,6 @@ class DirectorioController extends Controller
         ]);
     }
 
-
-
     private function calcularStats(array $stores): array
     {
         $incompletos = 0;
@@ -89,17 +89,23 @@ class DirectorioController extends Controller
         $asambleasMes = 0;
         $tiendasFaltante = 0;
         $importeFaltante = 0.0;
+        $pagaresVencidos = 0;
+        $importePagaresVencidos = 0.0;
+
+        $columnasIncompletos = array_filter($this->trackedColumns, fn ($c) => ! str_contains($c, 'Sup_CRA'));
 
         foreach ($stores as $store) {
             $hasEmpty = false;
-            foreach ($this->trackedColumns as $col) {
+            foreach ($columnasIncompletos as $col) {
                 $val = trim($store[$col] ?? '');
                 if ($val === '' || $val === '0') {
                     $hasEmpty = true;
                     break;
                 }
             }
-            if ($hasEmpty) $incompletos++;
+            if ($hasEmpty) {
+                $incompletos++;
+            }
 
             $capTotStr = trim($store['Cap_Tot'] ?? '');
             $capTot = (float) str_replace([',', '$', ' '], '', $capTotStr);
@@ -128,8 +134,22 @@ class DirectorioController extends Controller
                 $tiendasFaltante++;
                 $importeFaltante += $faltante;
             }
+
+            // Pagaré vencido (1 año de vigencia desde Pagare_Fecha)
+            $pagareFechaStr = trim($store['Pagare_Fecha'] ?? '');
+            if ($pagareFechaStr !== '' && $pagareFechaStr !== '0') {
+                $parsed = Carbon::createFromFormat('d/m/Y', $pagareFechaStr);
+                if ($parsed === false) {
+                    $parsed = Carbon::parse($pagareFechaStr);
+                }
+                if ($parsed !== false && $parsed->copy()->addYear()->isPast()) {
+                    $pagaresVencidos++;
+                    $pagareMonto = (float) str_replace([',', '$', ' '], '', trim($store['Pagare_Monto'] ?? '0'));
+                    $importePagaresVencidos += $pagareMonto;
+                }
+            }
         }
 
-        return compact('incompletos', 'sinCapital', 'comitesIncompletos', 'asambleasMes', 'tiendasFaltante', 'importeFaltante');
+        return compact('incompletos', 'sinCapital', 'comitesIncompletos', 'asambleasMes', 'tiendasFaltante', 'importeFaltante', 'pagaresVencidos', 'importePagaresVencidos');
     }
 }

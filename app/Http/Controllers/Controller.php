@@ -7,7 +7,9 @@ abstract class Controller
     protected function applyRegionFilter(array $stores): array
     {
         $uo = request()->cookie('region_filter', '');
-        if ($uo === '' || $uo === null) return $stores;
+        if ($uo === '' || $uo === null) {
+            return $stores;
+        }
 
         return collect($stores)->filter(function ($s) use ($uo) {
             return ($s['Nombre_UniOpe'] ?? '') === $uo;
