@@ -170,11 +170,6 @@ class ServicioTiendaCritica
                 $count++;
             }
 
-            $gdomarg = strtoupper(trim($store['GDOMARG'] ?? ''));
-            if ($gdomarg === 'BAJA') {
-                $count++;
-            }
-
             $asamProg = (int) ($store['Asam_Prog_Mes'] ?? 0);
             $asamReal = (int) ($store['Asam_Real_Mes'] ?? 0);
             if ($asamProg > 0 && $asamReal === 0) {

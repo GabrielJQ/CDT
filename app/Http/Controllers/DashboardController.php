@@ -20,12 +20,7 @@ class DashboardController extends Controller
 
     public function index()
     {
-        $stores = $this->sheet->obtenerTiendas();
-        if ($stores === null) {
-            abort(503, $this->sheet->getUltimoError() ?? 'No se pudieron obtener los datos del Google Sheet.');
-        }
-
-        $stores = $this->applyRegionFilter($stores);
+        $stores = $this->applyRegionFilter($this->sheet->obtenerTiendas());
         $totalCount = count($stores);
 
         return view('dashboard', [
@@ -40,15 +35,16 @@ class DashboardController extends Controller
             'directorioStats' => $this->calcularDirectorioStats($stores),
             'auditoriaKpis' => $this->auditoria->resumenSimple($stores),
             'updatedAt' => cache()->get('dashboard_updated_at'),
+            'error' => $this->sheet->getUltimoError(),
         ]);
     }
 
     public function refresh()
     {
-        $stores = $this->sheet->refrescar();
+        $this->sheet->refrescar();
 
-        if ($stores === null) {
-            return back()->with('error', $this->sheet->getUltimoError() ?? 'No se pudieron refrescar los datos desde el Google Sheet.');
+        if ($this->sheet->getUltimoError()) {
+            return back()->with('error', $this->sheet->getUltimoError());
         }
 
         return back()->with('success', 'Datos actualizados correctamente desde el Google Sheet.');

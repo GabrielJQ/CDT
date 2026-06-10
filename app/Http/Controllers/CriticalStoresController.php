@@ -18,12 +18,7 @@ class CriticalStoresController extends Controller
 
     public function index(Request $request)
     {
-        $stores = $this->sheet->obtenerTiendas();
-        if ($stores === null) {
-            abort(503, $this->sheet->getUltimoError() ?? 'No se pudieron obtener los datos del Google Sheet.');
-        }
-
-        $stores = $this->applyRegionFilter($stores);
+        $stores = $this->applyRegionFilter($this->sheet->obtenerTiendas());
         $totalCount = count($stores);
 
         $filters = [

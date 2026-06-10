@@ -31,10 +31,6 @@ class ResumenConectividadTool extends Tool
     {
         $tiendas = $this->sheet->obtenerTiendas();
 
-        if ($tiendas === null) {
-            return Response::error('No se pudieron obtener los datos del Google Sheet.');
-        }
-
         $estado = trim($request->get('estado', ''));
         if ($estado !== '') {
             $tiendas = array_values(array_filter($tiendas, fn ($t) => str_contains(mb_strtolower($t['Estado'] ?? ''), mb_strtolower($estado))

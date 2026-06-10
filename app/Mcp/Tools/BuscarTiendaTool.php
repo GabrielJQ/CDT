@@ -39,10 +39,6 @@ class BuscarTiendaTool extends Tool
 
         $tiendas = $this->sheet->obtenerTiendas();
 
-        if ($tiendas === null) {
-            return Response::error('No se pudieron obtener los datos del Google Sheet.');
-        }
-
         $resultados = array_values(array_filter($tiendas, fn ($t) => str_contains(mb_strtolower($t['Nombre_Almacen'] ?? ''), $query)
             || str_contains(mb_strtolower($t['Estado'] ?? ''), $query)
             || str_contains(mb_strtolower($t['Municipio'] ?? ''), $query)

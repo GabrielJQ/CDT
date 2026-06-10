@@ -35,10 +35,6 @@ class ResumenGeneralTool extends Tool
     {
         $tiendas = $this->sheet->obtenerTiendas();
 
-        if ($tiendas === null) {
-            return Response::error('No se pudieron obtener los datos del Google Sheet.');
-        }
-
         $estado = trim($request->get('estado', ''));
         if ($estado !== '') {
             $tiendas = array_values(array_filter($tiendas, fn ($t) => str_contains(mb_strtolower($t['Estado'] ?? ''), mb_strtolower($estado))
@@ -83,10 +79,10 @@ class ResumenGeneralTool extends Tool
         }
         $lineas[] = '';
         $lineas[] = '--- Auditoría ---';
-        $lineas[] = "Comités vencidos: {$auditoria['comitesVencidos']}";
-        $lineas[] = "Auditoría alta: {$auditoria['auditoriaAlta']}";
-        $lineas[] = "Rotación baja: {$auditoria['rotacionBaja']}";
-        $lineas[] = "Auditorías pendientes: {$auditoria['auditoriaPendiente']}";
+        $lineas[] = "Comités de CRA vencidos: {$auditoria['comitesVencidos']} (".($total > 0 ? round($auditoria['comitesVencidos'] / $total * 100, 1) : 0).'%)';
+        $lineas[] = "Auditorías mayores a $500,000: {$auditoria['auditoriaAlta']} (".($total > 0 ? round($auditoria['auditoriaAlta'] / $total * 100, 1) : 0).'%)';
+        $lineas[] = "Rotación menor a 0.5: {$auditoria['rotacionBaja']} (".($total > 0 ? round($auditoria['rotacionBaja'] / $total * 100, 1) : 0).'%)';
+        $lineas[] = "Auditorías pendientes (+3 meses): {$auditoria['auditoriaPendiente']} (".($total > 0 ? round($auditoria['auditoriaPendiente'] / $total * 100, 1) : 0).'%)';
         $lineas[] = '';
         $lineas[] = '--- Geo ---';
         $lineas[] = "Con coordenadas: {$conCoordenadas}";
