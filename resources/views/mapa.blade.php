@@ -28,7 +28,7 @@
  @php $g = $geoLabels[$status] ?? []; @endphp
  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 {{ $border }}">
  <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{{ $g['icon'] ?? '' }} {{ $g['label'] ?? $status }}</p>
- <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ $stats[$status] ?? 0 }}</p>
+ <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ $stats[$status] ?? 0 }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round(($stats[$status] ?? 0) / $totalCount * 100, 1) : 0 }}%)</span></p>
  </div>
  @endforeach
  </div>
@@ -76,7 +76,7 @@
  @if(count($criticales) > 0)
  <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-x-auto">
  <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
- <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">⚠️ Tiendas CRÍTICAS por geolocalización</p>
+ <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">⚠️ Tiendas sin coordenadas</p>
  <span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 font-semibold px-2.5 py-0.5 rounded-full">{{ count($criticales) }}</span>
  </div>
  <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
@@ -223,3 +223,4 @@
  });
 </script>
 @endpush
+

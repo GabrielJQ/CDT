@@ -65,6 +65,14 @@
                 <button onclick="toggleSidebar()" class="lg:hidden text-green-200 hover:text-white text-xl leading-none px-2">&times;</button>
             </div>
             <nav class="flex-1 p-2 space-y-1 overflow-y-auto overflow-x-hidden">
+                <a href="{{ url('carga-masiva') }}"
+                   title="Carga Masiva"
+                   class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition
+                          {{ str_starts_with($currentPath, 'carga-masiva') ? 'bg-green-700 text-white' : 'text-green-100 hover:bg-green-700/50' }}">
+                    <span class="text-lg flex-shrink-0 w-6 text-center">📥</span>
+                    <span class="nav-label truncate">Carga Masiva</span>
+                </a>
+
                 @foreach($navItems as $path => $item)
                     @php
                         $isActive = $currentPath === $path || ($path !== '/' && str_starts_with($currentPath, $path));

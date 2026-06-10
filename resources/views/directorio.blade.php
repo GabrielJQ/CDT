@@ -36,22 +36,22 @@
  </div>
  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-red-500">
  <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">🔴 Incompletos</p>
- <p class="text-2xl font-bold text-red-600" id="stat-incompletos">{{ $globalStats['incompletos'] }}</p>
+ <p class="text-2xl font-bold text-red-600" id="stat-incompletos">{{ $globalStats['incompletos'] }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round($globalStats['incompletos'] / $totalCount * 100, 1) : 0 }}%)</span></p>
  </div>
  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-orange-400">
  <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">💰 Sin capital</p>
- <p class="text-2xl font-bold text-orange-600" id="stat-sinCapital">{{ $globalStats['sinCapital'] }}</p>
+ <p class="text-2xl font-bold text-orange-600" id="stat-sinCapital">{{ $globalStats['sinCapital'] }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round($globalStats['sinCapital'] / $totalCount * 100, 1) : 0 }}%)</span></p>
  </div>
  </div>
 
   <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
   <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-purple-500">
   <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">🏛️ Comités Incomp.</p>
-  <p class="text-2xl font-bold text-purple-600">{{ $globalStats['comitesIncompletos'] ?? 0 }}</p>
+  <p class="text-2xl font-bold text-purple-600">{{ $globalStats['comitesIncompletos'] ?? 0 }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round(($globalStats['comitesIncompletos'] ?? 0) / $totalCount * 100, 1) : 0 }}%)</span></p>
   </div>
   <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-indigo-500">
   <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">🗳️ Asambleas Mes</p>
-  <p class="text-2xl font-bold text-indigo-600">{{ $globalStats['asambleasMes'] ?? 0 }}</p>
+  <p class="text-2xl font-bold text-indigo-600">{{ $globalStats['asambleasMes'] ?? 0 }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round(($globalStats['asambleasMes'] ?? 0) / $totalCount * 100, 1) : 0 }}%)</span></p>
   </div>
   <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-pink-500">
   <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">💸 Faltante Cap.</p>
@@ -442,3 +442,4 @@
  });
 </script>
 @endpush
+

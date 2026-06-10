@@ -10,16 +10,16 @@
             <div class="text-xs text-gray-500 dark:text-gray-400">🏪 Total de tiendas</div>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm px-3 lg:px-4 py-2 lg:py-3">
-            <div class="text-lg lg:text-xl font-bold text-red-600">{{ $criticalSummary['rojo'] }}</div>
-            <div class="text-xs text-red-500">⚠️ Tiendas críticas</div>
+            <div class="text-lg lg:text-xl font-bold text-red-600">{{ $criticalSummary['rojo'] }} <span class="text-sm font-normal text-red-400">({{ $totalCount > 0 ? round($criticalSummary['rojo'] / $totalCount * 100, 1) : 0 }}%)</span></div>
+            <div class="text-xs text-red-500">⚠️ Tiendas con nivel crítico (4+ factores)</div>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm px-3 lg:px-4 py-2 lg:py-3">
-            <div class="text-lg lg:text-xl font-bold text-orange-600">{{ $sinConectividad }}</div>
-            <div class="text-xs text-orange-500">📡 Sin conectividad</div>
+            <div class="text-lg lg:text-xl font-bold text-orange-600">{{ $sinConectividad }} <span class="text-sm font-normal text-orange-400">({{ $totalCount > 0 ? round($sinConectividad / $totalCount * 100, 1) : 0 }}%)</span></div>
+            <div class="text-xs text-orange-500">📡 Sin ningún servicio de conectividad</div>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm px-3 lg:px-4 py-2 lg:py-3">
-            <div class="text-lg lg:text-xl font-bold text-blue-600">{{ $aperturasEsteMes }}</div>
-            <div class="text-xs text-blue-500">📅 Aperturas este mes</div>
+            <div class="text-lg lg:text-xl font-bold text-blue-600">{{ $aperturasEsteMes }} <span class="text-sm font-normal text-blue-400">({{ $totalCount > 0 ? round($aperturasEsteMes / $totalCount * 100, 1) : 0 }}%)</span></div>
+            <div class="text-xs text-blue-500">📅 Aperturas realizadas este mes</div>
         </div>
     </div>
 
@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // 1. Connectivity — stacked bar (Sí/No for T, C, I)
         var connTotal = connKpis._total || total;
-        var connLabels = { TELEFONIA: 'Teléfono', 'Señal de celular': 'Señal Cel.', INTERNET: 'Internet' };
+        var connLabels = { TELEFONIA: 'Teléfono fijo', 'Señal de celular': 'Señal Cel.', INTERNET: 'Internet' };
         var connSi = [], connNo = [];
         ['TELEFONIA', 'Señal de celular', 'INTERNET'].forEach(function (key) {
             var k = connKpis[key] || { yes: 0 };
@@ -157,7 +157,7 @@ document.addEventListener('DOMContentLoaded', function () {
         new Chart(document.getElementById('chart-connectivity'), {
             type: 'bar',
             data: {
-                labels: ['Teléfono', 'Señal Cel.', 'Internet'],
+                labels: ['Teléfono fijo', 'Señal Cel.', 'Internet'],
                 datasets: [
                     { label: 'Sí', data: connSi, backgroundColor: '#22c55e', borderRadius: 3 },
                     { label: 'No', data: connNo, backgroundColor: '#fca5a5', borderRadius: 3 },
@@ -176,7 +176,7 @@ document.addEventListener('DOMContentLoaded', function () {
         new Chart(document.getElementById('chart-critical'), {
             type: 'doughnut',
             data: {
-                labels: ['Críticas', 'Monitoreo', 'Normales'],
+                labels: ['Críticas (4+ factores)', 'Monitoreo (2-3 factores)', 'Normales (0-1 factores)'],
                 datasets: [{
                     data: [critical.rojo, critical.amarillo, critical.verde],
                     backgroundColor: ['#ef4444', '#eab308', '#22c55e'],
@@ -244,7 +244,7 @@ document.addEventListener('DOMContentLoaded', function () {
         new Chart(document.getElementById('chart-auditoria'), {
             type: 'bar',
             data: {
-                labels: ['Comités venc.', 'Auditoría >$500k', 'Rotación baja', 'Aud. pendiente'],
+                labels: ['Comités vencidos', 'Auditorías > $500 mil', 'Rotación baja (<0.5)', 'Aud. pendiente (>3 meses)'],
                 datasets: [{
                     label: 'Tiendas',
                     data: [auditoria.comitesVencidos, auditoria.auditoriaAlta, auditoria.rotacionBaja, auditoria.auditoriaPendiente],

@@ -23,25 +23,27 @@
 
  <div id="app">
  {{-- KPIs --}}
+ @php $aperTotal = $kpis['total']; @endphp
  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-blue-500">
- <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">🏪 Tiendas</p>
- <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ $kpis['total'] }}</p>
+ <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">🏪 Tiendas mostradas</p>
+ <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ $kpis['total'] }}
  @if($filteredCount !== $totalCount)
- <p class="text-xs text-gray-400 dark:text-gray-500">de {{ $totalCount }} totales</p>
+ <span class="text-sm font-normal text-gray-400 dark:text-gray-500">de {{ $totalCount }} totales</span>
  @endif
+ </p>
  </div>
  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-green-500">
  <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">📅 Abiertas este mes</p>
- <p class="text-2xl font-bold text-green-600">{{ $kpis['esteMes'] }}</p>
+ <p class="text-2xl font-bold text-green-600">{{ $kpis['esteMes'] }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $kpis['total'] > 0 ? round($kpis['esteMes'] / $kpis['total'] * 100, 1) : 0 }}%)</span></p>
  </div>
  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-amber-500">
  <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">📅 Abiertas este año</p>
- <p class="text-2xl font-bold text-amber-600">{{ $kpis['esteAnio'] }}</p>
+ <p class="text-2xl font-bold text-amber-600">{{ $kpis['esteAnio'] }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $kpis['total'] > 0 ? round($kpis['esteAnio'] / $kpis['total'] * 100, 1) : 0 }}%)</span></p>
  </div>
  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-gray-400">
- <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">⚠️ Sin fecha</p>
- <p class="text-2xl font-bold text-gray-600 dark:text-gray-300">{{ $kpis['sinFecha'] }}</p>
+ <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">⚠️ Sin fecha de apertura</p>
+ <p class="text-2xl font-bold text-gray-600 dark:text-gray-300">{{ $kpis['sinFecha'] }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $kpis['total'] > 0 ? round($kpis['sinFecha'] / $kpis['total'] * 100, 1) : 0 }}%)</span></p>
  </div>
  </div>
 
@@ -324,3 +326,5 @@
  });
 </script>
 @endpush
+
+

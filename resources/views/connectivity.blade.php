@@ -23,7 +23,11 @@
  <div id="app">
  {{-- KPI Cards --}}
  @if(!empty($kpis))
- <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+ <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+ <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-blue-500">
+ <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">🏪 Tiendas mostradas</p>
+ <p class="text-3xl font-bold text-gray-800 dark:text-gray-100">{{ $filteredCount }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">de {{ $totalCount }} totales</span></p>
+ </div>
  @foreach(['TELEFONIA', 'Señal de celular', 'INTERNET'] as $key)
  @php $k = $kpis[$key] ?? null; @endphp
  @if($k)
@@ -46,7 +50,7 @@
  {{-- Compañía distribution --}}
  @if(!empty($kpis['_compania']))
  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 mb-6">
- <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">📡 Distribución por Compañía (tiendas con señal)</p>
+ <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">📡 Distribución por Compañía (tiendas con señal celular)</p>
  <div class="flex flex-wrap gap-6">
  @foreach($kpis['_compania'] as $comp => $info)
  <div class="flex-1 min-w-[120px]">
@@ -70,7 +74,7 @@
  class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
  </div>
  <div class="min-w-[130px]">
- <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">📞 Teléfono</label>
+ <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">📞 Teléfono fijo</label>
  <select name="telefono" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800">
  <option value="">Todos</option>
  <option value="si" {{ $filters['telefono'] === 'si' ? 'selected' : '' }}>Sí</option>
@@ -168,7 +172,7 @@
  Nombre_Almacen: 'Almacén',
  No_Tienda_Actual: 'Tienda #',
  Municipio: 'Municipio',
- TELEFONIA: '📞 Teléfono',
+ TELEFONIA: '📞 Teléfono fijo',
  'Señal de celular': '📱 Señal Celular',
  Compañía: 'Compañía',
  INTERNET: '🌐 Internet',
