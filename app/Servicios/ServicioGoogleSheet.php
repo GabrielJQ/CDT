@@ -11,17 +11,22 @@ class ServicioGoogleSheet
 
     public function getUltimoError(): ?string
     {
-        return $this->ultimoError;
+        return $this->ultimoError ?? $this->postgres->getUltimoError();
     }
 
-    public function obtenerTiendas(): ?array
+    public function __construct(
+        private ServicioPostgresql $postgres,
+    ) {}
+
+    public function obtenerTiendas(): array
     {
+        if ($this->postgres->tieneDatos()) {
+            return $this->postgres->obtenerTiendas();
+        }
+
         $this->ultimoError = null;
 
         $cached = cache()->get('dashboard_data');
-        if ($cached) {
-            return $cached;
-        }
 
         try {
             $stores = $this->fetchDesdeSheet();
@@ -32,7 +37,11 @@ class ServicioGoogleSheet
             $this->ultimoError = $e->getMessage();
             Log::error('[GoogleSheet] '.$e->getMessage());
 
-            return null;
+            if ($cached) {
+                return $cached;
+            }
+
+            return [];
         }
     }
 
@@ -45,7 +54,7 @@ class ServicioGoogleSheet
         }
 
         try {
-            $response = Http::withoutVerifying()->timeout(30)->get($url);
+            $response = Http::timeout(30)->get($url);
         } catch (\Exception $e) {
             throw new \RuntimeException('No se pudo conectar con Google Sheets: '.$e->getMessage());
         }
@@ -132,9 +141,13 @@ class ServicioGoogleSheet
         cache()->put('dashboard_updated_at', now()->toDateTimeString(), now()->addHours(1));
     }
 
-    public function refrescar(): ?array
+    public function refrescar(): array
     {
         $this->ultimoError = null;
+
+        if ($this->postgres->tieneDatos()) {
+            return $this->postgres->refrescar();
+        }
 
         try {
             $stores = $this->fetchDesdeSheet();
@@ -145,7 +158,7 @@ class ServicioGoogleSheet
             $this->ultimoError = $e->getMessage();
             Log::error('[GoogleSheet] Refrescar: '.$e->getMessage());
 
-            return null;
+            return [];
         }
     }
 }
