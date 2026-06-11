@@ -33,7 +33,7 @@
         @php
             $currentPath = request()->path();
             $navItems = [
-                '/' => ['label' => 'Dashboard', 'icon' => '📊'],
+                'dashboard' => ['label' => 'Dashboard', 'icon' => '📊'],
                 'auditoria' => ['label' => 'Auditoría', 'icon' => '🔍'],
                 'directorio' => ['label' => 'Directorio', 'icon' => '📋'],
             ];
@@ -113,7 +113,7 @@
                 </div>
             </nav>
             <div class="border-t border-green-700 text-xs text-green-300 p-3 sidebar-extra flex-shrink-0">
-                @php $layoutUpdated = cache()->get('dashboard_updated_at', '—'); @endphp
+                @php $layoutUpdated = now()->toDateTimeString(); @endphp
                 <p>Actualizado: <span class="font-mono text-white">{{ $layoutUpdated }}</span></p>
             </div>
         </aside>
@@ -124,15 +124,34 @@
                 <button onclick="toggleSidebar()" class="text-gray-600 hover:text-gray-900 text-xl leading-none pr-2">☰</button>
                 <h2 class="text-base lg:text-lg font-semibold text-gray-800 dark:text-gray-100 truncate flex-1">{{ $pageTitle ?? 'Dashboard' }}</h2>
                 <div class="flex items-center gap-2 w-full lg:w-auto">
-                    @php $currentRegion = request()->cookie('region_filter', ''); @endphp
-                    <form action="{{ url('/set-region') }}" method="POST" id="region-form" class="flex-1 lg:flex-none">
+                    @php
+                        $currentRegionCookie = request()->cookie('region_filter', '');
+                        $currentUoCookie = request()->cookie('uo_filter', '');
+                    @endphp
+                    <form action="{{ url('/set-region') }}" method="POST" id="region-form" class="flex-1 lg:flex-none flex gap-1.5">
                         @csrf
-                        <select name="region" onchange="document.getElementById('region-form').submit()"
+                        <input type="hidden" name="redirect" value="{{ url()->current() }}">
+                        <select name="region" id="region-select"
                                 class="w-full lg:w-auto border border-gray-300 rounded-lg px-2 lg:px-3 py-1.5 lg:py-2 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white">
-                            <option value="">🌎 Todas las regiones</option>
-                            <option value="U.O. OAXACA" {{ $currentRegion === 'U.O. OAXACA' ? 'selected' : '' }}>📍 Oaxaca</option>
-                            <option value="U.O. ISTMO" {{ $currentRegion === 'U.O. ISTMO' ? 'selected' : '' }}>📍 Istmo</option>
-                            <option value="U.O. MIXTECA" {{ $currentRegion === 'U.O. MIXTECA' ? 'selected' : '' }}>📍 Mixteca</option>
+                            <option value="">🌎 Todas</option>
+                            @foreach($regionesData ?? [] as $reg)
+                                <option value="{{ $reg['clave'] }}" {{ $currentRegionCookie === $reg['clave'] ? 'selected' : '' }}>
+                                    {{ $reg['nombre'] }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <select name="uo" id="uo-select"
+                                class="w-full lg:w-auto border border-gray-300 rounded-lg px-2 lg:px-3 py-1.5 lg:py-2 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white">
+                            <option value="">📍 Todas UO</option>
+                            @foreach($regionesData ?? [] as $reg)
+                                @foreach($reg['uos'] as $uo)
+                                    <option value="{{ $uo['clave'] }}"
+                                            data-region="{{ $reg['clave'] }}"
+                                            {{ $currentUoCookie === $uo['clave'] ? 'selected' : '' }}>
+                                        {{ $uo['nombre'] }}
+                                    </option>
+                                @endforeach
+                            @endforeach
                         </select>
                     </form>
                     <form action="{{ url('/refresh') }}" method="POST" class="flex-none">
@@ -229,6 +248,43 @@
                 }
                 temaBtn.addEventListener('click', function () {
                     aplicarTema(!document.documentElement.classList.contains('dark'));
+                });
+            }
+
+            var regionSelect = document.getElementById('region-select');
+            var uoSelect = document.getElementById('uo-select');
+            var regionForm = document.getElementById('region-form');
+
+            function actualizarUoOptions() {
+                var selectedRegion = regionSelect.value;
+                var currentUo = uoSelect.value;
+                uoSelect.innerHTML = '<option value="">📍 Todas UO</option>';
+                if (selectedRegion === '') {
+                    uoSelect.disabled = true;
+                    return;
+                }
+                uoSelect.disabled = false;
+                for (var i = 0; i < uoSelect.__allOptions.length; i++) {
+                    var opt = uoSelect.__allOptions[i];
+                    if (opt.getAttribute('data-region') === selectedRegion) {
+                        uoSelect.appendChild(opt.cloneNode(true));
+                    }
+                }
+                uoSelect.value = currentUo;
+            }
+
+            if (regionSelect && uoSelect) {
+                uoSelect.__allOptions = [];
+                for (var i = 0; i < uoSelect.options.length; i++) {
+                    uoSelect.__allOptions.push(uoSelect.options[i]);
+                }
+                actualizarUoOptions();
+                regionSelect.addEventListener('change', function () {
+                    actualizarUoOptions();
+                    regionForm.submit();
+                });
+                uoSelect.addEventListener('change', function () {
+                    regionForm.submit();
                 });
             }
         });

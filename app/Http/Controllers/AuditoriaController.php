@@ -18,7 +18,7 @@ class AuditoriaController extends Controller
 
     public function index(Request $request)
     {
-        $stores = $this->applyRegionFilter($this->sheet->obtenerTiendas());
+        $stores = $this->sheet->obtenerTiendas($this->applyRegionFilter());
         $totalCount = count($stores);
 
         $filters = [
@@ -122,7 +122,7 @@ class AuditoriaController extends Controller
             'filteredCount' => count($filtered),
             'kpis' => $this->auditoria->calcularKpis($evaluated->all()),
             'filters' => $filters,
-            'updatedAt' => cache()->get('dashboard_updated_at'),
+            'updatedAt' => now()->toDateTimeString(),
         ]);
     }
 }

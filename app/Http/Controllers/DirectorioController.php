@@ -26,7 +26,7 @@ class DirectorioController extends Controller
 
     public function index(Request $request)
     {
-        $stores = $this->applyRegionFilter($this->sheet->obtenerTiendas());
+        $stores = $this->sheet->obtenerTiendas($this->applyRegionFilter());
         $totalCount = count($stores);
 
         if ($request->query('export') === 'csv') {
@@ -72,7 +72,7 @@ class DirectorioController extends Controller
             'stores' => $stores,
             'totalCount' => $totalCount,
             'globalStats' => $this->calcularStats($stores),
-            'updatedAt' => cache()->get('dashboard_updated_at'),
+            'updatedAt' => now()->toDateTimeString(),
         ]);
     }
 

@@ -20,7 +20,7 @@ class DashboardController extends Controller
 
     public function index()
     {
-        $stores = $this->applyRegionFilter($this->sheet->obtenerTiendas());
+        $stores = $this->sheet->obtenerTiendas($this->applyRegionFilter());
         $totalCount = count($stores);
 
         return view('dashboard', [
@@ -34,7 +34,7 @@ class DashboardController extends Controller
             'aperturasPorMes' => $this->calcularAperturasPorMes($stores),
             'directorioStats' => $this->calcularDirectorioStats($stores),
             'auditoriaKpis' => $this->auditoria->resumenSimple($stores),
-            'updatedAt' => cache()->get('dashboard_updated_at'),
+            'updatedAt' => now()->toDateTimeString(),
             'error' => $this->sheet->getUltimoError(),
         ]);
     }

@@ -18,28 +18,21 @@ class ServicioGoogleSheet
         private ServicioPostgresql $postgres,
     ) {}
 
-    public function obtenerTiendas(): array
+    public function obtenerTiendas(array $filters = []): array
     {
         if ($this->postgres->tieneDatos()) {
-            return $this->postgres->obtenerTiendas();
+            return $this->postgres->obtenerTiendas($filters);
         }
 
         $this->ultimoError = null;
 
-        $cached = cache()->get('dashboard_data');
-
         try {
             $stores = $this->fetchDesdeSheet();
-            $this->guardarEnCache($stores);
 
             return $stores;
         } catch (\RuntimeException $e) {
             $this->ultimoError = $e->getMessage();
             Log::error('[GoogleSheet] '.$e->getMessage());
-
-            if ($cached) {
-                return $cached;
-            }
 
             return [];
         }
@@ -135,25 +128,17 @@ class ServicioGoogleSheet
         return $stores;
     }
 
-    public function guardarEnCache(array $stores): void
-    {
-        cache()->put('dashboard_data', $stores, now()->addHours(1));
-        cache()->put('dashboard_updated_at', now()->toDateTimeString(), now()->addHours(1));
-    }
-
     public function refrescar(): array
     {
         $this->ultimoError = null;
 
         if ($this->postgres->tieneDatos()) {
-            return $this->postgres->refrescar();
+            // PostgreSQL siempre tiene datos frescos
+            return $this->postgres->obtenerTiendas();
         }
 
         try {
-            $stores = $this->fetchDesdeSheet();
-            $this->guardarEnCache($stores);
-
-            return $stores;
+            return $this->fetchDesdeSheet();
         } catch (\RuntimeException $e) {
             $this->ultimoError = $e->getMessage();
             Log::error('[GoogleSheet] Refrescar: '.$e->getMessage());

@@ -18,7 +18,7 @@ class MapaController extends Controller
 
     public function index(Request $request)
     {
-        $stores = $this->applyRegionFilter($this->sheet->obtenerTiendas());
+        $stores = $this->sheet->obtenerTiendas($this->applyRegionFilter());
         $totalCount = count($stores);
 
         $evaluated = collect($stores)->map(function ($store) {
@@ -71,7 +71,7 @@ class MapaController extends Controller
             'stats' => $this->geo->calcularStats($evaluated->all()),
             'filters' => $filters,
             'geoLabels' => ServicioGeo::GEO_LABELS,
-            'updatedAt' => cache()->get('dashboard_updated_at'),
+            'updatedAt' => now()->toDateTimeString(),
         ]);
     }
 }

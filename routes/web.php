@@ -6,13 +6,16 @@ use App\Http\Controllers\ConnectivityController;
 use App\Http\Controllers\CriticalStoresController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DirectorioController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\MapaController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [DashboardController::class, 'index']);
-Route::post('/refresh', [DashboardController::class, 'refresh']);
+Route::get('/', [HomeController::class, 'index']);
+
+Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+Route::post('/refresh', [DashboardController::class, 'refresh'])->name('refresh');
 
 Route::get('/conectividad', [ConnectivityController::class, 'index']);
 Route::get('/informacion-tiendas', [CriticalStoresController::class, 'index']);
@@ -28,6 +31,10 @@ Route::controller(ImportController::class)->prefix('carga-masiva')->name('import
 
 Route::post('/set-region', function (Request $r) {
     $region = $r->input('region', '');
+    $uo = $r->input('uo', '');
+    $redirect = $r->input('redirect', url()->previous());
 
-    return back()->withCookie(cookie('region_filter', $region ?? '', 43800));
+    return redirect($redirect)
+        ->withCookie(cookie('region_filter', $region, 43800))
+        ->withCookie(cookie('uo_filter', $uo, 43800));
 })->middleware('web');

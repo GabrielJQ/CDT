@@ -4,24 +4,11 @@ namespace App\Http\Controllers;
 
 abstract class Controller
 {
-    protected function applyRegionFilter(array $stores): array
-    {
-        $uo = request()->cookie('region_filter', '');
-        if ($uo === '' || $uo === null) {
-            return $stores;
-        }
-
-        return collect($stores)->filter(function ($s) use ($uo) {
-            return ($s['Nombre_UniOpe'] ?? '') === $uo;
-        })->values()->all();
-    }
-
-    protected function getRegionOptions(): array
+    protected function applyRegionFilter(): array
     {
         return [
-            'U.O. OAXACA' => 'Oaxaca',
-            'U.O. ISTMO' => 'Istmo',
-            'U.O. MIXTECA' => 'Mixteca',
+            'region' => request()->cookie('region_filter', ''),
+            'uo' => request()->cookie('uo_filter', ''),
         ];
     }
 }

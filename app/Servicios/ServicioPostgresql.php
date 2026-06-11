@@ -16,75 +16,93 @@ class ServicioPostgresql
         return $this->ultimoError;
     }
 
-    public function obtenerTiendas(): array
+    public function obtenerTiendas(array $filters = []): array
     {
         $this->ultimoError = null;
 
-        $cached = cache()->get('dashboard_data');
-
         try {
-            $stores = $this->fetchDesdePostgres();
-            $this->guardarEnCache($stores);
-
-            return $stores;
+            return $this->fetchDesdePostgres($filters);
         } catch (\Throwable $e) {
             $this->ultimoError = $e->getMessage();
             Log::error('[Postgresql] '.$e->getMessage());
-
-            if ($cached) {
-                return $cached;
-            }
 
             return [];
         }
     }
 
-    public function fetchDesdePostgres(): array
+    public function fetchDesdePostgres(array $filters = []): array
     {
         $conn = $this->conexion();
-
         $count = $conn->table('tiendas')->count();
         if ($count === 0) {
             throw new \RuntimeException('La tabla tiendas está vacía en PostgreSQL');
         }
 
-        $rows = $conn->table('tiendas')->get();
-
         $reverseMap = $this->reverseMap();
         $columns = array_keys($reverseMap);
 
-        $stores = [];
-        foreach ($rows as $row) {
-            $store = [];
-            foreach ($columns as $csvColumn) {
-                $dbColumn = $reverseMap[$csvColumn];
-                $value = $row->{$dbColumn} ?? null;
-                $store[$csvColumn] = $this->valorAString($value);
-            }
-            $stores[] = $store;
+        $query = $conn->table('tiendas');
+
+        if (! empty($filters['region'])) {
+            $query->where('Clave_Regional', $filters['region']);
         }
+        if (! empty($filters['uo'])) {
+            $query->where('Clave_UniOpe', $filters['uo']);
+        }
+
+        $stores = [];
+        $query->orderBy('id')->chunk(1000, function ($rows) use (&$stores, $reverseMap, $columns) {
+            foreach ($rows as $row) {
+                $store = [];
+                foreach ($columns as $csvColumn) {
+                    $dbColumn = $reverseMap[$csvColumn];
+                    $value = $row->{$dbColumn} ?? null;
+                    $store[$csvColumn] = $this->valorAString($value);
+                }
+                $stores[] = $store;
+            }
+        });
 
         return $stores;
     }
 
-    public function guardarEnCache(array $stores): void
+    public function obtenerJerarquiaRegional(): array
     {
-        cache()->put('dashboard_data', $stores, now()->addHours(1));
-        cache()->put('dashboard_updated_at', now()->toDateTimeString(), now()->addHours(1));
-    }
-
-    public function refrescar(): array
-    {
-        $this->ultimoError = null;
-
         try {
-            $stores = $this->fetchDesdePostgres();
-            $this->guardarEnCache($stores);
+            $conn = $this->conexion();
+            $rows = $conn->select("
+                SELECT
+                    \"Clave_Regional\", \"Nombre_Regional\",
+                    \"Clave_UniOpe\", \"Nombre_UniOpe\",
+                    COUNT(*) as total
+                FROM tiendas
+                WHERE \"Nombre_Regional\" IS NOT NULL AND TRIM(\"Nombre_Regional\") != ''
+                GROUP BY \"Clave_Regional\", \"Nombre_Regional\", \"Clave_UniOpe\", \"Nombre_UniOpe\"
+                ORDER BY \"Clave_Regional\", \"Clave_UniOpe\"
+            ");
 
-            return $stores;
+            $jerarquia = [];
+            foreach ($rows as $row) {
+                $claveReg = $row->{'Clave_Regional'};
+                if (! isset($jerarquia[$claveReg])) {
+                    $jerarquia[$claveReg] = [
+                        'clave' => $claveReg,
+                        'nombre' => $row->{'Nombre_Regional'},
+                        'total' => 0,
+                        'uos' => [],
+                    ];
+                }
+                $jerarquia[$claveReg]['total'] += (int) $row->total;
+                $jerarquia[$claveReg]['uos'][] = [
+                    'clave' => $row->{'Clave_UniOpe'},
+                    'nombre' => $row->{'Nombre_UniOpe'},
+                    'total' => (int) $row->total,
+                ];
+            }
+
+            return array_values($jerarquia);
         } catch (\Throwable $e) {
-            $this->ultimoError = $e->getMessage();
-            Log::error('[Postgresql] Refrescar: '.$e->getMessage());
+            Log::error('[Postgresql] obtenerJerarquiaRegional: '.$e->getMessage());
 
             return [];
         }

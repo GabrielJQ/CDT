@@ -18,7 +18,7 @@ class CriticalStoresController extends Controller
 
     public function index(Request $request)
     {
-        $stores = $this->applyRegionFilter($this->sheet->obtenerTiendas());
+        $stores = $this->sheet->obtenerTiendas($this->applyRegionFilter());
         $totalCount = count($stores);
 
         $filters = [
@@ -94,7 +94,7 @@ class CriticalStoresController extends Controller
             'summary' => $this->critica->calcularResumen($evaluated->all()),
             'filters' => $filters,
             'indicadores' => $indicadores,
-            'updatedAt' => cache()->get('dashboard_updated_at'),
+            'updatedAt' => now()->toDateTimeString(),
         ]);
     }
 }
