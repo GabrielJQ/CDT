@@ -55,11 +55,11 @@
   </div>
   <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-pink-500">
   <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">💸 Faltante Cap.</p>
-  <p class="text-2xl font-bold text-pink-600">{{ $globalStats['tiendasFaltante'] ?? 0 }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">(${{ number_format($globalStats['importeFaltante'] ?? 0, 2) }})</span></p>
+  <p class="text-2xl font-bold text-pink-600">{{ $globalStats['tiendasFaltante'] ?? 0 }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round(($globalStats['tiendasFaltante'] ?? 0) / $totalCount * 100, 1) : 0 }}% · ${{ number_format($globalStats['importeFaltante'] ?? 0, 2) }})</span></p>
   </div>
   <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-blue-500">
   <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">📄 Pagarés vencidos</p>
-  <p class="text-2xl font-bold text-blue-600">{{ $globalStats['pagaresVencidos'] ?? 0 }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">(${{ number_format($globalStats['importePagaresVencidos'] ?? 0, 2) }})</span></p>
+  <p class="text-2xl font-bold text-blue-600">{{ $globalStats['pagaresVencidos'] ?? 0 }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round(($globalStats['pagaresVencidos'] ?? 0) / $totalCount * 100, 1) : 0 }}% · ${{ number_format($globalStats['importePagaresVencidos'] ?? 0, 2) }})</span></p>
   </div>
   </div>
 

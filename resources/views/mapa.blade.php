@@ -93,21 +93,21 @@
   <p class="text-sm font-extrabold text-gray-900 dark:text-gray-100">Sin coordenadas</p>
   <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Registros que no pueden mostrarse en el mapa.</p>
   </div>
-  <span class="status-pill {{ ($stats['SIN_COORDENADAS'] ?? 0) > 0 ? 'status-warning' : 'status-ok' }}">{{ $stats['SIN_COORDENADAS'] ?? 0 }}</span>
+  <span class="status-pill {{ ($stats['SIN_COORDENADAS'] ?? 0) > 0 ? 'status-warning' : 'status-ok' }}">{{ $stats['SIN_COORDENADAS'] ?? 0 }} · {{ $totalCount > 0 ? round(($stats['SIN_COORDENADAS'] ?? 0) / $totalCount * 100, 1) : 0 }}%</span>
   </div>
   <div class="priority-item">
   <div>
   <p class="text-sm font-extrabold text-gray-900 dark:text-gray-100">Fuera de Mexico</p>
   <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Coordenadas fuera del rango geografico esperado.</p>
   </div>
-  <span class="status-pill {{ ($stats['FUERA_MEXICO'] ?? 0) > 0 ? 'status-critical' : 'status-ok' }}">{{ $stats['FUERA_MEXICO'] ?? 0 }}</span>
+  <span class="status-pill {{ ($stats['FUERA_MEXICO'] ?? 0) > 0 ? 'status-critical' : 'status-ok' }}">{{ $stats['FUERA_MEXICO'] ?? 0 }} · {{ $totalCount > 0 ? round(($stats['FUERA_MEXICO'] ?? 0) / $totalCount * 100, 1) : 0 }}%</span>
   </div>
   <div class="priority-item">
   <div>
   <p class="text-sm font-extrabold text-gray-900 dark:text-gray-100">{{ $geoMismatchLabel ?? ($geoLabels['FUERA_ESTADO']['label'] ?? 'No corresponde al filtro territorial') }}</p>
   <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Tiendas con posible error de captura territorial.</p>
   </div>
-  <span class="status-pill {{ ($stats['FUERA_ESTADO'] ?? 0) > 0 ? 'status-warning' : 'status-ok' }}">{{ $stats['FUERA_ESTADO'] ?? 0 }}</span>
+  <span class="status-pill {{ ($stats['FUERA_ESTADO'] ?? 0) > 0 ? 'status-warning' : 'status-ok' }}">{{ $stats['FUERA_ESTADO'] ?? 0 }} · {{ $totalCount > 0 ? round(($stats['FUERA_ESTADO'] ?? 0) / $totalCount * 100, 1) : 0 }}%</span>
   </div>
   </div>
   </aside>

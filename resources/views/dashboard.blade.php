@@ -65,21 +65,21 @@
                             <p class="text-sm font-extrabold text-gray-900 dark:text-gray-100">Criticidad</p>
                             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Tiendas con acumulacion de factores operativos.</p>
                         </div>
-                        <span class="status-pill status-critical">{{ number_format($criticalSummary['rojo']) }}</span>
+                        <span class="status-pill status-critical">{{ number_format($criticalSummary['rojo']) }} · {{ $criticalPct }}%</span>
                     </a>
                     <a href="{{ url('/conectividad?telefono=no&senial=no&internet=no') }}" class="priority-item">
                         <div>
                             <p class="text-sm font-extrabold text-gray-900 dark:text-gray-100">Conectividad</p>
                             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Sucursales sin telefono, senal celular ni internet.</p>
                         </div>
-                        <span class="status-pill status-warning">{{ number_format($sinConectividad) }}</span>
+                        <span class="status-pill status-warning">{{ number_format($sinConectividad) }} · {{ $sinConectividadPct }}%</span>
                     </a>
                     <a href="{{ url('/mapa?estado_geo=SIN_COORDENADAS') }}" class="priority-item">
                         <div>
                             <p class="text-sm font-extrabold text-gray-900 dark:text-gray-100">Georreferencia</p>
                             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Registros que impiden visualizar cobertura territorial.</p>
                         </div>
-                        <span class="status-pill {{ $geoSinCoordenadas > 0 ? 'status-warning' : 'status-ok' }}">{{ number_format($geoSinCoordenadas) }}</span>
+                        <span class="status-pill {{ $geoSinCoordenadas > 0 ? 'status-warning' : 'status-ok' }}">{{ number_format($geoSinCoordenadas) }} · {{ $geoPct }}%</span>
                     </a>
                 </div>
             </div>
@@ -90,11 +90,11 @@
                 <div class="mt-4 space-y-3">
                     <div class="flex items-center justify-between gap-3 border-b border-gray-100 pb-3 dark:border-gray-700">
                         <span class="text-sm text-gray-500 dark:text-gray-400">Tiendas en monitoreo preventivo</span>
-                        <strong class="text-gray-900 dark:text-gray-100">{{ number_format($criticalSummary['amarillo']) }}</strong>
+                        <strong class="text-gray-900 dark:text-gray-100">{{ number_format($criticalSummary['amarillo']) }} <span class="text-xs font-semibold text-gray-400">({{ $totalCount > 0 ? round($criticalSummary['amarillo'] / $totalCount * 100, 1) : 0 }}%)</span></strong>
                     </div>
                     <div class="flex items-center justify-between gap-3 border-b border-gray-100 pb-3 dark:border-gray-700">
                         <span class="text-sm text-gray-500 dark:text-gray-400">Tiendas normales</span>
-                        <strong class="text-green-600">{{ number_format($criticalSummary['verde']) }}</strong>
+                        <strong class="text-green-600">{{ number_format($criticalSummary['verde']) }} <span class="text-xs font-semibold text-gray-400">({{ $totalCount > 0 ? round($criticalSummary['verde'] / $totalCount * 100, 1) : 0 }}%)</span></strong>
                     </div>
                     <div class="flex items-center justify-between gap-3">
                         <span class="text-sm text-gray-500 dark:text-gray-400">Sin coordenadas</span>

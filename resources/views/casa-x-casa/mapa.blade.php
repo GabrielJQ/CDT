@@ -13,6 +13,10 @@
 @endpush
 
 @section('content')
+    @php
+        $pct = fn (int|float $value, int|float $base = $totalCount) => $base > 0 ? round($value / $base * 100, 1) : 0;
+        $sinCoordenadas = max(0, $totalCount - $conCoordenadas);
+    @endphp
     <div class="page-shell">
         <section class="page-hero">
             <div class="page-hero-content">
@@ -32,19 +36,19 @@
             </div>
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-green-500">
                 <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">🟢 Instalados</p>
-                <p class="text-2xl font-bold text-green-600">{{ number_format($anaqueles['instalados'] ?? 0) }}</p>
+                <p class="text-2xl font-bold text-green-600">{{ number_format($anaqueles['instalados'] ?? 0) }} <span class="text-sm font-normal text-gray-400">({{ $pct($anaqueles['instalados'] ?? 0) }}%)</span></p>
             </div>
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-amber-500">
                 <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">🟠 Pendientes</p>
-                <p class="text-2xl font-bold text-amber-600">{{ number_format($anaqueles['pendientes'] ?? 0) }}</p>
+                <p class="text-2xl font-bold text-amber-600">{{ number_format($anaqueles['pendientes'] ?? 0) }} <span class="text-sm font-normal text-gray-400">({{ $pct($anaqueles['pendientes'] ?? 0) }}%)</span></p>
             </div>
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-green-500">
                 <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">📍 Con coordenadas</p>
-                <p class="text-2xl font-bold text-green-600">{{ number_format($conCoordenadas) }}</p>
+                <p class="text-2xl font-bold text-green-600">{{ number_format($conCoordenadas) }} <span class="text-sm font-normal text-gray-400">({{ $pct($conCoordenadas) }}%)</span></p>
             </div>
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-gray-400">
                 <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">❌ Sin coordenadas</p>
-                <p class="text-2xl font-bold text-gray-500">{{ number_format($totalCount - $conCoordenadas) }}</p>
+                <p class="text-2xl font-bold text-gray-500">{{ number_format($sinCoordenadas) }} <span class="text-sm font-normal text-gray-400">({{ $pct($sinCoordenadas) }}%)</span></p>
             </div>
         </div>
 
@@ -66,21 +70,21 @@
                             <p class="text-sm font-extrabold text-gray-900 dark:text-gray-100">Instalados</p>
                             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Marcadores verdes en el mapa.</p>
                         </div>
-                        <span class="status-pill status-ok">{{ number_format($anaqueles['instalados'] ?? 0) }}</span>
+                        <span class="status-pill status-ok">{{ number_format($anaqueles['instalados'] ?? 0) }} · {{ $pct($anaqueles['instalados'] ?? 0) }}%</span>
                     </div>
                     <div class="priority-item">
                         <div>
                             <p class="text-sm font-extrabold text-gray-900 dark:text-gray-100">Pendientes</p>
                             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Marcadores ámbar para seguimiento.</p>
                         </div>
-                        <span class="status-pill status-warning">{{ number_format($anaqueles['pendientes'] ?? 0) }}</span>
+                        <span class="status-pill status-warning">{{ number_format($anaqueles['pendientes'] ?? 0) }} · {{ $pct($anaqueles['pendientes'] ?? 0) }}%</span>
                     </div>
                     <div class="priority-item">
                         <div>
                             <p class="text-sm font-extrabold text-gray-900 dark:text-gray-100">Sin coordenadas</p>
                             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">No se muestran hasta completar latitud/longitud.</p>
                         </div>
-                        <span class="status-pill {{ ($totalCount - $conCoordenadas) > 0 ? 'status-warning' : 'status-ok' }}">{{ number_format($totalCount - $conCoordenadas) }}</span>
+                        <span class="status-pill {{ $sinCoordenadas > 0 ? 'status-warning' : 'status-ok' }}">{{ number_format($sinCoordenadas) }} · {{ $pct($sinCoordenadas) }}%</span>
                     </div>
                 </div>
             </aside>
