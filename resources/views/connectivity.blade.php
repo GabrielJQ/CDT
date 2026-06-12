@@ -20,7 +20,7 @@
  <div class="bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-6">{{ $error }}</div>
  @endisset
 
- <div id="app">
+ <div id="app" class="page-shell">
  {{-- KPI Cards --}}
  @if(!empty($kpis))
  <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
@@ -65,17 +65,17 @@
  @endif
 
  {{-- Filters --}}
- <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 mb-4">
+  <div class="filter-panel">
  <form method="GET" action="{{ url('/conectividad') }}" class="flex flex-wrap items-end gap-3">
  <div class="flex-1 min-w-[160px]">
  <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Almacén</label>
  <input type="text" name="almacen" value="{{ $filters['almacen'] }}"
  placeholder="Buscar..."
- class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+  class="input-filter">
  </div>
  <div class="min-w-[130px]">
  <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">📞 Teléfono fijo</label>
- <select name="telefono" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800">
+  <select name="telefono" class="input-filter">
  <option value="">Todos</option>
  <option value="si" {{ $filters['telefono'] === 'si' ? 'selected' : '' }}>Sí</option>
  <option value="no" {{ $filters['telefono'] === 'no' ? 'selected' : '' }}>No</option>
@@ -83,7 +83,7 @@
  </div>
  <div class="min-w-[130px]">
  <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">📱 Señal Celular</label>
- <select name="senial" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800">
+  <select name="senial" class="input-filter">
  <option value="">Todos</option>
  <option value="si" {{ $filters['senial'] === 'si' ? 'selected' : '' }}>Sí</option>
  <option value="no" {{ $filters['senial'] === 'no' ? 'selected' : '' }}>No</option>
@@ -91,7 +91,7 @@
  </div>
  <div class="min-w-[130px]">
  <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Compañía</label>
- <select name="compania" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800">
+  <select name="compania" class="input-filter">
  <option value="">Todas</option>
  @foreach($filterOptions['companias'] ?? [] as $comp)
  <option value="{{ $comp }}" {{ $filters['compania'] === $comp ? 'selected' : '' }}>{{ $comp }}</option>
@@ -100,16 +100,16 @@
  </div>
  <div class="min-w-[130px]">
  <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">🌐 Internet</label>
- <select name="internet" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800">
+  <select name="internet" class="input-filter">
  <option value="">Todos</option>
  <option value="si" {{ $filters['internet'] === 'si' ? 'selected' : '' }}>Sí</option>
  <option value="no" {{ $filters['internet'] === 'no' ? 'selected' : '' }}>No</option>
  </select>
  </div>
  <div class="flex gap-2">
- <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Filtrar</button>
- <a href="{{ url('/conectividad') }}" class="bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-semibold transition inline-block">Limpiar</a>
- <a href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition inline-block">⬇ CSV</a>
+  <button type="submit" class="btn-filter">Filtrar</button>
+  <a href="{{ url('/conectividad') }}" class="btn-secondary">Limpiar</a>
+  <a href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}" class="btn-export">⬇ CSV</a>
  </div>
  </form>
  </div>
@@ -134,7 +134,7 @@
  </div>
 
  {{-- Table --}}
- <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-x-auto">
+  <div class="table-shell">
  <table id="conn-table" class="w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm dark:text-gray-200">
  <thead class="bg-gray-50 dark:bg-gray-800">
  <tr id="conn-header"></tr>

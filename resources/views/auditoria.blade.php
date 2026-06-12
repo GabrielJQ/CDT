@@ -21,7 +21,7 @@
  <div class="bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-6">{{ $error }}</div>
  @endisset
 
- <div id="app">
+ <div id="app" class="page-shell">
  {{-- KPIs --}}
  @php $kpiTotal = $totalCount; @endphp
  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
@@ -89,18 +89,18 @@
  </div>
 
  {{-- Filters --}}
- <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 mb-4">
+  <div class="filter-panel">
  <form method="GET" action="{{ url('/auditoria') }}" class="flex flex-wrap items-end gap-3">
  <div class="flex-1 min-w-[160px]">
  <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Almacén</label>
  <input type="text" name="almacen" value="{{ $filters['almacen'] }}"
  placeholder="Buscar..."
- class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+  class="input-filter">
  </div>
  <div class="min-w-[140px]">
  <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Nivel de riesgo</label>
  <select name="nivel"
- class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800">
+  class="input-filter">
  <option value="">Todos</option>
  <option value="rojo" {{ $filters['nivel'] === 'rojo' ? 'selected' : '' }}>🔴 Crítico</option>
  <option value="amarillo" {{ $filters['nivel'] === 'amarillo' ? 'selected' : '' }}>🟡 Monitoreo</option>
@@ -110,7 +110,7 @@
  <div class="min-w-[150px]">
  <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Estado del comité</label>
  <select name="estado_comite"
- class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800">
+  class="input-filter">
  <option value="">Todos</option>
  <option value="vigente" {{ $filters['estado_comite'] === 'vigente' ? 'selected' : '' }}>🟢 Vigente</option>
  <option value="proximo_a_vencer" {{ $filters['estado_comite'] === 'proximo_a_vencer' ? 'selected' : '' }}>🟡 Próximo a vencer</option>
@@ -121,7 +121,7 @@
  <div class="min-w-[150px]">
  <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Estado de auditoría</label>
  <select name="estado_auditoria"
- class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800">
+  class="input-filter">
  <option value="">Todos</option>
  <option value="al_dia" {{ $filters['estado_auditoria'] === 'al_dia' ? 'selected' : '' }}>🟢 Al día</option>
  <option value="vencida" {{ $filters['estado_auditoria'] === 'vencida' ? 'selected' : '' }}>🔴 Vencida</option>
@@ -131,7 +131,7 @@
  <div class="min-w-[140px]">
  <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Aud. &gt; $500k</label>
  <select name="filtro_500k"
- class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800">
+  class="input-filter">
  <option value="">Todos</option>
  <option value="si" {{ $filters['filtro_500k'] === 'si' ? 'selected' : '' }}>🔴 Sí</option>
  <option value="no" {{ $filters['filtro_500k'] === 'no' ? 'selected' : '' }}>🟢 No</option>
@@ -140,7 +140,7 @@
  <div class="min-w-[150px]">
  <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Rango Rotación</label>
  <select name="rango_rotacion"
- class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800">
+  class="input-filter">
   <option value="">Todos</option>
   <option value="cero" {{ $filters['rango_rotacion'] === 'cero' ? 'selected' : '' }}>Cero</option>
   <option value="critico" {{ $filters['rango_rotacion'] === 'critico' ? 'selected' : '' }}>Crítico (&lt;0.5)</option>
@@ -151,7 +151,7 @@
  <div class="min-w-[150px]">
  <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Tiempo Auditoría</label>
  <select name="tiempo_auditoria"
- class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800">
+  class="input-filter">
  <option value="">Todos</option>
  <option value="mes" {{ $filters['tiempo_auditoria'] === 'mes' ? 'selected' : '' }}>Realizada en mes</option>
  <option value="trimestre" {{ $filters['tiempo_auditoria'] === 'trimestre' ? 'selected' : '' }}>Sin aud. &gt; 3 meses</option>
@@ -161,16 +161,16 @@
  <div class="min-w-[150px]">
  <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Asambleas (Mes)</label>
  <select name="asambleas_mes"
- class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800">
+  class="input-filter">
  <option value="">Todas</option>
  <option value="si" {{ $filters['asambleas_mes'] === 'si' ? 'selected' : '' }}>Con asambleas</option>
  <option value="no" {{ $filters['asambleas_mes'] === 'no' ? 'selected' : '' }}>Sin asambleas</option>
  </select>
  </div>
  <div class="flex gap-2">
- <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Filtrar</button>
- <a href="{{ url('/auditoria') }}" class="bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-semibold transition inline-block">Limpiar</a>
- <a href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition inline-block">⬇ CSV</a>
+  <button type="submit" class="btn-filter">Filtrar</button>
+  <a href="{{ url('/auditoria') }}" class="btn-secondary">Limpiar</a>
+  <a href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}" class="btn-export">⬇ CSV</a>
  </div>
  </form>
  </div>
@@ -201,7 +201,7 @@
  </div>
 
  {{-- Table --}}
- <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-x-auto">
+  <div class="table-shell">
  <table id="audit-table" class="w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm dark:text-gray-200">
  <thead class="bg-gray-50 dark:bg-gray-800">
  <tr id="audit-header"></tr>
