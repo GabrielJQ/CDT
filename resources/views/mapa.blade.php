@@ -72,12 +72,12 @@
  </form>
  </div>
 
- {{-- Información de conteo --}}
- <div class="text-sm text-gray-500 dark:text-gray-400 mb-2">
- Mostrando <strong>{{ count($stores) }}</strong> tiendas en el mapa
- @if($filteredCount !== $totalCount)
- (filtradas de <strong>{{ $totalCount }}</strong>)
- @endif
+  {{-- Información de conteo --}}
+  <div class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+  Mostrando <strong>{{ $filteredCount }}</strong> tiendas filtradas. El mapa carga los puntos visibles segun la zona actual
+  @if($filteredCount !== $totalCount)
+  (filtradas de <strong>{{ $totalCount }}</strong>)
+  @endif
  </div>
 
   {{-- Map --}}
