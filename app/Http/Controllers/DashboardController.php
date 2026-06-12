@@ -7,6 +7,7 @@ use App\Servicios\ServicioConectividad;
 use App\Servicios\ServicioFecha;
 use App\Servicios\ServicioGoogleSheet;
 use App\Servicios\ServicioTiendaCritica;
+use Illuminate\Support\Facades\Cache;
 
 class DashboardController extends Controller
 {
@@ -31,7 +32,50 @@ class DashboardController extends Controller
         $stores = $this->sheet->obtenerTiendas($this->applyRegionFilter(), self::COLUMNS);
         $totalCount = count($stores);
 
-        return view('dashboard', [
+        $metrics = Cache::remember(
+            $this->dashboardCacheKey(),
+            now()->addMinutes(10),
+            fn () => $this->dashboardMetrics($stores, $totalCount),
+        );
+
+        return view('dashboard', $metrics + [
+            'updatedAt' => now()->toDateTimeString(),
+            'error' => $this->sheet->getUltimoError(),
+        ]);
+    }
+
+    public function refresh()
+    {
+        $this->sheet->refrescar();
+        $this->invalidateDashboardCache();
+
+        if ($this->sheet->getUltimoError()) {
+            return back()->with('error', $this->sheet->getUltimoError());
+        }
+
+        return back()->with('success', 'Datos actualizados correctamente desde el Google Sheet.');
+    }
+
+    public static function invalidateDashboardCache(): void
+    {
+        Cache::increment('dashboard_metrics_version');
+    }
+
+    private function dashboardCacheKey(): string
+    {
+        $filter = $this->applyRegionFilter();
+
+        return sprintf(
+            'dashboard_metrics:v%s:region:%s:uo:%s',
+            Cache::get('dashboard_metrics_version', 1),
+            $filter['region'] ?: 'all',
+            $filter['uo'] ?: 'all',
+        );
+    }
+
+    private function dashboardMetrics(array $stores, int $totalCount): array
+    {
+        return [
             'totalCount' => $totalCount,
             'connectivityKpis' => $this->conectividad->resumenSimple($stores),
             'criticalSummary' => $this->critica->resumenSimple($stores),
@@ -42,20 +86,7 @@ class DashboardController extends Controller
             'aperturasPorMes' => $this->calcularAperturasPorMes($stores),
             'directorioStats' => $this->calcularDirectorioStats($stores),
             'auditoriaKpis' => $this->auditoria->resumenSimple($stores),
-            'updatedAt' => now()->toDateTimeString(),
-            'error' => $this->sheet->getUltimoError(),
-        ]);
-    }
-
-    public function refresh()
-    {
-        $this->sheet->refrescar();
-
-        if ($this->sheet->getUltimoError()) {
-            return back()->with('error', $this->sheet->getUltimoError());
-        }
-
-        return back()->with('success', 'Datos actualizados correctamente desde el Google Sheet.');
+        ];
     }
 
     private function contarAperturasEsteMes(array $stores): int

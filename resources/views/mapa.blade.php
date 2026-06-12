@@ -194,7 +194,8 @@
 
  var bounds = [];
 
- stores.forEach(function (store) {
+ function renderStores(storesToRender) {
+ storesToRender.forEach(function (store) {
  var geo = store._geo || {};
  if (geo.status === 'SIN_COORDENADAS') return;
  var lat = geo.lat;
@@ -241,6 +242,20 @@
  map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
  } else {
  map.setView([23.6, -102.0], 5);
+ }
+ }
+
+ if (stores.length > 0) {
+ renderStores(stores);
+ } else {
+ var dataUrl = new URL(@json(route('mapa.data')), window.location.origin);
+ var currentParams = new URLSearchParams(window.location.search);
+ currentParams.delete('export');
+ currentParams.forEach(function (value, key) { dataUrl.searchParams.set(key, value); });
+ fetch(dataUrl.toString(), { headers: { 'Accept': 'application/json' } })
+ .then(function (response) { return response.json(); })
+ .then(function (payload) { renderStores(payload.stores || []); })
+ .catch(function () { map.setView([23.6, -102.0], 5); });
  }
 
  var legend = L.control({ position: 'bottomright' });

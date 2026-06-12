@@ -72,7 +72,7 @@ class MapaController extends Controller
         }
 
         return view('mapa', [
-            'stores' => $filtered,
+            'stores' => [],
             'criticales' => $criticales,
             'totalCount' => $totalCount,
             'filteredCount' => count($filtered),
@@ -82,6 +82,38 @@ class MapaController extends Controller
             'geoMismatchLabel' => $geoLabels['FUERA_ESTADO']['label'],
             'updatedAt' => now()->toDateTimeString(),
         ]);
+    }
+
+    public function data(Request $request)
+    {
+        $regionFilter = $this->applyRegionFilter();
+        $stores = $this->sheet->obtenerTiendas($regionFilter, self::COLUMNS);
+        $evaluated = collect($stores)->map(function ($store) {
+            $store['_geo'] = $this->geo->evaluarGeo($store);
+
+            return $store;
+        });
+
+        $filters = [
+            'almacen' => trim($request->query('almacen', '')),
+            'estado_geo' => $request->query('estado_geo', ''),
+        ];
+
+        $filtered = $evaluated->filter(function ($store) use ($filters) {
+            if ($filters['almacen'] !== '') {
+                $nombre = $store['Nombre_Almacen'] ?? '';
+                if (! str_contains(mb_strtoupper($nombre), mb_strtoupper($filters['almacen']))) {
+                    return false;
+                }
+            }
+            if ($filters['estado_geo'] !== '' && ($store['_geo']['status'] ?? '') !== $filters['estado_geo']) {
+                return false;
+            }
+
+            return true;
+        })->values()->all();
+
+        return response()->json(['stores' => $filtered]);
     }
 
     private function geoMismatchLabel(array $stores, array $regionFilter): string

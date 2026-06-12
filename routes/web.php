@@ -21,6 +21,7 @@ Route::post('/refresh', [DashboardController::class, 'refresh'])->name('refresh'
 Route::get('/conectividad', [ConnectivityController::class, 'index']);
 Route::get('/informacion-tiendas', [CriticalStoresController::class, 'index']);
 Route::get('/mapa', [MapaController::class, 'index']);
+Route::get('/mapa/data', [MapaController::class, 'data'])->name('mapa.data');
 Route::get('/directorio', [DirectorioController::class, 'index']);
 Route::get('/aperturas', [AperturaController::class, 'index']);
 Route::get('/auditoria', [AuditoriaController::class, 'index']);

@@ -6,6 +6,7 @@ use App\Servicios\ServicioConectividad;
 use App\Servicios\ServicioExportacion;
 use App\Servicios\ServicioFiltro;
 use App\Servicios\ServicioGoogleSheet;
+use App\Servicios\ServicioPostgresql;
 use Illuminate\Http\Request;
 
 class ConnectivityController extends Controller
@@ -18,24 +19,50 @@ class ConnectivityController extends Controller
         private ServicioGoogleSheet $sheet,
         private ServicioConectividad $conectividad,
         private ServicioFiltro $filtro,
+        private ServicioPostgresql $postgres,
     ) {}
 
     public function index(Request $request)
     {
-        $stores = $this->sheet->obtenerTiendas($this->applyRegionFilter(), self::COLUMNS);
-        $totalCount = count($stores);
-
-        $filterOptions = [
-            'almacenes' => $this->filtro->opcionesAlmacen($stores),
-            'companias' => $this->filtro->opcionesCompania($stores),
-        ];
-
         $filters = [
             'almacen' => trim($request->query('almacen', '')),
             'telefono' => $request->query('telefono', ''),
             'senial' => $request->query('senial', ''),
             'compania' => $request->query('compania', ''),
             'internet' => $request->query('internet', ''),
+        ];
+
+        if ($this->postgres->tieneDatos() && $request->query('export') !== 'csv') {
+            $page = max(1, (int) $request->query('page', 1));
+            $perPage = max(10, min(100, (int) $request->query('per_page', self::DEFAULT_PAGE_SIZE)));
+            $result = $this->postgres->obtenerConectividadPaginada($this->applyRegionFilter(), $filters, $page, $perPage);
+
+            return view('connectivity', [
+                'kpis' => $result['kpis'],
+                'stores' => $result['rows'],
+                'totalCount' => $result['total'],
+                'filteredCount' => $result['filtered'],
+                'serverPagination' => [
+                    'page' => $page,
+                    'perPage' => $perPage,
+                    'total' => $result['filtered'],
+                    'totalPages' => max(1, (int) ceil($result['filtered'] / $perPage)),
+                ],
+                'filterOptions' => [
+                    'almacenes' => [],
+                    'companias' => $result['companias'],
+                ],
+                'filters' => $filters,
+                'updatedAt' => now()->toDateTimeString(),
+            ]);
+        }
+
+        $stores = $this->sheet->obtenerTiendas($this->applyRegionFilter(), self::COLUMNS);
+        $totalCount = count($stores);
+
+        $filterOptions = [
+            'almacenes' => $this->filtro->opcionesAlmacen($stores),
+            'companias' => $this->filtro->opcionesCompania($stores),
         ];
 
         $filtered = collect($stores)->filter(function ($store) use ($filters) {

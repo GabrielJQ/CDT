@@ -141,6 +141,8 @@ class ImportController extends Controller
             return back()->with('error', 'Error al importar: '.$output);
         }
 
+        DashboardController::invalidateDashboardCache();
+
         $lines = explode("\n", trim($output));
         $summary = collect($lines)->filter(fn ($l) => str_starts_with($l, 'Importación'))->first() ?? 'OK';
 

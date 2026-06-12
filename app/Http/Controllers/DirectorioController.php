@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Servicios\ServicioExportacion;
 use App\Servicios\ServicioGoogleSheet;
+use App\Servicios\ServicioPostgresql;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -31,18 +32,47 @@ class DirectorioController extends Controller
 
     public function __construct(
         private ServicioGoogleSheet $sheet,
+        private ServicioPostgresql $postgres,
     ) {}
 
     public function index(Request $request)
     {
-        $stores = $this->sheet->obtenerTiendas($this->applyRegionFilter(), self::COLUMNS);
-        $totalCount = count($stores);
-
         $filters = [
             'q' => trim($request->query('q', '')),
             'incompletos' => $request->boolean('incompletos'),
             'sinCapital' => $request->boolean('sinCapital'),
         ];
+
+        if ($this->postgres->tieneDatos() && $request->query('export') !== 'csv') {
+            $page = max(1, (int) $request->query('page', 1));
+            $perPage = max(10, min(100, (int) $request->query('per_page', self::DEFAULT_PAGE_SIZE)));
+            $result = $this->postgres->obtenerDirectorioPaginado(
+                $this->applyRegionFilter(),
+                $filters,
+                $page,
+                $perPage,
+                self::COLUMNS,
+                $this->trackedColumns,
+            );
+
+            return view('directorio', [
+                'stores' => $result['rows'],
+                'totalCount' => $result['total'],
+                'filteredCount' => $result['filtered'],
+                'serverPagination' => [
+                    'page' => $page,
+                    'perPage' => $perPage,
+                    'total' => $result['filtered'],
+                    'totalPages' => max(1, (int) ceil($result['filtered'] / $perPage)),
+                ],
+                'filters' => $filters,
+                'globalStats' => $result['stats'],
+                'updatedAt' => now()->toDateTimeString(),
+            ]);
+        }
+
+        $stores = $this->sheet->obtenerTiendas($this->applyRegionFilter(), self::COLUMNS);
+        $totalCount = count($stores);
 
         $filtered = array_values(array_filter($stores, function (array $store) use ($filters) {
             if ($filters['q'] !== '') {
