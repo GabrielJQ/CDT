@@ -5,7 +5,8 @@
 @section('content')
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 lg:p-6 mb-6">
         <div class="flex items-center justify-between mb-4">
-            <h3 class="text-base lg:text-lg font-bold text-gray-800 dark:text-gray-100">📤 Subir archivo CSV</h3>
+            <h3 class="text-base lg:text-lg font-bold text-gray-800 dark:text-gray-100">📤 Subir archivo CSV — Tiendas Regulares</h3>
+            <span class="text-xs text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">135 columnas</span>
         </div>
         <form action="{{ route('imports.upload') }}" method="POST" enctype="multipart/form-data" id="upload-form"
             class="space-y-4">
@@ -33,6 +34,42 @@
             </p>
 
             <button id="submit-btn" type="submit" disabled
+                class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold px-5 py-3 rounded-lg text-sm shadow transition">
+                ⬆ Subir e Importar
+            </button>
+        </form>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 lg:p-6 mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base lg:text-lg font-bold text-gray-800 dark:text-gray-100">📤 Subir Excel — Salud Casa por Casa</h3>
+            <span class="text-xs text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">18 columnas</span>
+        </div>
+        <form action="{{ route('imports.upload-casa-x-casa') }}" method="POST" enctype="multipart/form-data" id="cxc-upload-form"
+            class="space-y-4">
+            @csrf
+
+            <label for="xlsx_file"
+                class="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-green-300 dark:border-green-600 rounded-xl cursor-pointer bg-green-50 dark:bg-green-900/20 hover:border-green-500 hover:bg-green-100 dark:hover:bg-green-900/40 transition">
+                <div class="text-center">
+                    <div class="text-3xl mb-2">📊</div>
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Haz clic para seleccionar archivo Excel
+                    </p>
+                    <p class="text-xs text-gray-400 mt-1">Directorio Nacional Tiendas Salud Casa por Casa</p>
+                </div>
+                <input type="file" name="xlsx_file" id="xlsx_file" accept=".xlsx,.xls" required class="hidden"
+                    onchange="document.getElementById('cxc-submit-btn').disabled = false; document.getElementById('cxc-file-name').textContent = this.files[0]?.name;">
+            </label>
+
+            <p id="cxc-file-name" class="text-xs text-gray-500 text-center"></p>
+
+            @error('xlsx_file')
+                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+            @enderror
+
+            <p class="text-xs text-gray-400">Máx. 50 MB. El archivo se importa directamente a <code class="font-mono bg-gray-100 dark:bg-gray-700 px-1 rounded">tiendas_casa_x_casa</code> vía upsert.</p>
+
+            <button id="cxc-submit-btn" type="submit" disabled
                 class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold px-5 py-3 rounded-lg text-sm shadow transition">
                 ⬆ Subir e Importar
             </button>
@@ -73,7 +110,7 @@
         @endif
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4">
             <div class="text-lg font-bold text-gray-800 dark:text-gray-100">{{ $chunkCount }}</div>
             <div class="text-xs text-gray-500 dark:text-gray-400">🧩 Chunks pendientes</div>
@@ -87,6 +124,10 @@
                 @endif
             </div>
             <div class="text-xs text-gray-500 dark:text-gray-400">🗄️ Filas en staging</div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4">
+            <div class="text-lg font-bold text-gray-800 dark:text-gray-100">{{ number_format($cxcCount) }}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">🏪 Tiendas CxC</div>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4">
             <div class="text-lg font-bold text-gray-800 dark:text-gray-100">

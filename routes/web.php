@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AperturaController;
 use App\Http\Controllers\AuditoriaController;
+use App\Http\Controllers\CasaPorCasaController;
 use App\Http\Controllers\ConnectivityController;
 use App\Http\Controllers\CriticalStoresController;
 use App\Http\Controllers\DashboardController;
@@ -27,6 +28,14 @@ Route::get('/auditoria', [AuditoriaController::class, 'index']);
 Route::controller(ImportController::class)->prefix('carga-masiva')->name('imports.')->group(function () {
     Route::get('/', 'index')->name('index');
     Route::post('/upload', 'upload')->name('upload');
+    Route::post('/upload-casa-x-casa', 'uploadCasaPorCasa')->name('upload-casa-x-casa');
+});
+
+Route::prefix('casa-x-casa')->name('casa-x-casa.')->controller(CasaPorCasaController::class)->group(function () {
+    Route::get('/', 'dashboard')->name('dashboard');
+    Route::get('/directorio', 'directorio')->name('directorio');
+    Route::get('/mapa', 'mapa')->name('mapa');
+    Route::get('/tienda/{id}', 'show')->name('show');
 });
 
 Route::post('/set-region', function (Request $r) {

@@ -111,6 +111,42 @@
                         @endforeach
                     </div>
                 </div>
+
+                {{-- Dropdown: Tiendas de Salud CxC --}}
+                @php
+                    $cxcPrefix = 'casa-x-casa';
+                    $cxcActive = str_starts_with($currentPath, $cxcPrefix);
+                    $cxcChildren = [
+                        '' => ['label' => 'Dashboard', 'icon' => '📊'],
+                        'directorio' => ['label' => 'Directorio', 'icon' => '📋'],
+                        'mapa' => ['label' => 'Mapa', 'icon' => '🗺️'],
+                    ];
+                @endphp
+                <div>
+                    <button type="button" id="cxc-toggle"
+                            title="Tiendas de Salud"
+                            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition w-full text-left
+                                   {{ $cxcActive ? 'bg-green-700 text-white' : 'text-green-100 hover:bg-green-700/50' }}">
+                        <span class="text-lg flex-shrink-0 w-6 text-center">🏥</span>
+                        <span class="nav-label flex-1 truncate">Tiendas de Salud</span>
+                        <span id="cxc-arrow" class="sidebar-extra text-xs transition-transform {{ $cxcActive ? 'rotate-0' : '-rotate-90' }}">▼</span>
+                    </button>
+                    <div id="cxc-submenu" class="ml-2 mt-1 space-y-1 {{ $cxcActive ? '' : 'hidden' }}">
+                        @foreach($cxcChildren as $childPath => $child)
+                            @php
+                                $fullPath = $childPath === '' ? $cxcPrefix : $cxcPrefix.'/'.$childPath;
+                                $isChildActive = $currentPath === $fullPath || ($childPath !== '' && str_starts_with($currentPath, $fullPath));
+                            @endphp
+                            <a href="{{ url($fullPath) }}"
+                               title="{{ $child['label'] }}"
+                               class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition
+                                      {{ $isChildActive ? 'bg-green-700 text-white' : 'text-green-100 hover:bg-green-700/50' }}">
+                                <span class="text-base flex-shrink-0 w-6 text-center">{{ $child['icon'] }}</span>
+                                <span class="nav-label truncate">{{ $child['label'] }}</span>
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
             </nav>
             <div class="border-t border-green-700 text-xs text-green-300 p-3 sidebar-extra flex-shrink-0">
                 @php $layoutUpdated = now()->toDateTimeString(); @endphp
@@ -222,6 +258,16 @@
                 toggle.addEventListener('click', function () {
                     submenu.classList.toggle('hidden');
                     arrow.classList.toggle('-rotate-90');
+                });
+            }
+
+            var cxcToggle = document.getElementById('cxc-toggle');
+            var cxcSubmenu = document.getElementById('cxc-submenu');
+            var cxcArrow = document.getElementById('cxc-arrow');
+            if (cxcToggle && cxcSubmenu && cxcArrow) {
+                cxcToggle.addEventListener('click', function () {
+                    cxcSubmenu.classList.toggle('hidden');
+                    cxcArrow.classList.toggle('-rotate-90');
                 });
             }
 

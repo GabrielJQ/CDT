@@ -7,8 +7,10 @@ use App\Jobs\ProcesarChunkCsvJob;
 use App\Servicios\ServicioMapeoColumnas;
 use App\Servicios\ServicioSanitizadorCsv;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ImportController extends Controller
 {
@@ -43,10 +45,19 @@ class ImportController extends Controller
         } catch (\Throwable) {
         }
 
+        $cxcCount = 0;
+        try {
+            $cxcCount = DB::connection('pgsql_imports')
+                ->table('tiendas_casa_x_casa')
+                ->count();
+        } catch (\Throwable) {
+        }
+
         return view('imports', [
             'archivos' => $archivos,
             'chunkCount' => $chunkCount,
             'stagingCount' => $stagingCount,
+            'cxcCount' => $cxcCount,
         ]);
     }
 
@@ -101,6 +112,39 @@ class ImportController extends Controller
             count($chunkFiles),
             $batch->id,
         ));
+    }
+
+    public function uploadCasaPorCasa(Request $request)
+    {
+        $request->validate([
+            'xlsx_file' => 'required|file|mimes:xlsx,xls|max:51200',
+        ]);
+
+        $file = $request->file('xlsx_file');
+        $dir = 'imports/casa-x-casa';
+
+        Storage::disk('local')->makeDirectory($dir);
+
+        $path = $file->storeAs($dir, 'cxc_'.now()->format('Ymd_His').'.'.$file->extension(), 'local');
+
+        $fullPath = Storage::disk('local')->path($path);
+
+        $exitCode = Artisan::call('casa-x-casa:import', [
+            'file' => $fullPath,
+            '--truncate' => true,
+            '--no-interaction' => true,
+        ]);
+
+        $output = Artisan::output();
+
+        if ($exitCode !== 0) {
+            return back()->with('error', 'Error al importar: '.$output);
+        }
+
+        $lines = explode("\n", trim($output));
+        $summary = collect($lines)->filter(fn ($l) => str_starts_with($l, 'Importación'))->first() ?? 'OK';
+
+        return back()->with('success', "Archivo CxC importado correctamente. {$summary}");
     }
 
     public function uploadForm()
