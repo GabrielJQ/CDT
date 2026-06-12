@@ -25,10 +25,18 @@
             </div>
         </section>
 
-        <div class="grid grid-cols-1 gap-3 mb-6 md:grid-cols-3">
+        <div class="grid grid-cols-1 gap-3 mb-6 md:grid-cols-5">
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-blue-500">
                 <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">🏪 Total</p>
                 <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ number_format($totalCount) }}</p>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-green-500">
+                <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">🟢 Instalados</p>
+                <p class="text-2xl font-bold text-green-600">{{ number_format($anaqueles['instalados'] ?? 0) }}</p>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-amber-500">
+                <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">🟠 Pendientes</p>
+                <p class="text-2xl font-bold text-amber-600">{{ number_format($anaqueles['pendientes'] ?? 0) }}</p>
             </div>
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-green-500">
                 <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">📍 Con coordenadas</p>
@@ -58,14 +66,14 @@
                             <p class="text-sm font-extrabold text-gray-900 dark:text-gray-100">Instalados</p>
                             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Marcadores verdes en el mapa.</p>
                         </div>
-                        <span class="status-pill status-ok">Verde</span>
+                        <span class="status-pill status-ok">{{ number_format($anaqueles['instalados'] ?? 0) }}</span>
                     </div>
                     <div class="priority-item">
                         <div>
                             <p class="text-sm font-extrabold text-gray-900 dark:text-gray-100">Pendientes</p>
                             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Marcadores ámbar para seguimiento.</p>
                         </div>
-                        <span class="status-pill status-warning">Ámbar</span>
+                        <span class="status-pill status-warning">{{ number_format($anaqueles['pendientes'] ?? 0) }}</span>
                     </div>
                     <div class="priority-item">
                         <div>

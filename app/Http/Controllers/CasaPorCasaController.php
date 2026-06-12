@@ -162,9 +162,13 @@ class CasaPorCasaController extends Controller
             ->where('longitud', '!=', 0)
             ->count();
 
+        $anaqueles = [
+            'instalados' => (clone $baseQuery)->where('anaqueles_instalados', true)->count(),
+            'pendientes' => (clone $baseQuery)->where('anaqueles_instalados', false)->count(),
+        ];
         $totalCount = (clone $baseQuery)->count();
 
-        return view('casa-x-casa.mapa', compact('totalCount', 'conCoordenadas'));
+        return view('casa-x-casa.mapa', compact('totalCount', 'conCoordenadas', 'anaqueles'));
     }
 
     public function mapaData(Request $request)
