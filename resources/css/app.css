@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700;800&display=swap');
 @import 'tailwindcss';
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -8,6 +9,306 @@
 @source '../**/*.js';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-sans: 'Montserrat', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+:root {
+    --gob-verde: #13322B;
+    --gob-verde-oscuro: #0d241f;
+    --gob-oro: #988256;
+    --gob-oro-oscuro: #856d44;
+    --gob-rojo: #691C32;
+    --gob-gris-oscuro: #4D4D4D;
+    --gob-gris-claro: #F2F2F2;
+    --gob-white: #ffffff;
+    --soft-shadow: 0 14px 35px rgba(19, 50, 43, 0.08);
+    --soft-shadow-hover: 0 18px 42px rgba(19, 50, 43, 0.14);
+}
+
+html {
+    font-family: var(--font-sans);
+}
+
+body {
+    color: var(--gob-gris-oscuro);
+    background:
+        radial-gradient(circle at top left, rgba(152, 130, 86, 0.12), transparent 30rem),
+        linear-gradient(180deg, #f7f7f4 0%, #eef0ec 100%);
+}
+
+.dark body {
+    color: #e5e7eb;
+    background:
+        radial-gradient(circle at top left, rgba(152, 130, 86, 0.10), transparent 28rem),
+        linear-gradient(180deg, #111827 0%, #0b1412 100%);
+}
+
+@layer components {
+    .institutional-card {
+        @apply rounded-2xl border border-black/5 bg-white shadow-lg shadow-black/5 transition duration-200 dark:border-white/10 dark:bg-gray-800;
+        box-shadow: var(--soft-shadow);
+    }
+
+    .institutional-card:hover {
+        box-shadow: var(--soft-shadow-hover);
+        transform: translateY(-1px);
+    }
+
+    .institutional-card-top {
+        @apply relative overflow-hidden rounded-2xl border border-black/5 bg-white shadow-lg shadow-black/5 dark:border-white/10 dark:bg-gray-800;
+    }
+
+    .institutional-card-top::before {
+        content: '';
+        @apply absolute inset-x-0 top-0 h-1;
+        background: linear-gradient(90deg, var(--gob-oro), rgba(152, 130, 86, 0.35));
+    }
+
+    .institutional-title {
+        @apply relative inline-flex pb-2 text-xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100;
+        color: var(--gob-verde);
+    }
+
+    .dark .institutional-title {
+        color: #f3f4f6;
+    }
+
+    .institutional-title::after {
+        content: '';
+        @apply absolute bottom-0 left-0 h-1 w-16 rounded-full;
+        background: var(--gob-oro);
+    }
+
+    .page-shell {
+        @apply mx-auto flex w-full max-w-[1600px] flex-col gap-5;
+    }
+
+    .page-hero {
+        @apply relative overflow-hidden rounded-3xl border border-black/5 bg-white p-5 shadow-lg shadow-black/5 dark:border-white/10 dark:bg-gray-800 lg:p-6;
+        box-shadow: var(--soft-shadow);
+    }
+
+    .page-hero::before {
+        content: '';
+        @apply absolute inset-y-0 right-0 w-1/2 opacity-70;
+        background: radial-gradient(circle at top right, rgba(152, 130, 86, 0.20), transparent 18rem);
+    }
+
+    .page-hero-content {
+        @apply relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between;
+    }
+
+    .eyebrow {
+        @apply text-xs font-extrabold uppercase tracking-[0.22em] text-gray-500 dark:text-gray-400;
+    }
+
+    .page-heading {
+        @apply mt-1 text-2xl font-extrabold tracking-tight text-gray-950 dark:text-white lg:text-3xl;
+    }
+
+    .page-subheading {
+        @apply mt-2 max-w-3xl text-sm leading-6 text-gray-600 dark:text-gray-300;
+    }
+
+    .kpi-card {
+        @apply rounded-2xl border border-black/5 bg-white p-4 shadow-sm transition duration-200 dark:border-white/10 dark:bg-gray-800;
+    }
+
+    .kpi-card:hover {
+        box-shadow: var(--soft-shadow-hover);
+        transform: translateY(-1px);
+    }
+
+    .kpi-label {
+        @apply text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400;
+    }
+
+    .kpi-value {
+        @apply mt-2 text-2xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100;
+    }
+
+    .kpi-meta {
+        @apply mt-1 text-xs font-semibold text-gray-400 dark:text-gray-500;
+    }
+
+    .module-card {
+        @apply relative overflow-hidden rounded-2xl border border-black/5 bg-white p-4 shadow-sm transition duration-200 dark:border-white/10 dark:bg-gray-800 lg:p-5;
+    }
+
+    .module-card:hover {
+        box-shadow: var(--soft-shadow-hover);
+        transform: translateY(-2px);
+    }
+
+    .module-card::before {
+        content: '';
+        @apply absolute inset-x-0 top-0 h-1 opacity-80;
+        background: linear-gradient(90deg, var(--gob-oro), transparent);
+    }
+
+    .module-title {
+        @apply text-sm font-extrabold text-gray-900 transition dark:text-gray-100 lg:text-base;
+    }
+
+    .module-link {
+        @apply text-xs font-bold uppercase tracking-wide text-gray-400 transition dark:text-gray-500;
+    }
+
+    .module-card:hover .module-link {
+        @apply text-gray-700 dark:text-gray-300;
+    }
+
+    .priority-panel {
+        @apply rounded-2xl border border-black/5 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-gray-800 lg:p-5;
+    }
+
+    .priority-item {
+        @apply flex items-start justify-between gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/35;
+    }
+
+    .status-pill {
+        @apply inline-flex items-center justify-center rounded-full px-2.5 py-1 text-xs font-extrabold uppercase tracking-wide;
+    }
+
+    .status-critical {
+        @apply bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300;
+    }
+
+    .status-warning {
+        @apply bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300;
+    }
+
+    .status-ok {
+        @apply bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300;
+    }
+
+    .btn-institutional {
+        @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-bold text-white shadow-sm transition duration-200 focus:outline-none;
+        background: linear-gradient(135deg, var(--gob-verde), var(--gob-verde-oscuro));
+    }
+
+    .btn-institutional:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 22px rgba(19, 50, 43, 0.22);
+    }
+
+    .btn-gold {
+        @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-bold text-white shadow-sm transition duration-200 focus:outline-none;
+        background: linear-gradient(135deg, var(--gob-oro), var(--gob-oro-oscuro));
+    }
+
+    .btn-guinda {
+        @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-bold text-white shadow-sm transition duration-200 focus:outline-none;
+        background: linear-gradient(135deg, var(--gob-rojo), #4d1425);
+    }
+
+    .btn-filter {
+        @apply inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700;
+    }
+
+    .btn-secondary {
+        @apply inline-flex items-center justify-center rounded-lg bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500;
+    }
+
+    .btn-export {
+        @apply inline-flex items-center justify-center rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700;
+    }
+
+    .btn-upload {
+        @apply w-full rounded-lg bg-green-600 px-5 py-3 text-sm font-semibold text-white shadow transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-300;
+    }
+
+    .filter-panel {
+        @apply mb-4 rounded-xl bg-white p-4 shadow dark:bg-gray-800;
+    }
+
+    .table-shell {
+        @apply overflow-x-auto rounded-xl bg-white shadow dark:bg-gray-800;
+    }
+
+    .input-institutional {
+        @apply rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 transition focus:border-transparent focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100;
+    }
+
+    .input-filter {
+        @apply w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 transition focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100;
+    }
+
+    .input-filter:focus {
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.22);
+        border-color: #60a5fa;
+    }
+
+    .input-institutional:focus {
+        box-shadow: 0 0 0 4px rgba(152, 130, 86, 0.15);
+        border-color: var(--gob-oro);
+    }
+
+    .table-institutional thead {
+        background: var(--gob-verde);
+        color: white;
+    }
+
+    .table-institutional tbody tr {
+        @apply transition;
+    }
+
+    .table-institutional tbody tr:hover {
+        background: rgba(152, 130, 86, 0.10);
+        box-shadow: inset 5px 0 0 var(--gob-oro);
+    }
+
+    .institutional-sidebar {
+        background: linear-gradient(180deg, var(--gob-verde) 0%, var(--gob-verde-oscuro) 100%);
+        box-shadow: 10px 0 30px rgba(13, 36, 31, 0.22);
+    }
+
+    .institutional-sidebar-brand {
+        @apply border-b px-4;
+        border-color: rgba(152, 130, 86, 0.35);
+    }
+
+    .institutional-nav-link {
+        @apply relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white/80 transition duration-200;
+    }
+
+    .institutional-nav-link:hover {
+        @apply text-white;
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .institutional-nav-link-active {
+        @apply text-white shadow-sm;
+        background: linear-gradient(90deg, var(--gob-oro) 0%, var(--gob-oro-oscuro) 100%);
+    }
+
+    .institutional-nav-link-active::before {
+        content: '';
+        @apply absolute bottom-2 left-0 top-2 w-1 rounded-r-full bg-black/70;
+    }
+
+    .institutional-subnav-link {
+        @apply relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-white/75 transition duration-200;
+    }
+
+    .institutional-subnav-link:hover {
+        @apply text-white;
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .institutional-subnav-link-active {
+        @apply text-white;
+        background: rgba(152, 130, 86, 0.92);
+    }
+
+    .institutional-topbar {
+        @apply border-b px-4 py-2 backdrop-blur lg:px-6 lg:py-3;
+        background: rgba(19, 50, 43, 0.96);
+        border-color: var(--gob-oro);
+    }
+
+    .institutional-topbar-title {
+        @apply truncate text-base font-extrabold tracking-tight text-white lg:text-lg;
+    }
 }

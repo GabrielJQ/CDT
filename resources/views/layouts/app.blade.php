@@ -50,26 +50,33 @@
                     break;
                 }
             }
+            $sectionLabel = match (true) {
+                str_starts_with($currentPath, 'casa-x-casa') => 'Tiendas de Salud',
+                str_starts_with($currentPath, 'carga-masiva') => 'Importaciones',
+                $presenciaActive => 'Presencia Tiendas',
+                str_starts_with($currentPath, 'auditoria') => 'Control Operativo',
+                str_starts_with($currentPath, 'directorio') => 'Directorio',
+                default => 'Monitoreo CDT',
+            };
         @endphp
 
         {{-- Overlay for mobile --}}
         <div id="sidebar-overlay" class="fixed inset-0 bg-black/40 z-20 hidden lg:hidden" onclick="toggleSidebar()"></div>
 
         {{-- Sidebar --}}
-        <aside id="sidebar" class="expanded flex-shrink-0 bg-[#166534] text-white flex flex-col z-30 overflow-hidden">
-            <div class="border-b border-green-700 flex items-center justify-between flex-shrink-0" style="height:3.5rem">
+        <aside id="sidebar" class="institutional-sidebar expanded shrink-0 text-white flex flex-col z-30 overflow-hidden">
+            <div class="institutional-sidebar-brand flex items-center justify-between shrink-0" style="height:3.5rem">
                 <div class="px-4 flex items-center gap-2 overflow-hidden">
-                    <span class="text-xl font-bold tracking-tight flex-shrink-0">CDT</span>
-                    <span class="nav-label text-xs text-green-300 whitespace-nowrap">Panel de Monitoreo</span>
+                    <span class="text-xl font-extrabold tracking-tight shrink-0">CDT</span>
+                    <span class="nav-label text-xs font-semibold uppercase tracking-widest text-[#988256] whitespace-nowrap">Panel de Monitoreo</span>
                 </div>
-                <button onclick="toggleSidebar()" class="lg:hidden text-green-200 hover:text-white text-xl leading-none px-2">&times;</button>
+                <button onclick="toggleSidebar()" class="lg:hidden text-white/70 hover:text-white text-xl leading-none px-2">&times;</button>
             </div>
             <nav class="flex-1 p-2 space-y-1 overflow-y-auto overflow-x-hidden">
                 <a href="{{ url('carga-masiva') }}"
                    title="Carga Masiva"
-                   class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition
-                          {{ str_starts_with($currentPath, 'carga-masiva') ? 'bg-green-700 text-white' : 'text-green-100 hover:bg-green-700/50' }}">
-                    <span class="text-lg flex-shrink-0 w-6 text-center">📥</span>
+                   class="nav-link institutional-nav-link {{ str_starts_with($currentPath, 'carga-masiva') ? 'institutional-nav-link-active' : '' }}">
+                    <span class="text-lg shrink-0 w-6 text-center">📥</span>
                     <span class="nav-label truncate">Carga Masiva</span>
                 </a>
 
@@ -79,9 +86,8 @@
                     @endphp
                     <a href="{{ url($path === '/' ? '' : $path) }}"
                        title="{{ $item['label'] }}"
-                       class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition
-                              {{ $isActive ? 'bg-green-700 text-white' : 'text-green-100 hover:bg-green-700/50' }}">
-                        <span class="text-lg flex-shrink-0 w-6 text-center">{{ $item['icon'] }}</span>
+                       class="nav-link institutional-nav-link {{ $isActive ? 'institutional-nav-link-active' : '' }}">
+                        <span class="text-lg shrink-0 w-6 text-center">{{ $item['icon'] }}</span>
                         <span class="nav-label truncate">{{ $item['label'] }}</span>
                     </a>
                 @endforeach
@@ -90,9 +96,8 @@
                 <div>
                     <button type="button" id="presencia-toggle"
                             title="Presencia Tiendas"
-                            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition w-full text-left
-                                   {{ $presenciaActive ? 'bg-green-700 text-white' : 'text-green-100 hover:bg-green-700/50' }}">
-                        <span class="text-lg flex-shrink-0 w-6 text-center">🏪</span>
+                            class="institutional-nav-link w-full text-left {{ $presenciaActive ? 'institutional-nav-link-active' : '' }}">
+                        <span class="text-lg shrink-0 w-6 text-center">🏪</span>
                         <span class="nav-label flex-1 truncate">Presencia Tiendas</span>
                         <span id="presencia-arrow" class="sidebar-extra text-xs transition-transform {{ $presenciaActive ? 'rotate-0' : '-rotate-90' }}">▼</span>
                     </button>
@@ -103,9 +108,8 @@
                             @endphp
                             <a href="{{ url($childPath) }}"
                                title="{{ $child['label'] }}"
-                               class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition
-                                      {{ $isChildActive ? 'bg-green-700 text-white' : 'text-green-100 hover:bg-green-700/50' }}">
-                                <span class="text-base flex-shrink-0 w-6 text-center">{{ $child['icon'] }}</span>
+                               class="nav-link institutional-subnav-link {{ $isChildActive ? 'institutional-subnav-link-active' : '' }}">
+                                <span class="text-base shrink-0 w-6 text-center">{{ $child['icon'] }}</span>
                                 <span class="nav-label truncate">{{ $child['label'] }}</span>
                             </a>
                         @endforeach
@@ -125,9 +129,8 @@
                 <div>
                     <button type="button" id="cxc-toggle"
                             title="Tiendas de Salud"
-                            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition w-full text-left
-                                   {{ $cxcActive ? 'bg-green-700 text-white' : 'text-green-100 hover:bg-green-700/50' }}">
-                        <span class="text-lg flex-shrink-0 w-6 text-center">🏥</span>
+                            class="institutional-nav-link w-full text-left {{ $cxcActive ? 'institutional-nav-link-active' : '' }}">
+                        <span class="text-lg shrink-0 w-6 text-center">🏥</span>
                         <span class="nav-label flex-1 truncate">Tiendas de Salud</span>
                         <span id="cxc-arrow" class="sidebar-extra text-xs transition-transform {{ $cxcActive ? 'rotate-0' : '-rotate-90' }}">▼</span>
                     </button>
@@ -139,16 +142,15 @@
                             @endphp
                             <a href="{{ url($fullPath) }}"
                                title="{{ $child['label'] }}"
-                               class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition
-                                      {{ $isChildActive ? 'bg-green-700 text-white' : 'text-green-100 hover:bg-green-700/50' }}">
-                                <span class="text-base flex-shrink-0 w-6 text-center">{{ $child['icon'] }}</span>
+                               class="nav-link institutional-subnav-link {{ $isChildActive ? 'institutional-subnav-link-active' : '' }}">
+                                <span class="text-base shrink-0 w-6 text-center">{{ $child['icon'] }}</span>
                                 <span class="nav-label truncate">{{ $child['label'] }}</span>
                             </a>
                         @endforeach
                     </div>
                 </div>
             </nav>
-            <div class="border-t border-green-700 text-xs text-green-300 p-3 sidebar-extra flex-shrink-0">
+            <div class="border-t border-[#988256]/35 text-xs text-white/55 p-3 sidebar-extra shrink-0">
                 @php $layoutUpdated = now()->toDateTimeString(); @endphp
                 <p>Actualizado: <span class="font-mono text-white">{{ $layoutUpdated }}</span></p>
             </div>
@@ -156,9 +158,15 @@
 
         <main class="flex-1 flex flex-col min-w-0">
             {{-- Top bar --}}
-            <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 lg:px-6 py-2 lg:py-3 flex flex-wrap items-center gap-2 lg:gap-3">
-                <button onclick="toggleSidebar()" class="text-gray-600 hover:text-gray-900 text-xl leading-none pr-2">☰</button>
-                <h2 class="text-base lg:text-lg font-semibold text-gray-800 dark:text-gray-100 truncate flex-1">{{ $pageTitle ?? 'Dashboard' }}</h2>
+            <div class="institutional-topbar flex flex-wrap items-center gap-2 lg:gap-3">
+                <button onclick="toggleSidebar()" class="rounded-lg px-2 py-1 text-xl leading-none text-white/80 transition hover:bg-white/10 hover:text-white">☰</button>
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2">
+                        <span class="hidden rounded-full border border-[#988256]/50 px-2 py-0.5 text-[0.65rem] font-extrabold uppercase tracking-[0.2em] text-[#d7c08a] sm:inline-flex">{{ $sectionLabel }}</span>
+                        <h2 class="institutional-topbar-title">{{ $pageTitle ?? 'Dashboard' }}</h2>
+                    </div>
+                    <p class="hidden text-xs text-white/55 lg:block">Filtro global aplicado a todos los modulos operativos</p>
+                </div>
                 <div class="flex items-center gap-2 w-full lg:w-auto">
                     @php
                         $currentRegionCookie = request()->cookie('region_filter', '');
@@ -168,7 +176,7 @@
                         @csrf
                         <input type="hidden" name="redirect" value="{{ url()->current() }}">
                         <select name="region" id="region-select"
-                                class="w-full lg:w-auto border border-gray-300 rounded-lg px-2 lg:px-3 py-1.5 lg:py-2 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white">
+                                class="input-institutional w-full lg:w-auto text-xs lg:text-sm">
                             <option value="">🌎 Todas</option>
                             @foreach($regionesData ?? [] as $reg)
                                 <option value="{{ $reg['clave'] }}" {{ $currentRegionCookie === $reg['clave'] ? 'selected' : '' }}>
@@ -177,7 +185,7 @@
                             @endforeach
                         </select>
                         <select name="uo" id="uo-select"
-                                class="w-full lg:w-auto border border-gray-300 rounded-lg px-2 lg:px-3 py-1.5 lg:py-2 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white">
+                                class="input-institutional w-full lg:w-auto text-xs lg:text-sm">
                             <option value="">📍 Todas UO</option>
                             @foreach($regionesData ?? [] as $reg)
                                 @foreach($reg['uos'] as $uo)
@@ -192,11 +200,11 @@
                     </form>
                     <form action="{{ url('/refresh') }}" method="POST" class="flex-none">
                         @csrf
-                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg text-xs lg:text-sm shadow transition whitespace-nowrap">
+                        <button type="submit" class="btn-gold px-3 py-1.5 text-xs lg:px-4 lg:py-2 lg:text-sm whitespace-nowrap">
                             ↻ Refrescar
                         </button>
                     </form>
-                    <button id="tema-toggle" class="text-lg leading-none w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Cambiar tema">🌙</button>
+                    <button id="tema-toggle" class="flex h-8 w-8 items-center justify-center rounded-lg text-lg leading-none text-white/85 transition hover:bg-white/10 hover:text-white" title="Cambiar tema">🌙</button>
                 </div>
             </div>
 
