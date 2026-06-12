@@ -3,6 +3,21 @@
 @section('title', 'Salud Casa por Casa — CDT')
 
 @section('content')
+<div class="page-shell">
+    <section class="page-hero">
+        <div class="page-hero-content">
+            <div>
+                <p class="eyebrow">Tiendas de Salud</p>
+                <h1 class="page-heading">Seguimiento Casa por Casa</h1>
+                <p class="page-subheading">Monitorea estatus, anaqueles, aviso de funcionamiento y cruce contra el catalogo general de tiendas.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ route('casa-x-casa.directorio') }}" class="btn-institutional">Directorio CxC</a>
+                <a href="{{ route('casa-x-casa.mapa') }}" class="btn-secondary">Ver mapa</a>
+            </div>
+        </div>
+    </section>
+
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3 mb-6">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm px-3 lg:px-4 py-2 lg:py-3">
             <div class="text-lg lg:text-xl font-bold text-gray-800 dark:text-gray-100">{{ number_format($total) }}</div>
@@ -121,4 +136,5 @@
             @endif
         </div>
     </div>
+</div>
 @endsection

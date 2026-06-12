@@ -3,6 +3,19 @@
 @section('title', 'Carga Masiva — CDT')
 
 @section('content')
+<div class="page-shell">
+    <section class="page-hero">
+        <div class="page-hero-content">
+            <div>
+                <p class="eyebrow">Importaciones</p>
+                <h1 class="page-heading">Carga masiva de informacion</h1>
+                <p class="page-subheading">Centraliza la actualizacion de tiendas regulares y Tiendas de Salud Casa por Casa. Valida el archivo correcto antes de iniciar la importacion.</p>
+            </div>
+            <a href="{{ route('imports.index') }}" class="btn-secondary">Recargar estado</a>
+        </div>
+    </section>
+
+    <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 lg:p-6 mb-6">
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-base lg:text-lg font-bold text-gray-800 dark:text-gray-100">📤 Subir archivo CSV — Tiendas Regulares</h3>
@@ -34,7 +47,7 @@
             </p>
 
             <button id="submit-btn" type="submit" disabled
-                class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold px-5 py-3 rounded-lg text-sm shadow transition">
+                class="btn-upload">
                 ⬆ Subir e Importar
             </button>
         </form>
@@ -70,10 +83,11 @@
             <p class="text-xs text-gray-400">Máx. 50 MB. El archivo se importa directamente a <code class="font-mono bg-gray-100 dark:bg-gray-700 px-1 rounded">tiendas_casa_x_casa</code> vía upsert.</p>
 
             <button id="cxc-submit-btn" type="submit" disabled
-                class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold px-5 py-3 rounded-lg text-sm shadow transition">
+                class="btn-upload">
                 ⬆ Subir e Importar
             </button>
         </form>
+    </div>
     </div>
 
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 lg:p-6 mb-6">
@@ -137,4 +151,5 @@
         </div>
     </div>
 
+</div>
 @endsection
