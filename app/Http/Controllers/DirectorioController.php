@@ -20,17 +20,56 @@ class DirectorioController extends Controller
 
     private array $trackedColumns = self::TRACKED_COLUMNS;
 
+    private const COLUMNS = [
+        'Nombre_Almacen', 'No_Tienda_Actual', 'Municipio', 'Fecha_Apertura', 'TELEFONIA', 'Señal de celular',
+        'Compañía', 'INTERNET', 'CORREO', 'Direccion', 'Vta_Mes', 'VtaNeta_Mes', 'Vta_Acu', 'VtaNeta_Acu',
+        'Bon_Mes', 'Cap_Tot', 'Cap_Com', 'Cap_Dic', 'Pagare_Monto', 'Pagare_Fecha', 'Fec_CRA', 'Vigencia',
+        'Fch_Audit', 'Imp_Res_Audi_Mes', 'Audit_Realiza_Mes', 'Latitud', 'Longitud', 'Nom_Pre_CRA',
+        'Nom_Pre_Sup_CRA', 'Nom_Sec_CRA', 'Nom_Sec_Sup_CRA', 'Nom_Tes_CRA', 'Nom_Vcv_CRA', 'Nom_Voc_Gen_CRA',
+        'Asam_Real_Mes',
+    ];
+
     public function __construct(
         private ServicioGoogleSheet $sheet,
     ) {}
 
     public function index(Request $request)
     {
-        $stores = $this->sheet->obtenerTiendas($this->applyRegionFilter());
+        $stores = $this->sheet->obtenerTiendas($this->applyRegionFilter(), self::COLUMNS);
         $totalCount = count($stores);
 
+        $filters = [
+            'q' => trim($request->query('q', '')),
+            'incompletos' => $request->boolean('incompletos'),
+            'sinCapital' => $request->boolean('sinCapital'),
+        ];
+
+        $filtered = array_values(array_filter($stores, function (array $store) use ($filters) {
+            if ($filters['q'] !== '') {
+                $search = mb_strtoupper($filters['q']);
+                $haystack = mb_strtoupper(implode(' ', [
+                    $store['Nombre_Almacen'] ?? '',
+                    $store['No_Tienda_Actual'] ?? '',
+                    $store['Municipio'] ?? '',
+                ]));
+                if (! str_contains($haystack, $search)) {
+                    return false;
+                }
+            }
+
+            if ($filters['incompletos'] && ! $this->tieneCamposIncompletos($store)) {
+                return false;
+            }
+
+            if ($filters['sinCapital'] && ! $this->sinCapital($store)) {
+                return false;
+            }
+
+            return true;
+        }));
+
         if ($request->query('export') === 'csv') {
-            return ServicioExportacion::csvResponse($stores, [
+            return ServicioExportacion::csvResponse($filtered, [
                 'Nombre_Almacen' => 'Almacén',
                 'No_Tienda_Actual' => 'Tienda #',
                 'Municipio' => 'Municipio',
@@ -68,9 +107,14 @@ class DirectorioController extends Controller
             ], 'directorio.csv');
         }
 
+        $pagination = $this->paginateArray($filtered);
+
         return view('directorio', [
-            'stores' => $stores,
+            'stores' => $pagination['items'],
             'totalCount' => $totalCount,
+            'filteredCount' => count($filtered),
+            'serverPagination' => $pagination['meta'],
+            'filters' => $filters,
             'globalStats' => $this->calcularStats($stores),
             'updatedAt' => now()->toDateTimeString(),
         ]);
@@ -90,21 +134,12 @@ class DirectorioController extends Controller
         $columnasIncompletos = array_filter($this->trackedColumns, fn ($c) => ! str_contains($c, 'Sup_CRA'));
 
         foreach ($stores as $store) {
-            $hasEmpty = false;
-            foreach ($columnasIncompletos as $col) {
-                $val = trim($store[$col] ?? '');
-                if ($val === '' || $val === '0') {
-                    $hasEmpty = true;
-                    break;
-                }
-            }
-            if ($hasEmpty) {
+            if ($this->tieneCamposIncompletos($store, $columnasIncompletos)) {
                 $incompletos++;
             }
 
-            $capTotStr = trim($store['Cap_Tot'] ?? '');
-            $capTot = (float) str_replace([',', '$', ' '], '', $capTotStr);
-            if ($capTotStr === '' || $capTotStr === '0' || $capTot === 0.0) {
+            $capTot = $this->capitalTotal($store);
+            if ($this->sinCapital($store)) {
                 $sinCapital++;
             }
 
@@ -146,5 +181,30 @@ class DirectorioController extends Controller
         }
 
         return compact('incompletos', 'sinCapital', 'comitesIncompletos', 'asambleasMes', 'tiendasFaltante', 'importeFaltante', 'pagaresVencidos', 'importePagaresVencidos');
+    }
+
+    private function tieneCamposIncompletos(array $store, ?array $columns = null): bool
+    {
+        $columns ??= array_filter($this->trackedColumns, fn ($c) => ! str_contains($c, 'Sup_CRA'));
+        foreach ($columns as $col) {
+            $val = trim($store[$col] ?? '');
+            if ($val === '' || $val === '0') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function sinCapital(array $store): bool
+    {
+        $capTotStr = trim($store['Cap_Tot'] ?? '');
+
+        return $capTotStr === '' || $capTotStr === '0' || $this->capitalTotal($store) === 0.0;
+    }
+
+    private function capitalTotal(array $store): float
+    {
+        return (float) str_replace([',', '$', ' '], '', trim($store['Cap_Tot'] ?? ''));
     }
 }

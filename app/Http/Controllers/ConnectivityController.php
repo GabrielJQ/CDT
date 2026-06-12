@@ -10,6 +10,10 @@ use Illuminate\Http\Request;
 
 class ConnectivityController extends Controller
 {
+    private const COLUMNS = [
+        'Nombre_Almacen', 'No_Tienda_Actual', 'Municipio', 'TELEFONIA', 'Señal de celular', 'Compañía', 'INTERNET',
+    ];
+
     public function __construct(
         private ServicioGoogleSheet $sheet,
         private ServicioConectividad $conectividad,
@@ -18,7 +22,7 @@ class ConnectivityController extends Controller
 
     public function index(Request $request)
     {
-        $stores = $this->sheet->obtenerTiendas($this->applyRegionFilter());
+        $stores = $this->sheet->obtenerTiendas($this->applyRegionFilter(), self::COLUMNS);
         $totalCount = count($stores);
 
         $filterOptions = [
@@ -86,11 +90,14 @@ class ConnectivityController extends Controller
             ], 'conectividad.csv');
         }
 
+        $pagination = $this->paginateArray($filtered);
+
         return view('connectivity', [
             'kpis' => $this->conectividad->calcularKpis($filtered),
-            'stores' => $filtered,
+            'stores' => $pagination['items'],
             'totalCount' => $totalCount,
             'filteredCount' => count($filtered),
+            'serverPagination' => $pagination['meta'],
             'filterOptions' => $filterOptions,
             'filters' => $filters,
             'updatedAt' => now()->toDateTimeString(),

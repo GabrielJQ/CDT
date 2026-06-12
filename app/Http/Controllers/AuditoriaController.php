@@ -10,6 +10,11 @@ use Illuminate\Http\Request;
 
 class AuditoriaController extends Controller
 {
+    private const COLUMNS = [
+        'Nombre_Almacen', 'Localidad', 'No_Tienda_Actual', 'Municipio', 'Vigencia', 'Imp_Res_Audi_Mes',
+        'Cap_Dic', 'Vta_Mes', 'Fch_Audit', 'Audit_Realiza_Mes', 'Asam_Real_Mes',
+    ];
+
     public function __construct(
         private ServicioGoogleSheet $sheet,
         private ServicioAuditoria $auditoria,
@@ -18,7 +23,7 @@ class AuditoriaController extends Controller
 
     public function index(Request $request)
     {
-        $stores = $this->sheet->obtenerTiendas($this->applyRegionFilter());
+        $stores = $this->sheet->obtenerTiendas($this->applyRegionFilter(), self::COLUMNS);
         $totalCount = count($stores);
 
         $filters = [
@@ -116,10 +121,13 @@ class AuditoriaController extends Controller
             ], 'auditoria.csv');
         }
 
+        $pagination = $this->paginateArray($filtered);
+
         return view('auditoria', [
-            'stores' => $filtered,
+            'stores' => $pagination['items'],
             'totalCount' => $totalCount,
             'filteredCount' => count($filtered),
+            'serverPagination' => $pagination['meta'],
             'kpis' => $this->auditoria->calcularKpis($evaluated->all()),
             'filters' => $filters,
             'updatedAt' => now()->toDateTimeString(),

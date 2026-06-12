@@ -105,7 +105,7 @@
   </div>
   <div class="priority-item">
   <div>
-  <p class="text-sm font-extrabold text-gray-900 dark:text-gray-100">Fuera de estado</p>
+  <p class="text-sm font-extrabold text-gray-900 dark:text-gray-100">{{ $geoMismatchLabel ?? ($geoLabels['FUERA_ESTADO']['label'] ?? 'No corresponde al filtro territorial') }}</p>
   <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Tiendas con posible error de captura territorial.</p>
   </div>
   <span class="status-pill {{ ($stats['FUERA_ESTADO'] ?? 0) > 0 ? 'status-warning' : 'status-ok' }}">{{ $stats['FUERA_ESTADO'] ?? 0 }}</span>
@@ -254,7 +254,7 @@
  div.innerHTML =
  '<div style="font-weight:600;margin-bottom:4px">Leyenda</div>' +
  '<div><span style="color:#22c55e">●</span> Válidas</div>' +
- '<div><span style="color:#f59e0b">●</span> No corresponde a Oaxaca</div>' +
+  '<div><span style="color:#f59e0b">●</span> ' + @json($geoMismatchLabel ?? ($geoLabels['FUERA_ESTADO']['label'] ?? 'No corresponde al filtro territorial')) + '</div>' +
  '<div><span style="color:#ef4444">●</span> Fuera de México</div>';
  return div;
  };

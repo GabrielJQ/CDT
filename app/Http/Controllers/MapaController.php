@@ -10,6 +10,11 @@ use Illuminate\Http\Request;
 
 class MapaController extends Controller
 {
+    private const COLUMNS = [
+        'Nombre_Almacen', 'No_Tienda_Actual', 'Municipio', 'Estado', 'Nombre_UniOpe', 'Nombre_Regional',
+        'Latitud', 'Longitud', 'Vta_Mes', 'Cap_Tot',
+    ];
+
     public function __construct(
         private ServicioGoogleSheet $sheet,
         private ServicioGeo $geo,
@@ -18,8 +23,11 @@ class MapaController extends Controller
 
     public function index(Request $request)
     {
-        $stores = $this->sheet->obtenerTiendas($this->applyRegionFilter());
+        $regionFilter = $this->applyRegionFilter();
+        $stores = $this->sheet->obtenerTiendas($regionFilter, self::COLUMNS);
         $totalCount = count($stores);
+        $geoLabels = ServicioGeo::GEO_LABELS;
+        $geoLabels['FUERA_ESTADO']['label'] = $this->geoMismatchLabel($stores, $regionFilter);
 
         $evaluated = collect($stores)->map(function ($store) {
             $store['_geo'] = $this->geo->evaluarGeo($store);
@@ -70,8 +78,38 @@ class MapaController extends Controller
             'filteredCount' => count($filtered),
             'stats' => $this->geo->calcularStats($evaluated->all()),
             'filters' => $filters,
-            'geoLabels' => ServicioGeo::GEO_LABELS,
+            'geoLabels' => $geoLabels,
+            'geoMismatchLabel' => $geoLabels['FUERA_ESTADO']['label'],
             'updatedAt' => now()->toDateTimeString(),
         ]);
+    }
+
+    private function geoMismatchLabel(array $stores, array $regionFilter): string
+    {
+        if (! empty($regionFilter['uo'])) {
+            $uoName = $this->firstNonEmptyValue($stores, 'Nombre_UniOpe');
+
+            return $uoName !== '' ? 'No corresponde a '.$uoName : 'No corresponde a la UO filtrada';
+        }
+
+        if (! empty($regionFilter['region'])) {
+            $regionName = $this->firstNonEmptyValue($stores, 'Nombre_Regional');
+
+            return $regionName !== '' ? 'No corresponde a '.$regionName : 'No corresponde a la region filtrada';
+        }
+
+        return 'No corresponde al estado registrado';
+    }
+
+    private function firstNonEmptyValue(array $stores, string $key): string
+    {
+        foreach ($stores as $store) {
+            $value = trim((string) ($store[$key] ?? ''));
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return '';
     }
 }

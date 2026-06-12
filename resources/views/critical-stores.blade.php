@@ -111,7 +111,7 @@
 
  {{-- Count --}}
  <div class="text-sm text-gray-500 dark:text-gray-400 mb-2">
- Mostrando <strong id="info-from">0</strong>–<strong id="info-to">0</strong> de <strong id="info-total">{{ count($stores) }}</strong> tiendas
+ Mostrando <strong id="info-from">0</strong>–<strong id="info-to">0</strong> de <strong id="info-total">{{ $filteredCount }}</strong> tiendas
  @if($filteredCount !== $totalCount)
  <span class="text-gray-400 dark:text-gray-500">(filtradas de {{ $totalCount }})</span>
  @endif
@@ -143,9 +143,10 @@
 @push('footer')
 <script>
  document.addEventListener('DOMContentLoaded', function () {
- var PAGE_SIZE = 25;
+ var serverPagination = @json($serverPagination ?? ['page' => 1, 'perPage' => 50, 'total' => count($stores), 'totalPages' => 1]);
+ var PAGE_SIZE = serverPagination.perPage;
  var allStores = @json($stores);
- var currentPage = 1;
+ var currentPage = serverPagination.page;
 
   var FACTOR_KEYS = ['capital_bajo', 'capital_dictaminado_bajo', 'comite_vencido', 'auditoria_elevada', 'pagare_vencido', 'rotacion_baja', 'asamblea_pendiente'];
   var FACTOR_LABELS = {
@@ -249,13 +250,13 @@
 
  function renderTable() {
  var cols = getActiveCols();
- var total = allStores.length;
- var totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+ var total = serverPagination.total;
+ var totalPages = serverPagination.totalPages;
  if (currentPage > totalPages) currentPage = totalPages;
 
  var start = (currentPage - 1) * PAGE_SIZE;
- var end = Math.min(start + PAGE_SIZE, total);
- var pageData = allStores.slice(start, end);
+ var pageData = allStores;
+ var end = Math.min(start + pageData.length, total);
 
  var headerRow = document.getElementById('cs-header');
  headerRow.innerHTML = cols.map(function (c) {
@@ -318,10 +319,7 @@
  });
 
  container.querySelectorAll('[data-page]').forEach(function (btn) {
- btn.addEventListener('click', function () {
- currentPage = parseInt(this.dataset.page);
- renderTable();
- });
+  btn.addEventListener('click', function () { goToPage(parseInt(this.dataset.page)); });
  });
 
  document.getElementById('page-prev').disabled = currentPage <= 1;
@@ -329,12 +327,18 @@
  }
 
  document.getElementById('page-prev').addEventListener('click', function () {
- if (currentPage > 1) { currentPage--; renderTable(); }
+ if (currentPage > 1) goToPage(currentPage - 1);
  });
  document.getElementById('page-next').addEventListener('click', function () {
- var total = Math.max(1, Math.ceil(allStores.length / PAGE_SIZE));
- if (currentPage < total) { currentPage++; renderTable(); }
+ if (currentPage < serverPagination.totalPages) goToPage(currentPage + 1);
  });
+
+ function goToPage(page) {
+ var url = new URL(window.location.href);
+ url.searchParams.set('page', page);
+ url.searchParams.set('per_page', PAGE_SIZE);
+ window.location.href = url.toString();
+ }
 
   var storageKey = 'col_prefs_critical';
   function saveColPrefs() {
@@ -365,8 +369,7 @@
 
   document.querySelectorAll('[data-group] input').forEach(function (cb) {
   cb.addEventListener('change', function () {
-  currentPage = 1;
-  saveColPrefs();
+      saveColPrefs();
   renderTable();
   });
   });

@@ -9,6 +9,10 @@ use Illuminate\Http\Request;
 
 class AperturaController extends Controller
 {
+    private const COLUMNS = [
+        'Nombre_Almacen', 'Localidad', 'No_Tienda_Actual', 'Municipio', 'Fecha_Apertura',
+    ];
+
     public function __construct(
         private ServicioGoogleSheet $sheet,
         private ServicioFecha $fecha,
@@ -16,7 +20,7 @@ class AperturaController extends Controller
 
     public function index(Request $request)
     {
-        $stores = $this->sheet->obtenerTiendas($this->applyRegionFilter());
+        $stores = $this->sheet->obtenerTiendas($this->applyRegionFilter(), self::COLUMNS);
         $totalCount = count($stores);
 
         $filters = [
@@ -73,10 +77,13 @@ class AperturaController extends Controller
             ], 'aperturas.csv');
         }
 
+        $pagination = $this->paginateArray($filtered);
+
         return view('aperturas', [
-            'stores' => $filtered,
+            'stores' => $pagination['items'],
             'totalCount' => $totalCount,
             'filteredCount' => count($filtered),
+            'serverPagination' => $pagination['meta'],
             'kpis' => $this->calcularKpis($evaluated->all(), $filtered),
             'filters' => $filters,
             'updatedAt' => now()->toDateTimeString(),

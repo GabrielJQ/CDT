@@ -18,10 +18,10 @@ class ServicioGoogleSheet
         private ServicioPostgresql $postgres,
     ) {}
 
-    public function obtenerTiendas(array $filters = []): array
+    public function obtenerTiendas(array $filters = [], ?array $columns = null): array
     {
         if ($this->postgres->tieneDatos()) {
-            return $this->postgres->obtenerTiendas($filters);
+            return $this->postgres->obtenerTiendas($filters, $columns);
         }
 
         $this->ultimoError = null;
@@ -29,13 +29,24 @@ class ServicioGoogleSheet
         try {
             $stores = $this->fetchDesdeSheet();
 
-            return $stores;
+            return $this->onlyColumns($stores, $columns);
         } catch (\RuntimeException $e) {
             $this->ultimoError = $e->getMessage();
             Log::error('[GoogleSheet] '.$e->getMessage());
 
             return [];
         }
+    }
+
+    private function onlyColumns(array $stores, ?array $columns): array
+    {
+        if ($columns === null) {
+            return $stores;
+        }
+
+        return array_map(function (array $store) use ($columns) {
+            return array_intersect_key($store, array_flip($columns));
+        }, $stores);
     }
 
     public function fetchDesdeSheet(): array

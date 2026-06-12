@@ -10,6 +10,11 @@ use Illuminate\Http\Request;
 
 class CriticalStoresController extends Controller
 {
+    private const COLUMNS = [
+        'Estado', 'Nombre_Almacen', 'No_Tienda_Actual', 'Municipio', 'Cap_Tot', 'Cap_Dic', 'Vigencia',
+        'Imp_Res_Audi_Mes', 'Pagare_Fecha', 'Vta_Mes', 'Asam_Prog_Mes', 'Asam_Real_Mes',
+    ];
+
     public function __construct(
         private ServicioGoogleSheet $sheet,
         private ServicioTiendaCritica $critica,
@@ -18,7 +23,7 @@ class CriticalStoresController extends Controller
 
     public function index(Request $request)
     {
-        $stores = $this->sheet->obtenerTiendas($this->applyRegionFilter());
+        $stores = $this->sheet->obtenerTiendas($this->applyRegionFilter(), self::COLUMNS);
         $totalCount = count($stores);
 
         $filters = [
@@ -87,10 +92,13 @@ class CriticalStoresController extends Controller
             'asamblea_pendiente' => '🗳️ Asamblea pendiente',
         ];
 
+        $pagination = $this->paginateArray($filtered);
+
         return view('critical-stores', [
-            'stores' => $filtered,
+            'stores' => $pagination['items'],
             'totalCount' => $totalCount,
             'filteredCount' => count($filtered),
+            'serverPagination' => $pagination['meta'],
             'summary' => $this->critica->calcularResumen($evaluated->all()),
             'filters' => $filters,
             'indicadores' => $indicadores,

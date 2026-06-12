@@ -12,7 +12,7 @@ class ServicioGeo
         'OK' => ['label' => 'Válidas', 'icon' => '🟢', 'color' => 'green'],
         'SIN_COORDENADAS' => ['label' => 'Sin coordenadas', 'icon' => '⚪', 'color' => 'gray'],
         'FUERA_MEXICO' => ['label' => 'Fuera de México', 'icon' => '🔴', 'color' => 'red'],
-        'FUERA_ESTADO' => ['label' => 'No corresponde a Oaxaca', 'icon' => '🟡', 'color' => 'orange'],
+        'FUERA_ESTADO' => ['label' => 'No corresponde al filtro territorial', 'icon' => '🟡', 'color' => 'orange'],
     ];
 
     public function parsearCoordenada(string $value): ?float

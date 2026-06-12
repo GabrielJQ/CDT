@@ -16,12 +16,12 @@ class ServicioPostgresql
         return $this->ultimoError;
     }
 
-    public function obtenerTiendas(array $filters = []): array
+    public function obtenerTiendas(array $filters = [], ?array $columns = null): array
     {
         $this->ultimoError = null;
 
         try {
-            return $this->fetchDesdePostgres($filters);
+            return $this->fetchDesdePostgres($filters, $columns);
         } catch (\Throwable $e) {
             $this->ultimoError = $e->getMessage();
             Log::error('[Postgresql] '.$e->getMessage());
@@ -30,7 +30,7 @@ class ServicioPostgresql
         }
     }
 
-    public function fetchDesdePostgres(array $filters = []): array
+    public function fetchDesdePostgres(array $filters = [], ?array $columns = null): array
     {
         $conn = $this->conexion();
         $count = $conn->table('tiendas')->count();
@@ -39,9 +39,13 @@ class ServicioPostgresql
         }
 
         $reverseMap = $this->reverseMap();
-        $columns = array_keys($reverseMap);
+        $csvColumns = $columns ? array_values(array_intersect($columns, array_keys($reverseMap))) : array_keys($reverseMap);
+        if ($csvColumns === []) {
+            $csvColumns = array_keys($reverseMap);
+        }
+        $dbColumns = array_values(array_unique(array_map(fn (string $csvColumn) => $reverseMap[$csvColumn], $csvColumns)));
 
-        $query = $conn->table('tiendas');
+        $query = $conn->table('tiendas')->select($dbColumns);
 
         if (! empty($filters['region'])) {
             $query->where('Clave_Regional', $filters['region']);
@@ -51,10 +55,10 @@ class ServicioPostgresql
         }
 
         $stores = [];
-        $query->orderBy('id')->chunk(1000, function ($rows) use (&$stores, $reverseMap, $columns) {
+        $query->orderBy('id')->chunk(1000, function ($rows) use (&$stores, $reverseMap, $csvColumns) {
             foreach ($rows as $row) {
                 $store = [];
-                foreach ($columns as $csvColumn) {
+                foreach ($csvColumns as $csvColumn) {
                     $dbColumn = $reverseMap[$csvColumn];
                     $value = $row->{$dbColumn} ?? null;
                     $store[$csvColumn] = $this->valorAString($value);

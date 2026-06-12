@@ -65,25 +65,26 @@
 
  {{-- Filters --}}
   <div class="filter-panel">
- <div class="flex flex-wrap items-end gap-3">
+ <form method="GET" action="{{ url('/directorio') }}" class="flex flex-wrap items-end gap-3">
  <div class="flex-1 min-w-[200px]">
  <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Buscar almacén o tienda</label>
- <input type="text" id="filter-search" placeholder="Escribe para filtrar..."
+ <input type="text" id="filter-search" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="Escribe para filtrar..."
   class="input-filter">
  </div>
  <div class="flex gap-3 items-end pb-1">
  <label class="col-toggle flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
- <input type="checkbox" id="filter-incompletos"> 🔴 Solo incompletos
+ <input type="checkbox" id="filter-incompletos" name="incompletos" value="1" {{ ($filters['incompletos'] ?? false) ? 'checked' : '' }}> 🔴 Solo incompletos
  </label>
  <label class="col-toggle flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
- <input type="checkbox" id="filter-sinCapital"> 💰 Sin capital
+ <input type="checkbox" id="filter-sinCapital" name="sinCapital" value="1" {{ ($filters['sinCapital'] ?? false) ? 'checked' : '' }}> 💰 Sin capital
  </label>
-  <button id="filter-clear" class="btn-secondary px-3 py-1.5">
+ <button type="submit" class="btn-filter px-3 py-1.5">Filtrar</button>
+  <a href="{{ url('/directorio') }}" id="filter-clear" class="btn-secondary px-3 py-1.5">
  Limpiar
- </button>
+  </a>
   <a href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}" class="btn-export px-3 py-1.5">⬇ CSV</a>
  </div>
- </div>
+ </form>
  </div>
 
  {{-- Column toggles --}}
@@ -114,7 +115,7 @@
 
  {{-- Count --}}
  <div class="text-sm text-gray-500 dark:text-gray-400 mb-2">
- Mostrando <strong id="info-from">0</strong>–<strong id="info-to">0</strong> de <strong id="info-total">{{ $totalCount }}</strong> tiendas
+ Mostrando <strong id="info-from">0</strong>–<strong id="info-to">0</strong> de <strong id="info-total">{{ $filteredCount }}</strong> tiendas
  </div>
 
  {{-- Table wrapper --}}
@@ -143,10 +144,11 @@
 @push('footer')
 <script>
  document.addEventListener('DOMContentLoaded', function () {
- var PAGE_SIZE = 25;
+ var serverPagination = @json($serverPagination ?? ['page' => 1, 'perPage' => 50, 'total' => count($stores), 'totalPages' => 1]);
+ var PAGE_SIZE = serverPagination.perPage;
   var allStores = @json($stores);
   var filtered = [];
-  var currentPage = 1;
+  var currentPage = serverPagination.page;
   var sortColumn = null;
   var sortDirection = 'asc';
 
@@ -211,42 +213,15 @@
  return store[col] !== undefined ? String(store[col]).trim() : '';
  }
 
- function applyFilters() {
- var search = document.getElementById('filter-search').value.trim().toLowerCase();
- var onlyIncompletos = document.getElementById('filter-incompletos').checked;
- var onlySinCapital = document.getElementById('filter-sinCapital').checked;
-
- filtered = allStores.filter(function (store) {
- if (search) {
- var name = (store.Nombre_Almacen || '').toLowerCase();
- var clave = (store.Clave_Sucursal || '').toLowerCase();
- var num = String(store.No_Tienda_Actual || '');
- if (name.indexOf(search) === -1 && clave.indexOf(search) === -1 && num.indexOf(search) === -1) {
- return false;
- }
- }
- if (onlyIncompletos || onlySinCapital) {
- var hasEmpty = trackedColumns.some(function (c) { return isEmpty(getValue(store, c)); });
- var noCapital = isEmpty(getValue(store, 'Cap_Tot'));
- if (onlyIncompletos && !hasEmpty) return false;
- if (onlySinCapital && !noCapital) return false;
- }
- return true;
- });
-
- currentPage = 1;
- renderTable();
- }
-
  function renderTable() {
  var cols = getActiveColumns();
- var totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+ var totalPages = serverPagination.totalPages;
  if (currentPage > totalPages) currentPage = totalPages;
 
   var sorted = sortData(filtered);
   var start = (currentPage - 1) * PAGE_SIZE;
-  var end = Math.min(start + PAGE_SIZE, sorted.length);
-  var pageData = sorted.slice(start, end);
+  var pageData = sorted;
+  var end = Math.min(start + pageData.length, serverPagination.total);
 
  var header = document.getElementById('dir-header');
  var body = document.getElementById('dir-body');
@@ -270,22 +245,13 @@
  '</tr>';
  }).join('');
 
- var totalFiltered = filtered.length;
+ var totalFiltered = serverPagination.total;
  document.getElementById('info-from').textContent = totalFiltered > 0 ? start + 1 : 0;
  document.getElementById('info-to').textContent = end;
  document.getElementById('info-total').textContent = totalFiltered;
 
  document.getElementById('stat-page').textContent = totalPages > 0 ? currentPage : 0;
  document.getElementById('stat-pages').textContent = totalPages;
-
- var incompCount = filtered.filter(function (s) {
- return trackedColumns.some(function (c) { return isEmpty(getValue(s, c)); });
- }).length;
- var sinCapCount = filtered.filter(function (s) {
- return isEmpty(getValue(s, 'Cap_Tot'));
- }).length;
- document.getElementById('stat-incompletos').textContent = incompCount;
- document.getElementById('stat-sinCapital').textContent = sinCapCount;
 
  renderPagination(totalPages);
  }
@@ -359,10 +325,7 @@
  });
 
  container.querySelectorAll('[data-page]').forEach(function (btn) {
- btn.addEventListener('click', function () {
- currentPage = parseInt(this.dataset.page);
- renderTable();
- });
+ btn.addEventListener('click', function () { goToPage(parseInt(this.dataset.page)); });
  });
 
  document.getElementById('page-prev').disabled = currentPage <= 1;
@@ -370,13 +333,19 @@
  }
 
  document.getElementById('page-prev').addEventListener('click', function () {
- if (currentPage > 1) { currentPage--; renderTable(); }
+ if (currentPage > 1) goToPage(currentPage - 1);
  });
 
  document.getElementById('page-next').addEventListener('click', function () {
- var total = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
- if (currentPage < total) { currentPage++; renderTable(); }
+ if (currentPage < serverPagination.totalPages) goToPage(currentPage + 1);
  });
+
+ function goToPage(page) {
+ var url = new URL(window.location.href);
+ url.searchParams.set('page', page);
+ url.searchParams.set('per_page', PAGE_SIZE);
+ window.location.href = url.toString();
+ }
 
   document.getElementById('dir-header').addEventListener('click', function (e) {
   var th = e.target.closest('th[data-col]');
@@ -388,7 +357,6 @@
   sortColumn = col;
   sortDirection = 'asc';
   }
-  currentPage = 1;
   renderTable();
   });
 
@@ -426,15 +394,8 @@
  });
  });
 
- document.getElementById('filter-search').addEventListener('input', applyFilters);
- document.getElementById('filter-incompletos').addEventListener('change', applyFilters);
- document.getElementById('filter-sinCapital').addEventListener('change', applyFilters);
- document.getElementById('filter-clear').addEventListener('click', function () {
- document.getElementById('filter-search').value = '';
- document.getElementById('filter-incompletos').checked = false;
- document.getElementById('filter-sinCapital').checked = false;
- applyFilters();
- });
+ document.getElementById('filter-incompletos').addEventListener('change', function () { this.form.submit(); });
+ document.getElementById('filter-sinCapital').addEventListener('change', function () { this.form.submit(); });
 
  filtered = allStores.slice();
  loadColPrefs();

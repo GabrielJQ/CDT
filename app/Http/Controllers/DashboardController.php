@@ -10,6 +10,14 @@ use App\Servicios\ServicioTiendaCritica;
 
 class DashboardController extends Controller
 {
+    private const COLUMNS = [
+        'TELEFONIA', 'INTERNET', 'Señal de celular', 'Cap_Tot', 'Cap_Dic', 'Vigencia', 'Imp_Res_Audi_Mes',
+        'Pagare_Fecha', 'Vta_Mes', 'Asam_Prog_Mes', 'Asam_Real_Mes', 'Fecha_Apertura', 'Latitud', 'Longitud',
+        'CORREO', 'Compañía', 'Pagare_Monto', 'Fec_CRA', 'Fch_Audit', 'Audit_Realiza_Mes', 'Direccion',
+        'Nom_Pre_CRA', 'Nom_Pre_Sup_CRA', 'Nom_Sec_CRA', 'Nom_Sec_Sup_CRA', 'Nom_Tes_CRA', 'Nom_Vcv_CRA',
+        'Nom_Voc_Gen_CRA', 'VtaNeta_Mes', 'Cap_Com',
+    ];
+
     public function __construct(
         private ServicioGoogleSheet $sheet,
         private ServicioConectividad $conectividad,
@@ -20,7 +28,7 @@ class DashboardController extends Controller
 
     public function index()
     {
-        $stores = $this->sheet->obtenerTiendas($this->applyRegionFilter());
+        $stores = $this->sheet->obtenerTiendas($this->applyRegionFilter(), self::COLUMNS);
         $totalCount = count($stores);
 
         return view('dashboard', [
