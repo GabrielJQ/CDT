@@ -14,7 +14,7 @@
 
 @section('content')
     @php
-        $pct = fn (int|float $value, int|float $base = $totalCount) => $base > 0 ? round($value / $base * 100, 1) : 0;
+        $pct = fn (int|float $value, int|float|null $base = null) => ($base ?? $totalCount) > 0 ? round($value / ($base ?? $totalCount) * 100, 1) : 0;
         $sinCoordenadas = max(0, $totalCount - $conCoordenadas);
     @endphp
     <div class="page-shell">

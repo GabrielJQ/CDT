@@ -4,7 +4,7 @@
 
 @section('content')
 @php
-    $pct = fn (int|float $value, int|float $base = $total) => $base > 0 ? round($value / $base * 100, 1) : 0;
+    $pct = fn (int|float $value, int|float|null $base = null) => ($base ?? $total) > 0 ? round($value / ($base ?? $total) * 100, 1) : 0;
 @endphp
 <div class="page-shell">
     <section class="page-hero">
