@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Servicios\ServicioExportacion;
-use App\Servicios\ServicioGoogleSheet;
 use App\Servicios\ServicioPostgresql;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -31,7 +30,6 @@ class DirectorioController extends Controller
     ];
 
     public function __construct(
-        private ServicioGoogleSheet $sheet,
         private ServicioPostgresql $postgres,
     ) {}
 
@@ -43,63 +41,8 @@ class DirectorioController extends Controller
             'sinCapital' => $request->boolean('sinCapital'),
         ];
 
-        if ($this->postgres->tieneDatos() && $request->query('export') !== 'csv') {
-            $page = max(1, (int) $request->query('page', 1));
-            $perPage = max(10, min(100, (int) $request->query('per_page', self::DEFAULT_PAGE_SIZE)));
-            $result = $this->postgres->obtenerDirectorioPaginado(
-                $this->applyRegionFilter(),
-                $filters,
-                $page,
-                $perPage,
-                self::COLUMNS,
-                $this->trackedColumns,
-            );
-
-            return view('directorio', [
-                'stores' => $result['rows'],
-                'totalCount' => $result['total'],
-                'filteredCount' => $result['filtered'],
-                'serverPagination' => [
-                    'page' => $page,
-                    'perPage' => $perPage,
-                    'total' => $result['filtered'],
-                    'totalPages' => max(1, (int) ceil($result['filtered'] / $perPage)),
-                ],
-                'filters' => $filters,
-                'globalStats' => $result['stats'],
-                'updatedAt' => now()->toDateTimeString(),
-            ]);
-        }
-
-        $stores = $this->sheet->obtenerTiendas($this->applyRegionFilter(), self::COLUMNS);
-        $totalCount = count($stores);
-
-        $filtered = array_values(array_filter($stores, function (array $store) use ($filters) {
-            if ($filters['q'] !== '') {
-                $search = mb_strtoupper($filters['q']);
-                $haystack = mb_strtoupper(implode(' ', [
-                    $store['Nombre_Almacen'] ?? '',
-                    $store['No_Tienda_Actual'] ?? '',
-                    $store['Municipio'] ?? '',
-                ]));
-                if (! str_contains($haystack, $search)) {
-                    return false;
-                }
-            }
-
-            if ($filters['incompletos'] && ! $this->tieneCamposIncompletos($store)) {
-                return false;
-            }
-
-            if ($filters['sinCapital'] && ! $this->sinCapital($store)) {
-                return false;
-            }
-
-            return true;
-        }));
-
         if ($request->query('export') === 'csv') {
-            return ServicioExportacion::csvResponse($filtered, [
+            return ServicioExportacion::csvStream($this->postgres->exportarTiendas($this->applyRegionFilter(), $filters, self::COLUMNS, 'directorio'), [
                 'Nombre_Almacen' => 'Almacén',
                 'No_Tienda_Actual' => 'Tienda #',
                 'Municipio' => 'Municipio',
@@ -137,15 +80,23 @@ class DirectorioController extends Controller
             ], 'directorio.csv');
         }
 
-        $pagination = $this->paginateArray($filtered);
+        [$page, $perPage] = $this->paginationInput();
+        $result = $this->postgres->obtenerDirectorioPaginado(
+            $this->applyRegionFilter(),
+            $filters,
+            $page,
+            $perPage,
+            self::COLUMNS,
+            $this->trackedColumns,
+        );
 
         return view('directorio', [
-            'stores' => $pagination['items'],
-            'totalCount' => $totalCount,
-            'filteredCount' => count($filtered),
-            'serverPagination' => $pagination['meta'],
+            'stores' => $result['rows'],
+            'totalCount' => $result['total'],
+            'filteredCount' => $result['filtered'],
+            'serverPagination' => $this->paginationMeta($page, $perPage, $result['filtered']),
             'filters' => $filters,
-            'globalStats' => $this->calcularStats($stores),
+            'globalStats' => $result['stats'],
             'updatedAt' => now()->toDateTimeString(),
         ]);
     }

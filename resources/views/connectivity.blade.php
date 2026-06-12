@@ -157,9 +157,12 @@
 @endsection
 
 @push('footer')
+@php
+ $paginationPayload = $serverPagination ?? ['page' => 1, 'perPage' => 50, 'total' => count($stores), 'totalPages' => 1];
+@endphp
 <script>
  document.addEventListener('DOMContentLoaded', function () {
- var serverPagination = @json($serverPagination ?? ['page' => 1, 'perPage' => 50, 'total' => count($stores), 'totalPages' => 1]);
+ var serverPagination = @json($paginationPayload);
  var PAGE_SIZE = serverPagination.perPage;
  var allStores = @json($stores);
  var currentPage = serverPagination.page;
@@ -202,10 +205,7 @@
  }
 
  function esc(str) {
- if (str == null) return '';
- var d = document.createElement('div');
- d.textContent = String(str);
- return d.innerHTML;
+ return window.CdtTables.escapeHtml(str);
  }
 
  function getActiveCols() {

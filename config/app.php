@@ -123,6 +123,4 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
-    'google_sheet_url' => env('GOOGLE_SHEET_URL'),
-
 ];

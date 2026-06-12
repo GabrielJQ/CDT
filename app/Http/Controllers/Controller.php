@@ -32,4 +32,22 @@ abstract class Controller
             ],
         ];
     }
+
+    protected function paginationMeta(int $page, int $perPage, int $total): array
+    {
+        return [
+            'page' => $page,
+            'perPage' => $perPage,
+            'total' => $total,
+            'totalPages' => max(1, (int) ceil($total / $perPage)),
+        ];
+    }
+
+    protected function paginationInput(): array
+    {
+        return [
+            max(1, (int) request()->query('page', 1)),
+            max(10, min(100, (int) request()->query('per_page', self::DEFAULT_PAGE_SIZE))),
+        ];
+    }
 }

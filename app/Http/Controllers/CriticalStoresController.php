@@ -3,9 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Servicios\ServicioExportacion;
-use App\Servicios\ServicioFiltro;
-use App\Servicios\ServicioGoogleSheet;
-use App\Servicios\ServicioTiendaCritica;
+use App\Servicios\ServicioPostgresql;
 use Illuminate\Http\Request;
 
 class CriticalStoresController extends Controller
@@ -16,63 +14,36 @@ class CriticalStoresController extends Controller
     ];
 
     public function __construct(
-        private ServicioGoogleSheet $sheet,
-        private ServicioTiendaCritica $critica,
-        private ServicioFiltro $filtro,
+        private ServicioPostgresql $postgres,
     ) {}
 
     public function index(Request $request)
     {
-        $stores = $this->sheet->obtenerTiendas($this->applyRegionFilter(), self::COLUMNS);
-        $totalCount = count($stores);
-
         $filters = [
             'almacen' => trim($request->query('almacen', '')),
             'nivel' => $request->query('nivel', ''),
             'indicador' => $request->query('indicador', ''),
         ];
 
-        $evaluated = collect($stores)->map(function ($store) {
-            return array_merge($store, ['_critico' => $this->critica->evaluarTienda($store)]);
-        });
-
-        $filtered = $evaluated->filter(function ($store) use ($filters) {
-            if ($filters['almacen'] !== '') {
-                $nombre = $store['Nombre_Almacen'] ?? '';
-                if (! str_contains(mb_strtoupper($nombre), mb_strtoupper($filters['almacen']))) {
-                    return false;
-                }
-            }
-            if ($filters['nivel'] !== '' && $store['_critico']['level'] !== $filters['nivel']) {
-                return false;
-            }
-            if ($filters['indicador'] !== '') {
-                $active = $store['_critico']['conditions'][$filters['indicador']] ?? false;
-                if (! $active) {
-                    return false;
-                }
-            }
-
-            return true;
-        })->values()->all();
-
         if ($request->query('export') === 'csv') {
-            $exportData = collect($filtered)->map(function ($store) {
-                $critico = $store['_critico'] ?? [];
-                $detalle = [];
-                foreach (($critico['conditions'] ?? []) as $key => $active) {
-                    if ($active) {
-                        $label = $critico['labels'][$key]['label'] ?? $key;
-                        $detail = $critico['labels'][$key]['detail'] ?? '';
-                        $detalle[] = $detail ? "$label ($detail)" : $label;
+            $exportData = (function () use ($filters) {
+                foreach ($this->postgres->exportarTiendas($this->applyRegionFilter(), $filters, self::COLUMNS, 'criticidad') as $store) {
+                    $critico = $store['_critico'] ?? [];
+                    $detalle = [];
+                    foreach (($critico['conditions'] ?? []) as $key => $active) {
+                        if ($active) {
+                            $label = $critico['labels'][$key]['label'] ?? $key;
+                            $detail = $critico['labels'][$key]['detail'] ?? '';
+                            $detalle[] = $detail ? "$label ($detail)" : $label;
+                        }
                     }
+                    $store['_detalle_factores'] = implode('; ', $detalle);
+
+                    yield $store;
                 }
-                $store['_detalle_factores'] = implode('; ', $detalle);
+            })();
 
-                return $store;
-            })->all();
-
-            return ServicioExportacion::csvResponse($exportData, [
+            return ServicioExportacion::csvStream($exportData, [
                 'Nombre_Almacen' => 'Almacén',
                 'No_Tienda_Actual' => 'Tienda #',
                 'Municipio' => 'Municipio',
@@ -92,14 +63,15 @@ class CriticalStoresController extends Controller
             'asamblea_pendiente' => '🗳️ Asamblea pendiente',
         ];
 
-        $pagination = $this->paginateArray($filtered);
+        [$page, $perPage] = $this->paginationInput();
+        $result = $this->postgres->obtenerCriticidadPaginada($this->applyRegionFilter(), $filters, $page, $perPage, self::COLUMNS);
 
         return view('critical-stores', [
-            'stores' => $pagination['items'],
-            'totalCount' => $totalCount,
-            'filteredCount' => count($filtered),
-            'serverPagination' => $pagination['meta'],
-            'summary' => $this->critica->calcularResumen($evaluated->all()),
+            'stores' => $result['rows'],
+            'totalCount' => $result['total'],
+            'filteredCount' => $result['filtered'],
+            'serverPagination' => $this->paginationMeta($page, $perPage, $result['filtered']),
+            'summary' => $result['summary'],
             'filters' => $filters,
             'indicadores' => $indicadores,
             'updatedAt' => now()->toDateTimeString(),

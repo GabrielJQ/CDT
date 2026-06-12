@@ -194,6 +194,214 @@ class ServicioPostgresql
         }
     }
 
+    /**
+     * @return array{rows: array<int, array<string, mixed>>, total: int, filtered: int, summary: array<string, mixed>}
+     */
+    public function obtenerCriticidadPaginada(array $regionFilters, array $filters, int $page, int $perPage, array $columns): array
+    {
+        $this->ultimoError = null;
+
+        try {
+            $conn = $this->conexion();
+            $base = $conn->table('tiendas');
+            $this->aplicarFiltroRegional($base, $regionFilters);
+
+            $filtered = clone $base;
+            $this->aplicarFiltrosCriticidad($filtered, $filters);
+
+            $selectColumns = array_values(array_unique(array_merge($columns, ['nivel_critico', 'factores_criticos_count'])));
+            $rows = (clone $filtered)
+                ->select($selectColumns)
+                ->orderByDesc('factores_criticos_count')
+                ->orderBy('id')
+                ->offset(($page - 1) * $perPage)
+                ->limit($perPage)
+                ->get()
+                ->map(fn ($row) => $this->rowToCriticalStore($row, $columns))
+                ->all();
+
+            return [
+                'rows' => $rows,
+                'total' => (clone $base)->count(),
+                'filtered' => (clone $filtered)->count(),
+                'summary' => $this->resumenCriticidad(clone $base),
+            ];
+        } catch (\Throwable $e) {
+            $this->ultimoError = $e->getMessage();
+            Log::error('[Postgresql] obtenerCriticidadPaginada: '.$e->getMessage());
+
+            return ['rows' => [], 'total' => 0, 'filtered' => 0, 'summary' => []];
+        }
+    }
+
+    /**
+     * @return array{rows: array<int, array<string, mixed>>, total: int, filtered: int, kpis: array<string, mixed>}
+     */
+    public function obtenerAuditoriaPaginada(array $regionFilters, array $filters, int $page, int $perPage, array $columns): array
+    {
+        $this->ultimoError = null;
+
+        try {
+            $conn = $this->conexion();
+            $base = $conn->table('tiendas');
+            $this->aplicarFiltroRegional($base, $regionFilters);
+
+            $filtered = clone $base;
+            $this->aplicarFiltrosAuditoria($filtered, $filters);
+
+            $selectColumns = array_values(array_unique(array_merge($columns, ['nivel_critico', 'estado_comite', 'rango_rotacion', 'auditoria_pendiente'])));
+            $rows = (clone $filtered)
+                ->select($selectColumns)
+                ->orderByDesc('auditoria_pendiente')
+                ->orderBy('id')
+                ->offset(($page - 1) * $perPage)
+                ->limit($perPage)
+                ->get()
+                ->map(fn ($row) => $this->rowToAuditStore($row, $columns))
+                ->all();
+
+            return [
+                'rows' => $rows,
+                'total' => (clone $base)->count(),
+                'filtered' => (clone $filtered)->count(),
+                'kpis' => $this->kpisAuditoria(clone $base),
+            ];
+        } catch (\Throwable $e) {
+            $this->ultimoError = $e->getMessage();
+            Log::error('[Postgresql] obtenerAuditoriaPaginada: '.$e->getMessage());
+
+            return ['rows' => [], 'total' => 0, 'filtered' => 0, 'kpis' => []];
+        }
+    }
+
+    /**
+     * @return array{rows: array<int, array<string, mixed>>, total: int, filtered: int, kpis: array<string, int>}
+     */
+    public function obtenerAperturasPaginada(array $regionFilters, array $filters, int $page, int $perPage, array $columns): array
+    {
+        $this->ultimoError = null;
+
+        try {
+            $conn = $this->conexion();
+            $base = $conn->table('tiendas');
+            $this->aplicarFiltroRegional($base, $regionFilters);
+
+            $filtered = clone $base;
+            $this->aplicarFiltrosAperturas($filtered, $filters);
+
+            $rows = (clone $filtered)
+                ->select($columns)
+                ->orderByDesc('Fecha_Apertura')
+                ->orderBy('id')
+                ->offset(($page - 1) * $perPage)
+                ->limit($perPage)
+                ->get()
+                ->map(fn ($row) => $this->rowToAperturaStore($row, $columns))
+                ->all();
+
+            return [
+                'rows' => $rows,
+                'total' => (clone $base)->count(),
+                'filtered' => (clone $filtered)->count(),
+                'kpis' => $this->kpisAperturas(clone $filtered),
+            ];
+        } catch (\Throwable $e) {
+            $this->ultimoError = $e->getMessage();
+            Log::error('[Postgresql] obtenerAperturasPaginada: '.$e->getMessage());
+
+            return ['rows' => [], 'total' => 0, 'filtered' => 0, 'kpis' => []];
+        }
+    }
+
+    public function obtenerMapa(array $regionFilters, array $filters, array $columns): array
+    {
+        $query = $this->conexion()->table('tiendas');
+        $this->aplicarFiltroRegional($query, $regionFilters);
+        $this->aplicarFiltrosMapa($query, $filters);
+
+        return $query->select(array_values(array_unique(array_merge($columns, ['estado_geo']))))
+            ->orderBy('id')
+            ->get()
+            ->map(fn ($row) => $this->rowToGeoStore($row, $columns))
+            ->all();
+    }
+
+    public function obtenerMapaViewport(array $regionFilters, array $filters, array $bounds, array $columns, int $limit = 3000): array
+    {
+        $query = $this->conexion()->table('tiendas');
+        $this->aplicarFiltroRegional($query, $regionFilters);
+        $this->aplicarFiltrosMapa($query, $filters);
+        $this->aplicarBounds($query, $bounds, 'Latitud', 'Longitud');
+
+        return $query->select(array_values(array_unique(array_merge($columns, ['estado_geo']))))
+            ->whereNotNull('Latitud')
+            ->whereNotNull('Longitud')
+            ->where('Latitud', '!=', '0')
+            ->where('Longitud', '!=', '0')
+            ->orderBy('id')
+            ->limit($limit)
+            ->get()
+            ->map(fn ($row) => $this->rowToGeoStore($row, $columns))
+            ->all();
+    }
+
+    public function obtenerDashboardMetricas(array $regionFilters): array
+    {
+        $base = $this->conexion()->table('tiendas');
+        $this->aplicarFiltroRegional($base, $regionFilters);
+
+        $total = (clone $base)->count();
+        $aperturasPorMes = $this->aperturasPorMes(clone $base);
+        $directorioStats = $this->statsDirectorio(clone $base, $this->trackedDirectorioColumns());
+        $completos = max(0, $total - ($directorioStats['incompletos'] ?? 0));
+
+        return [
+            'totalCount' => $total,
+            'connectivityKpis' => $this->kpisConectividad(clone $base),
+            'criticalSummary' => $this->resumenCriticidad(clone $base),
+            'sinConectividad' => $this->sinConectividadCount(clone $base),
+            'aperturasEsteMes' => $this->aperturasEsteMesCount(clone $base),
+            'geoStats' => $this->geoStats(clone $base),
+            'aperturasKpi' => $this->aperturasKpiDashboard(clone $base),
+            'aperturasPorMes' => $aperturasPorMes,
+            'directorioStats' => ['completos' => $completos, 'incompletos' => (int) ($directorioStats['incompletos'] ?? 0)],
+            'auditoriaKpis' => $this->kpisAuditoria(clone $base),
+        ];
+    }
+
+    public function exportarTiendas(array $regionFilters, array $filters, array $columns, string $module): \Generator
+    {
+        $query = $this->conexion()->table('tiendas');
+        $this->aplicarFiltroRegional($query, $regionFilters);
+
+        if ($module === 'conectividad') {
+            $this->aplicarFiltrosConectividad($query, $filters);
+        } elseif ($module === 'directorio') {
+            $this->aplicarFiltrosDirectorio($query, $filters, $this->trackedDirectorioColumns());
+        } elseif ($module === 'criticidad') {
+            $this->aplicarFiltrosCriticidad($query, $filters);
+            $columns = array_values(array_unique(array_merge($columns, ['nivel_critico', 'factores_criticos_count'])));
+        } elseif ($module === 'auditoria') {
+            $this->aplicarFiltrosAuditoria($query, $filters);
+            $columns = array_values(array_unique(array_merge($columns, ['nivel_critico', 'estado_comite', 'rango_rotacion', 'auditoria_pendiente'])));
+        } elseif ($module === 'aperturas') {
+            $this->aplicarFiltrosAperturas($query, $filters);
+        } elseif ($module === 'mapa') {
+            $this->aplicarFiltrosMapa($query, $filters);
+            $columns = array_values(array_unique(array_merge($columns, ['estado_geo'])));
+        }
+
+        foreach ($query->select($columns)->orderBy('id')->cursor() as $row) {
+            yield match ($module) {
+                'criticidad' => $this->rowToCriticalStore($row, $columns),
+                'auditoria' => $this->rowToAuditStore($row, $columns),
+                'aperturas' => $this->rowToAperturaStore($row, $columns),
+                'mapa' => $this->rowToGeoStore($row, $columns),
+                default => $this->rowToStore($row, $columns),
+            };
+        }
+    }
+
     public function tieneDatos(): bool
     {
         try {
@@ -263,6 +471,131 @@ class ServicioPostgresql
 
         if (! empty($filters['sinCapital'])) {
             $query->whereRaw($this->sinCapitalSql());
+        }
+    }
+
+    private function aplicarFiltrosCriticidad(Builder $query, array $filters): void
+    {
+        if (($filters['almacen'] ?? '') !== '') {
+            $query->whereRaw('"Nombre_Almacen" ILIKE ?', ['%'.$filters['almacen'].'%']);
+        }
+
+        if (($filters['nivel'] ?? '') !== '') {
+            $query->where('nivel_critico', $filters['nivel']);
+        }
+
+        if (($filters['indicador'] ?? '') !== '') {
+            $condition = $this->indicadorCriticoSql($filters['indicador']);
+            if ($condition !== null) {
+                $query->whereRaw($condition);
+            }
+        }
+    }
+
+    private function aplicarFiltrosAuditoria(Builder $query, array $filters): void
+    {
+        if (($filters['almacen'] ?? '') !== '') {
+            $query->whereRaw('"Nombre_Almacen" ILIKE ?', ['%'.$filters['almacen'].'%']);
+        }
+
+        if (($filters['nivel'] ?? '') !== '') {
+            $query->where('nivel_critico', $filters['nivel']);
+        }
+
+        if (($filters['estado_comite'] ?? '') !== '') {
+            $query->where('estado_comite', $filters['estado_comite']);
+        }
+
+        if (($filters['estado_auditoria'] ?? '') === 'vencida') {
+            $query->where('auditoria_pendiente', true);
+        } elseif (($filters['estado_auditoria'] ?? '') === 'al_dia') {
+            $query->where('auditoria_pendiente', false)->whereNotNull('Fch_Audit');
+        } elseif (($filters['estado_auditoria'] ?? '') === 'sin_fecha') {
+            $query->whereNull('Fch_Audit');
+        }
+
+        if (($filters['filtro_500k'] ?? '') === 'si') {
+            $query->where('Imp_Res_Audi_Mes', '>', 500000);
+        } elseif (($filters['filtro_500k'] ?? '') === 'no') {
+            $query->where(function ($query) {
+                $query->whereNull('Imp_Res_Audi_Mes')->orWhere('Imp_Res_Audi_Mes', '<=', 500000);
+            });
+        }
+
+        if (($filters['rango_rotacion'] ?? '') !== '') {
+            $query->where('rango_rotacion', $filters['rango_rotacion']);
+        }
+
+        if (($filters['tiempo_auditoria'] ?? '') === 'mes') {
+            $query->where('Audit_Realiza_Mes', '>', 0);
+        } elseif (($filters['tiempo_auditoria'] ?? '') === 'trimestre') {
+            $query->where('auditoria_pendiente', true);
+        } elseif (($filters['tiempo_auditoria'] ?? '') === 'anio') {
+            $query->where(function ($query) {
+                $query->whereNull('Fch_Audit')
+                    ->orWhere('Fch_Audit', '<=', now()->subYear()->toDateString());
+            });
+        }
+
+        if (($filters['asambleas_mes'] ?? '') === 'si') {
+            $query->where('Asam_Real_Mes', '>', 0);
+        } elseif (($filters['asambleas_mes'] ?? '') === 'no') {
+            $query->where(function ($query) {
+                $query->whereNull('Asam_Real_Mes')->orWhere('Asam_Real_Mes', '<=', 0);
+            });
+        }
+    }
+
+    private function aplicarFiltrosAperturas(Builder $query, array $filters): void
+    {
+        if (($filters['almacen'] ?? '') !== '') {
+            $query->whereRaw('"Nombre_Almacen" ILIKE ?', ['%'.$filters['almacen'].'%']);
+        }
+
+        if (($filters['desde'] ?? '') !== '') {
+            $query->where('Fecha_Apertura', '>=', $filters['desde']);
+        }
+
+        if (($filters['hasta'] ?? '') !== '') {
+            $query->where('Fecha_Apertura', '<=', $filters['hasta']);
+        }
+    }
+
+    private function aplicarFiltrosMapa(Builder $query, array $filters): void
+    {
+        if (($filters['almacen'] ?? '') !== '') {
+            $query->whereRaw('"Nombre_Almacen" ILIKE ?', ['%'.$filters['almacen'].'%']);
+        }
+
+        if (($filters['estado_geo'] ?? '') !== '') {
+            $query->where('estado_geo', $filters['estado_geo']);
+        }
+    }
+
+    private function aplicarBounds(Builder $query, array $bounds, string $latColumn, string $lonColumn): void
+    {
+        foreach (['north', 'south', 'east', 'west'] as $key) {
+            if (! isset($bounds[$key]) || ! is_numeric($bounds[$key])) {
+                return;
+            }
+        }
+
+        $north = min(90, (float) $bounds['north']);
+        $south = max(-90, (float) $bounds['south']);
+        $east = min(180, (float) $bounds['east']);
+        $west = max(-180, (float) $bounds['west']);
+
+        $latExpression = 'NULLIF(TRIM("'.$latColumn.'"::text), \'\')::double precision';
+        $lonExpression = 'NULLIF(TRIM("'.$lonColumn.'"::text), \'\')::double precision';
+
+        $query->whereRaw($latExpression.' BETWEEN ? AND ?', [min($south, $north), max($south, $north)]);
+        if ($west <= $east) {
+            $query->whereRaw($lonExpression.' BETWEEN ? AND ?', [$west, $east]);
+        } else {
+            $query->where(function ($query) use ($lonExpression, $west, $east) {
+                $query->whereRaw($lonExpression.' BETWEEN ? AND ?', [$west, 180])
+                    ->orWhereRaw($lonExpression.' BETWEEN ? AND ?', [-180, $east]);
+            });
         }
     }
 
@@ -340,6 +673,189 @@ class ServicioPostgresql
         ];
     }
 
+    private function resumenCriticidad(Builder $query): array
+    {
+        $row = (clone $query)->selectRaw("
+            SUM(CASE WHEN nivel_critico = 'rojo' THEN 1 ELSE 0 END) as rojo,
+            SUM(CASE WHEN nivel_critico = 'amarillo' THEN 1 ELSE 0 END) as amarillo,
+            SUM(CASE WHEN nivel_critico = 'verde' OR nivel_critico IS NULL THEN 1 ELSE 0 END) as verde,
+            SUM(CASE WHEN {$this->indicadorCriticoSql('capital_bajo')} THEN 1 ELSE 0 END) as capital_bajo,
+            SUM(CASE WHEN {$this->indicadorCriticoSql('capital_dictaminado_bajo')} THEN 1 ELSE 0 END) as capital_dictaminado_bajo,
+            SUM(CASE WHEN {$this->indicadorCriticoSql('comite_vencido')} THEN 1 ELSE 0 END) as comite_vencido,
+            SUM(CASE WHEN {$this->indicadorCriticoSql('auditoria_elevada')} THEN 1 ELSE 0 END) as auditoria_elevada,
+            SUM(CASE WHEN {$this->indicadorCriticoSql('pagare_vencido')} THEN 1 ELSE 0 END) as pagare_vencido,
+            SUM(CASE WHEN {$this->indicadorCriticoSql('rotacion_baja')} THEN 1 ELSE 0 END) as rotacion_baja,
+            SUM(CASE WHEN {$this->indicadorCriticoSql('asamblea_pendiente')} THEN 1 ELSE 0 END) as asamblea_pendiente
+        ")->first();
+
+        $labels = $this->indicadorLabels();
+        $desgloseLabels = [];
+        foreach ($labels as $key => $label) {
+            $count = (int) ($row->{$key} ?? 0);
+            if ($count > 0) {
+                $desgloseLabels[] = ['key' => $key, 'label' => $label, 'count' => $count];
+            }
+        }
+
+        usort($desgloseLabels, fn (array $a, array $b) => $b['count'] <=> $a['count']);
+
+        return [
+            'rojo' => (int) ($row->rojo ?? 0),
+            'amarillo' => (int) ($row->amarillo ?? 0),
+            'verde' => (int) ($row->verde ?? 0),
+            'desgloseLabels' => $desgloseLabels,
+        ];
+    }
+
+    private function kpisAuditoria(Builder $query): array
+    {
+        $row = (clone $query)->selectRaw("
+            SUM(CASE WHEN estado_comite = 'vencido' THEN 1 ELSE 0 END) as comites_vencidos,
+            SUM(CASE WHEN COALESCE(\"Imp_Res_Audi_Mes\", 0) > 500000 THEN 1 ELSE 0 END) as auditoria_alta,
+            SUM(CASE WHEN rango_rotacion = 'critico' OR rango_rotacion = 'cero' THEN 1 ELSE 0 END) as rotacion_baja,
+            SUM(CASE WHEN auditoria_pendiente = true THEN 1 ELSE 0 END) as auditoria_pendiente,
+            SUM(CASE WHEN rango_rotacion = 'cero' THEN 1 ELSE 0 END) as rotacion_cero,
+            SUM(CASE WHEN rango_rotacion = 'critico' THEN 1 ELSE 0 END) as rotacion_critico,
+            SUM(CASE WHEN rango_rotacion = 'amarillo' THEN 1 ELSE 0 END) as rotacion_amarillo,
+            SUM(CASE WHEN rango_rotacion = 'optimo' THEN 1 ELSE 0 END) as rotacion_optimo,
+            SUM(CASE WHEN COALESCE(\"Audit_Realiza_Mes\", 0) > 0 THEN 1 ELSE 0 END) as auditorias_mes,
+            SUM(CASE WHEN auditoria_pendiente = true THEN 1 ELSE 0 END) as sin_auditoria_trimestre,
+            SUM(CASE WHEN \"Fch_Audit\" IS NULL OR \"Fch_Audit\" <= CURRENT_DATE - INTERVAL '1 year' THEN 1 ELSE 0 END) as sin_auditoria_anio
+        ")->first();
+
+        return [
+            'comitesVencidos' => (int) ($row->comites_vencidos ?? 0),
+            'auditoriaAlta' => (int) ($row->auditoria_alta ?? 0),
+            'rotacionBaja' => (int) ($row->rotacion_baja ?? 0),
+            'auditoriaPendiente' => (int) ($row->auditoria_pendiente ?? 0),
+            'rotacionCero' => (int) ($row->rotacion_cero ?? 0),
+            'rotacionCritico' => (int) ($row->rotacion_critico ?? 0),
+            'rotacionAmarillo' => (int) ($row->rotacion_amarillo ?? 0),
+            'rotacionOptimo' => (int) ($row->rotacion_optimo ?? 0),
+            'auditoriasMes' => (int) ($row->auditorias_mes ?? 0),
+            'sinAuditoriaTrimestre' => (int) ($row->sin_auditoria_trimestre ?? 0),
+            'sinAuditoriaAnio' => (int) ($row->sin_auditoria_anio ?? 0),
+        ];
+    }
+
+    private function kpisAperturas(Builder $query): array
+    {
+        $row = (clone $query)->selectRaw("
+            COUNT(*) as total,
+            SUM(CASE WHEN \"Fecha_Apertura\" >= DATE_TRUNC('month', CURRENT_DATE) THEN 1 ELSE 0 END) as este_mes,
+            SUM(CASE WHEN \"Fecha_Apertura\" >= DATE_TRUNC('year', CURRENT_DATE) THEN 1 ELSE 0 END) as este_anio,
+            SUM(CASE WHEN \"Fecha_Apertura\" IS NULL THEN 1 ELSE 0 END) as sin_fecha
+        ")->first();
+
+        return [
+            'total' => (int) ($row->total ?? 0),
+            'esteMes' => (int) ($row->este_mes ?? 0),
+            'esteAnio' => (int) ($row->este_anio ?? 0),
+            'sinFecha' => (int) ($row->sin_fecha ?? 0),
+        ];
+    }
+
+    private function sinConectividadCount(Builder $query): int
+    {
+        return (clone $query)
+            ->where(function ($query) {
+                $query->whereNull('TELEFONIA')->orWhere('TELEFONIA', '!=', 'S');
+            })
+            ->where(function ($query) {
+                $query->whereNull('INTERNET')->orWhere('INTERNET', '!=', 'S');
+            })
+            ->where(function ($query) {
+                $query->whereNull('Señal de celular')->orWhere('Señal de celular', '!=', 'S');
+            })
+            ->count();
+    }
+
+    private function aperturasEsteMesCount(Builder $query): int
+    {
+        return (clone $query)
+            ->where('Fecha_Apertura', '>=', now()->startOfMonth()->toDateString())
+            ->where('Fecha_Apertura', '<=', now()->endOfMonth()->toDateString())
+            ->count();
+    }
+
+    private function geoStats(Builder $query): array
+    {
+        $row = (clone $query)->selectRaw("
+            SUM(CASE WHEN \"Latitud\" IS NOT NULL AND \"Longitud\" IS NOT NULL AND \"Latitud\" != '0' AND \"Longitud\" != '0' THEN 1 ELSE 0 END) as con_coordenadas,
+            SUM(CASE WHEN \"Latitud\" IS NULL OR \"Longitud\" IS NULL OR \"Latitud\" = '0' OR \"Longitud\" = '0' THEN 1 ELSE 0 END) as sin_coordenadas
+        ")->first();
+
+        return [
+            'conCoordenadas' => (int) ($row->con_coordenadas ?? 0),
+            'sinCoordenadas' => (int) ($row->sin_coordenadas ?? 0),
+        ];
+    }
+
+    private function aperturasKpiDashboard(Builder $query): array
+    {
+        $row = (clone $query)->selectRaw("
+            SUM(CASE WHEN \"Fecha_Apertura\" IS NOT NULL THEN 1 ELSE 0 END) as total,
+            SUM(CASE WHEN \"Fecha_Apertura\" >= DATE_TRUNC('year', CURRENT_DATE) THEN 1 ELSE 0 END) as este_anio
+        ")->first();
+
+        return [
+            'total' => (int) ($row->total ?? 0),
+            'esteAnio' => (int) ($row->este_anio ?? 0),
+        ];
+    }
+
+    private function aperturasPorMes(Builder $query): array
+    {
+        $nombres = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        $meses = [];
+        $now = now();
+        for ($i = 11; $i >= 0; $i--) {
+            $date = (clone $now)->subMonths($i);
+            $meses[$date->format('Y-m')] = ['label' => $nombres[(int) $date->format('n') - 1], 'count' => 0];
+        }
+
+        $rows = (clone $query)
+            ->selectRaw('TO_CHAR("Fecha_Apertura", \'YYYY-MM\') as mes, COUNT(*) as total')
+            ->whereNotNull('Fecha_Apertura')
+            ->where('Fecha_Apertura', '>=', now()->subMonths(11)->startOfMonth()->toDateString())
+            ->groupBy('mes')
+            ->pluck('total', 'mes');
+
+        foreach ($rows as $mes => $total) {
+            if (isset($meses[$mes])) {
+                $meses[$mes]['count'] = (int) $total;
+            }
+        }
+
+        return array_values($meses);
+    }
+
+    private function indicadorCriticoSql(string $indicador): ?string
+    {
+        return [
+            'capital_bajo' => 'COALESCE("Cap_Tot", 0) > 0 AND COALESCE("Cap_Tot", 0) <= 20000',
+            'capital_dictaminado_bajo' => 'COALESCE("Cap_Dic", 0) > 0 AND COALESCE("Cap_Dic", 0) <= 20000',
+            'comite_vencido' => '"Vigencia" IS NOT NULL AND "Vigencia" < CURRENT_DATE',
+            'auditoria_elevada' => 'COALESCE("Imp_Res_Audi_Mes", 0) > 500000',
+            'pagare_vencido' => '"Pagare_Fecha" IS NOT NULL AND "Pagare_Fecha" <= CURRENT_DATE - INTERVAL \'1 year\'',
+            'rotacion_baja' => 'COALESCE("Cap_Dic", 0) <= 0 OR COALESCE("Vta_Mes", 0) / NULLIF("Cap_Dic", 0) < 0.5',
+            'asamblea_pendiente' => 'COALESCE("Asam_Prog_Mes", 0) > 0 AND COALESCE("Asam_Real_Mes", 0) = 0',
+        ][$indicador] ?? null;
+    }
+
+    private function indicadorLabels(): array
+    {
+        return [
+            'capital_bajo' => '💰 Capital total bajo',
+            'capital_dictaminado_bajo' => '🏛️ Capital Bienestar bajo',
+            'comite_vencido' => '📅 Comité vencido',
+            'auditoria_elevada' => '🔍 Auditoría > $500k',
+            'pagare_vencido' => '📄 Pagaré vencido',
+            'rotacion_baja' => '📉 Rotación baja',
+            'asamblea_pendiente' => '🗳️ Asamblea pendiente',
+        ];
+    }
+
     private function camposIncompletosSql(array $columns): string
     {
         return collect($columns)
@@ -351,6 +867,120 @@ class ServicioPostgresql
     private function sinCapitalSql(): string
     {
         return '"Cap_Tot" IS NULL OR COALESCE("Cap_Tot", 0) = 0';
+    }
+
+    private function rowToCriticalStore(object $row, array $columns): array
+    {
+        $store = $this->rowToStore($row, $columns);
+        $conditions = [];
+        foreach (array_keys($this->indicadorLabels()) as $key) {
+            $conditions[$key] = $this->rowMatchesIndicador($row, $key);
+        }
+
+        $store['_critico'] = [
+            'conditions' => $conditions,
+            'labels' => collect($this->indicadorLabels())->map(fn (string $label) => ['label' => $label, 'detail' => ''])->all(),
+            'count' => (int) ($row->factores_criticos_count ?? count(array_filter($conditions))),
+            'level' => (string) ($row->nivel_critico ?? 'verde'),
+        ];
+
+        return $store;
+    }
+
+    private function rowToAuditStore(object $row, array $columns): array
+    {
+        $store = $this->rowToStore($row, $columns);
+        $fchAudit = $row->Fch_Audit ?? null;
+        $mesesSinAuditoria = $fchAudit ? Carbon::parse($fchAudit)->diffInMonths(now()) : null;
+        $impuesto = (float) ($row->Imp_Res_Audi_Mes ?? 0);
+        $capDic = (float) ($row->Cap_Dic ?? 0);
+        $vtaMes = (float) ($row->Vta_Mes ?? 0);
+        $rotacion = $capDic > 0 ? $vtaMes / $capDic : 0;
+        $conditions = [];
+        if (($row->estado_comite ?? '') === 'vencido') {
+            $conditions[] = 'comite_vencido';
+        }
+        if ($impuesto > 500000) {
+            $conditions[] = 'auditoria_alta';
+        }
+        if (in_array($row->rango_rotacion ?? '', ['cero', 'critico'], true)) {
+            $conditions[] = 'rotacion_baja';
+        }
+        if ((bool) ($row->auditoria_pendiente ?? false)) {
+            $conditions[] = 'auditoria_pendiente';
+        }
+
+        $store['_audit'] = [
+            'level' => (string) ($row->nivel_critico ?? 'verde'),
+            'conditions' => $conditions,
+            'estadoComite' => (string) ($row->estado_comite ?? 'sin_fecha'),
+            'vigencia' => $this->valorAString($row->Vigencia ?? null),
+            'impuesto' => $impuesto,
+            'rotacion' => $rotacion,
+            'fchAudit' => $this->valorAString($fchAudit),
+            'mesesSinAuditoria' => $mesesSinAuditoria,
+            'rangoRotacion' => (string) ($row->rango_rotacion ?? ''),
+            'auditRealizada' => (int) ($row->Audit_Realiza_Mes ?? 0),
+            'sinAuditoriaAnio' => $fchAudit === null || Carbon::parse($fchAudit)->lte(now()->subYear()),
+            'auditoriaPendiente' => (bool) ($row->auditoria_pendiente ?? false),
+        ];
+
+        return $store;
+    }
+
+    private function rowToAperturaStore(object $row, array $columns): array
+    {
+        $store = $this->rowToStore($row, $columns);
+        $fecha = $row->Fecha_Apertura ?? null;
+        $store['_fecha_apertura'] = $fecha ? Carbon::parse($fecha)->toDateString() : null;
+        $store['_antiguedad'] = $fecha ? ((int) Carbon::parse($fecha)->diffInMonths(now())).' meses' : '—';
+
+        return $store;
+    }
+
+    private function rowToGeoStore(object $row, array $columns): array
+    {
+        $store = $this->rowToStore($row, $columns);
+        $lat = is_numeric($row->Latitud ?? null) ? (float) $row->Latitud : null;
+        $lon = is_numeric($row->Longitud ?? null) ? (float) $row->Longitud : null;
+        $store['_geo'] = [
+            'lat' => $lat,
+            'lon' => $lon,
+            'status' => (string) ($row->estado_geo ?? 'OK'),
+            'mensaje' => (string) ($row->estado_geo ?? 'OK'),
+        ];
+
+        return $store;
+    }
+
+    private function rowMatchesIndicador(object $row, string $key): bool
+    {
+        $capTot = (float) ($row->Cap_Tot ?? 0);
+        $capDic = (float) ($row->Cap_Dic ?? 0);
+        $vtaMes = (float) ($row->Vta_Mes ?? 0);
+
+        return match ($key) {
+            'capital_bajo' => $capTot > 0 && $capTot <= 20000,
+            'capital_dictaminado_bajo' => $capDic > 0 && $capDic <= 20000,
+            'comite_vencido' => ! empty($row->Vigencia) && Carbon::parse($row->Vigencia)->isPast(),
+            'auditoria_elevada' => (float) ($row->Imp_Res_Audi_Mes ?? 0) > 500000,
+            'pagare_vencido' => ! empty($row->Pagare_Fecha) && Carbon::parse($row->Pagare_Fecha)->addYear()->isPast(),
+            'rotacion_baja' => $capDic <= 0 || ($vtaMes / $capDic) < 0.5,
+            'asamblea_pendiente' => (int) ($row->Asam_Prog_Mes ?? 0) > 0 && (int) ($row->Asam_Real_Mes ?? 0) === 0,
+            default => false,
+        };
+    }
+
+    private function trackedDirectorioColumns(): array
+    {
+        return [
+            'TELEFONIA', 'CORREO', 'Señal de celular', 'Compañía', 'INTERNET',
+            'Vta_Mes', 'VtaNeta_Mes', 'Cap_Tot', 'Cap_Com', 'Cap_Dic',
+            'Pagare_Monto', 'Pagare_Fecha', 'Fec_CRA', 'Vigencia', 'Fch_Audit', 'Imp_Res_Audi_Mes',
+            'Audit_Realiza_Mes', 'Latitud', 'Longitud', 'Direccion',
+            'Nom_Pre_CRA', 'Nom_Pre_Sup_CRA', 'Nom_Sec_CRA', 'Nom_Sec_Sup_CRA',
+            'Nom_Tes_CRA', 'Nom_Vcv_CRA', 'Nom_Voc_Gen_CRA',
+        ];
     }
 
     private function rowToStore(object $row, array $columns): array

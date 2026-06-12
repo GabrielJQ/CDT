@@ -3,7 +3,7 @@
 namespace App\Mcp\Tools;
 
 use App\Servicios\ServicioConectividad;
-use App\Servicios\ServicioGoogleSheet;
+use App\Servicios\ServicioPostgresql;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -14,7 +14,7 @@ use Laravel\Mcp\Server\Tool;
 class ResumenConectividadTool extends Tool
 {
     public function __construct(
-        private ServicioGoogleSheet $sheet,
+        private ServicioPostgresql $postgres,
         private ServicioConectividad $conectividad,
     ) {}
 
@@ -29,7 +29,7 @@ class ResumenConectividadTool extends Tool
 
     public function handle(Request $request): Response
     {
-        $tiendas = $this->sheet->obtenerTiendas();
+        $tiendas = $this->postgres->obtenerTiendas(columns: ['Estado', 'TELEFONIA', 'INTERNET', 'Señal de celular', 'Compañía']);
 
         $estado = trim($request->get('estado', ''));
         if ($estado !== '') {

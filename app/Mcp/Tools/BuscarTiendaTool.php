@@ -2,7 +2,7 @@
 
 namespace App\Mcp\Tools;
 
-use App\Servicios\ServicioGoogleSheet;
+use App\Servicios\ServicioPostgresql;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -13,7 +13,7 @@ use Laravel\Mcp\Server\Tool;
 class BuscarTiendaTool extends Tool
 {
     public function __construct(
-        private ServicioGoogleSheet $sheet,
+        private ServicioPostgresql $postgres,
     ) {}
 
     public function schema(JsonSchema $schema): array
@@ -37,7 +37,7 @@ class BuscarTiendaTool extends Tool
             return Response::error('Debes proporcionar un texto de búsqueda.');
         }
 
-        $tiendas = $this->sheet->obtenerTiendas();
+        $tiendas = $this->postgres->obtenerTiendas(columns: ['Clave_Sucursal', 'Nombre_Almacen', 'Estado', 'Municipio', 'Domicilio', 'Colonia']);
 
         $resultados = array_values(array_filter($tiendas, fn ($t) => str_contains(mb_strtolower($t['Nombre_Almacen'] ?? ''), $query)
             || str_contains(mb_strtolower($t['Estado'] ?? ''), $query)

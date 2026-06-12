@@ -31,6 +31,30 @@ class ServicioExportacion
         ]);
     }
 
+    public static function csvStream(iterable $data, array $columns, string $filename): StreamedResponse
+    {
+        $callback = function () use ($data, $columns) {
+            $output = fopen('php://output', 'w');
+            fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            fputcsv($output, array_values($columns));
+
+            foreach ($data as $row) {
+                $values = [];
+                foreach (array_keys($columns) as $key) {
+                    $values[] = self::extractValue($row, $key);
+                }
+                fputcsv($output, $values);
+            }
+
+            fclose($output);
+        };
+
+        return response()->streamDownload($callback, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
     private static function extractValue(array $row, string $key): string
     {
         if (str_contains($key, '.')) {

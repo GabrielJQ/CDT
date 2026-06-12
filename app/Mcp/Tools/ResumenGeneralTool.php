@@ -5,7 +5,7 @@ namespace App\Mcp\Tools;
 use App\Servicios\ServicioAuditoria;
 use App\Servicios\ServicioConectividad;
 use App\Servicios\ServicioFecha;
-use App\Servicios\ServicioGoogleSheet;
+use App\Servicios\ServicioPostgresql;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -16,7 +16,7 @@ use Laravel\Mcp\Server\Tool;
 class ResumenGeneralTool extends Tool
 {
     public function __construct(
-        private ServicioGoogleSheet $sheet,
+        private ServicioPostgresql $postgres,
         private ServicioConectividad $conectividad,
         private ServicioAuditoria $auditoria,
         private ServicioFecha $fecha,
@@ -33,7 +33,7 @@ class ResumenGeneralTool extends Tool
 
     public function handle(Request $request): Response
     {
-        $tiendas = $this->sheet->obtenerTiendas();
+        $tiendas = $this->postgres->obtenerTiendas();
 
         $estado = trim($request->get('estado', ''));
         if ($estado !== '') {

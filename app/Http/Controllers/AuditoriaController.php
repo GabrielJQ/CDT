@@ -2,10 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Servicios\ServicioAuditoria;
 use App\Servicios\ServicioExportacion;
-use App\Servicios\ServicioFiltro;
-use App\Servicios\ServicioGoogleSheet;
+use App\Servicios\ServicioPostgresql;
 use Illuminate\Http\Request;
 
 class AuditoriaController extends Controller
@@ -16,16 +14,11 @@ class AuditoriaController extends Controller
     ];
 
     public function __construct(
-        private ServicioGoogleSheet $sheet,
-        private ServicioAuditoria $auditoria,
-        private ServicioFiltro $filtro,
+        private ServicioPostgresql $postgres,
     ) {}
 
     public function index(Request $request)
     {
-        $stores = $this->sheet->obtenerTiendas($this->applyRegionFilter(), self::COLUMNS);
-        $totalCount = count($stores);
-
         $filters = [
             'almacen' => trim($request->query('almacen', '')),
             'nivel' => $request->query('nivel', ''),
@@ -37,76 +30,8 @@ class AuditoriaController extends Controller
             'asambleas_mes' => $request->query('asambleas_mes', ''),
         ];
 
-        $evaluated = collect($stores)->map(function ($store) {
-            return array_merge($store, ['_audit' => $this->auditoria->evaluarTienda($store)]);
-        });
-
-        $filtered = $evaluated->filter(function ($store) use ($filters) {
-            if ($filters['almacen'] !== '') {
-                $nombre = $store['Nombre_Almacen'] ?? '';
-                if (! str_contains(mb_strtoupper($nombre), mb_strtoupper($filters['almacen']))) {
-                    return false;
-                }
-            }
-            if ($filters['nivel'] !== '' && ($store['_audit']['level'] ?? '') !== $filters['nivel']) {
-                return false;
-            }
-            if ($filters['estado_comite'] !== '' && ($store['_audit']['estadoComite'] ?? '') !== $filters['estado_comite']) {
-                return false;
-            }
-            if ($filters['estado_auditoria'] !== '') {
-                $fch = $store['_audit']['fchAudit'] ?? null;
-                $meses = $store['_audit']['mesesSinAuditoria'] ?? null;
-                $estado = $fch ? ($meses >= 3 ? 'vencida' : 'al_dia') : 'sin_fecha';
-                if ($estado !== $filters['estado_auditoria']) {
-                    return false;
-                }
-            }
-            if ($filters['filtro_500k'] !== '') {
-                $impuesto = $store['_audit']['impuesto'] ?? 0;
-                $esAlto = $impuesto > 500000;
-                if (($filters['filtro_500k'] === 'si' && ! $esAlto) || ($filters['filtro_500k'] === 'no' && $esAlto)) {
-                    return false;
-                }
-            }
-            if ($filters['rango_rotacion'] !== '') {
-                $rango = $store['_audit']['rangoRotacion'] ?? '';
-                if ($rango !== $filters['rango_rotacion']) {
-                    return false;
-                }
-            }
-            if ($filters['tiempo_auditoria'] !== '') {
-                $auditRealizada = $store['_audit']['auditRealizada'] ?? 0;
-                $sinAuditoriaAnio = $store['_audit']['sinAuditoriaAnio'] ?? false;
-                $fchAudit = $store['_audit']['fchAudit'] ?? null;
-                $mesesSinAuditoria = $store['_audit']['mesesSinAuditoria'] ?? null;
-                $sinAuditoriaTrimestre = $fchAudit === null || ($mesesSinAuditoria !== null && $mesesSinAuditoria >= 3);
-
-                if ($filters['tiempo_auditoria'] === 'mes' && $auditRealizada == 0) {
-                    return false;
-                }
-                if ($filters['tiempo_auditoria'] === 'trimestre' && ! $sinAuditoriaTrimestre) {
-                    return false;
-                }
-                if ($filters['tiempo_auditoria'] === 'anio' && ! $sinAuditoriaAnio) {
-                    return false;
-                }
-            }
-            if ($filters['asambleas_mes'] !== '') {
-                $asambleas = (int) ($store['Asam_Real_Mes'] ?? 0);
-                if ($filters['asambleas_mes'] === 'si' && $asambleas == 0) {
-                    return false;
-                }
-                if ($filters['asambleas_mes'] === 'no' && $asambleas > 0) {
-                    return false;
-                }
-            }
-
-            return true;
-        })->values()->all();
-
         if ($request->query('export') === 'csv') {
-            return ServicioExportacion::csvResponse($filtered, [
+            return ServicioExportacion::csvStream($this->postgres->exportarTiendas($this->applyRegionFilter(), $filters, self::COLUMNS, 'auditoria'), [
                 'Nombre_Almacen' => 'Almacén',
                 'No_Tienda_Actual' => 'Tienda #',
                 'Localidad' => 'Localidad',
@@ -121,14 +46,15 @@ class AuditoriaController extends Controller
             ], 'auditoria.csv');
         }
 
-        $pagination = $this->paginateArray($filtered);
+        [$page, $perPage] = $this->paginationInput();
+        $result = $this->postgres->obtenerAuditoriaPaginada($this->applyRegionFilter(), $filters, $page, $perPage, self::COLUMNS);
 
         return view('auditoria', [
-            'stores' => $pagination['items'],
-            'totalCount' => $totalCount,
-            'filteredCount' => count($filtered),
-            'serverPagination' => $pagination['meta'],
-            'kpis' => $this->auditoria->calcularKpis($evaluated->all()),
+            'stores' => $result['rows'],
+            'totalCount' => $result['total'],
+            'filteredCount' => $result['filtered'],
+            'serverPagination' => $this->paginationMeta($page, $perPage, $result['filtered']),
+            'kpis' => $result['kpis'],
             'filters' => $filters,
             'updatedAt' => now()->toDateTimeString(),
         ]);
