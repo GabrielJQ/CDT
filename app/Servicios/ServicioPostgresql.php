@@ -317,23 +317,27 @@ class ServicioPostgresql
     {
         $query = $this->conexion()->table('tiendas');
         $this->aplicarFiltroRegional($query, $regionFilters);
-        $this->aplicarFiltrosMapa($query, $filters);
+        $this->aplicarFiltrosMapa($query, array_diff_key($filters, ['estado_geo' => true]));
 
-        return $query->select(array_values(array_unique(array_merge($columns, ['estado_geo']))))
+        $rows = $query->select(array_values(array_unique(array_merge($columns, ['estado_geo']))))
             ->orderBy('id')
             ->get()
             ->map(fn ($row) => $this->rowToGeoStore($row, $columns))
             ->all();
+
+        return $this->filtrarGeoCalculado($rows, $filters['estado_geo'] ?? '');
     }
 
     public function obtenerMapaViewport(array $regionFilters, array $filters, array $bounds, array $columns, int $limit = 3000): array
     {
         $query = $this->conexion()->table('tiendas');
         $this->aplicarFiltroRegional($query, $regionFilters);
-        $this->aplicarFiltrosMapa($query, $filters);
-        $this->aplicarBounds($query, $bounds, 'Latitud', 'Longitud');
+        $this->aplicarFiltrosMapa($query, array_diff_key($filters, ['estado_geo' => true]));
+        if (($filters['estado_geo'] ?? '') !== 'FUERA_MEXICO') {
+            $this->aplicarBounds($query, $bounds, 'Latitud', 'Longitud');
+        }
 
-        return $query->select(array_values(array_unique(array_merge($columns, ['estado_geo']))))
+        $rows = $query->select(array_values(array_unique(array_merge($columns, ['estado_geo']))))
             ->whereNotNull('Latitud')
             ->whereNotNull('Longitud')
             ->where('Latitud', '!=', '0')
@@ -343,6 +347,8 @@ class ServicioPostgresql
             ->get()
             ->map(fn ($row) => $this->rowToGeoStore($row, $columns))
             ->all();
+
+        return $this->filtrarGeoCalculado($rows, $filters['estado_geo'] ?? '');
     }
 
     public function obtenerDashboardMetricas(array $regionFilters): array
@@ -585,8 +591,13 @@ class ServicioPostgresql
         $east = min(180, (float) $bounds['east']);
         $west = max(-180, (float) $bounds['west']);
 
-        $latExpression = 'NULLIF(TRIM("'.$latColumn.'"::text), \'\')::double precision';
-        $lonExpression = 'NULLIF(TRIM("'.$lonColumn.'"::text), \'\')::double precision';
+        $latTextExpression = 'NULLIF(TRIM("'.$latColumn.'"::text), \'\')';
+        $lonTextExpression = 'NULLIF(TRIM("'.$lonColumn.'"::text), \'\')';
+        $latExpression = $latTextExpression.'::double precision';
+        $lonExpression = $lonTextExpression.'::double precision';
+
+        $query->whereRaw($latTextExpression.' ~ ?', ['^-?\d+(\.\d+)?$']);
+        $query->whereRaw($lonTextExpression.' ~ ?', ['^-?\d+(\.\d+)?$']);
 
         $query->whereRaw($latExpression.' BETWEEN ? AND ?', [min($south, $north), max($south, $north)]);
         if ($west <= $east) {
@@ -941,16 +952,23 @@ class ServicioPostgresql
     private function rowToGeoStore(object $row, array $columns): array
     {
         $store = $this->rowToStore($row, $columns);
-        $lat = is_numeric($row->Latitud ?? null) ? (float) $row->Latitud : null;
-        $lon = is_numeric($row->Longitud ?? null) ? (float) $row->Longitud : null;
-        $store['_geo'] = [
-            'lat' => $lat,
-            'lon' => $lon,
-            'status' => (string) ($row->estado_geo ?? 'OK'),
-            'mensaje' => (string) ($row->estado_geo ?? 'OK'),
-        ];
+        $store['_geo'] = $this->geo()->evaluarGeo($store);
 
         return $store;
+    }
+
+    private function filtrarGeoCalculado(array $rows, string $estadoGeo): array
+    {
+        if ($estadoGeo === '') {
+            return $rows;
+        }
+
+        return array_values(array_filter($rows, fn (array $row) => ($row['_geo']['status'] ?? '') === $estadoGeo));
+    }
+
+    private function geo(): ServicioGeo
+    {
+        return app(ServicioGeo::class);
     }
 
     private function rowMatchesIndicador(object $row, string $key): bool
