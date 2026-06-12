@@ -82,7 +82,6 @@
   <a href="{{ url('/directorio') }}" id="filter-clear" class="btn-secondary px-3 py-1.5">
  Limpiar
   </a>
-  <a href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}" class="btn-export px-3 py-1.5">⬇ CSV</a>
  </div>
  </form>
  </div>

@@ -67,7 +67,6 @@
  <div class="flex gap-2">
   <button type="submit" class="btn-filter">Filtrar</button>
   <a href="{{ url('/mapa') }}" class="btn-secondary">Limpiar</a>
-  <a href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}" class="btn-export">⬇ CSV</a>
  </div>
  </form>
  </div>
