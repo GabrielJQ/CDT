@@ -215,16 +215,18 @@
  var lon = geo.lon;
  if (lat == null || lon == null) return;
 
+ var isBienestar = (store._cxc || {}).esTiendaBienestar === true;
  var colorMap = { OK: '#22c55e', FUERA_MEXICO: '#ef4444', FUERA_ESTADO: '#f59e0b' };
- var color = colorMap[geo.status] || '#6b7280';
+ var color = isBienestar ? '#7c3aed' : (colorMap[geo.status] || '#6b7280');
 
  var popupHtml =
  '<div style="min-width:200px">' +
  '<strong style="font-size:0.9rem">' + (store.Nombre_Almacen || '—') + '</strong><br>' +
  '<span style="color:#6b7280">#' + (store.No_Tienda_Actual || '—') + '</span><br>' +
  '<span>' + (store.Municipio || '—') + ', ' + (store.Estado || '—') + '</span><br>' +
- '<span style="color:#2563eb;font-size:0.75rem">📍 ' + (store.Nombre_UniOpe || '—') + '</span><br>' +
- '<hr style="margin:6px 0;border-color:#e5e7eb">' +
+  '<span style="color:#2563eb;font-size:0.75rem">📍 ' + (store.Nombre_UniOpe || '—') + '</span><br>' +
+  (isBienestar ? '<span style="display:inline-block;margin-top:4px;color:#7c3aed;font-weight:700;font-size:0.75rem">🟣 Tienda de Salud Bienestar</span><br>' : '') +
+  '<hr style="margin:6px 0;border-color:#e5e7eb">' +
  '<span>📊 Vta_Mes: <strong>$' + (store.Vta_Mes ? Number(store.Vta_Mes).toLocaleString() : '—') + '</strong></span><br>' +
  '<span>💰 Cap_Tot: <strong>$' + (store.Cap_Tot ? Number(store.Cap_Tot).toLocaleString() : '—') + '</strong></span><br>' +
  '<hr style="margin:6px 0;border-color:#e5e7eb">' +
@@ -308,8 +310,9 @@
  div.style.padding = '8px 12px';
  div.style.fontSize = '12px';
  div.innerHTML =
- '<div style="font-weight:600;margin-bottom:4px">Leyenda</div>' +
- '<div><span style="color:#22c55e">●</span> Válidas</div>' +
+  '<div style="font-weight:600;margin-bottom:4px">Leyenda</div>' +
+  '<div><span style="color:#22c55e">●</span> Válidas</div>' +
+  '<div><span style="color:#7c3aed">●</span> Tienda de Salud Bienestar CxC</div>' +
   '<div><span style="color:#f59e0b">●</span> ' + @json($geoMismatchLabel ?? ($geoLabels['FUERA_ESTADO']['label'] ?? 'No corresponde al filtro territorial')) + '</div>' +
  '<div><span style="color:#ef4444">●</span> Fuera de México</div>';
  return div;

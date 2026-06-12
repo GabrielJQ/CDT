@@ -319,7 +319,7 @@ class ServicioPostgresql
         $this->aplicarFiltroRegional($query, $regionFilters);
         $this->aplicarFiltrosMapa($query, array_diff_key($filters, ['estado_geo' => true]));
 
-        $rows = $query->select(array_values(array_unique(array_merge($columns, ['estado_geo']))))
+        $rows = $this->selectMapaColumns($query, $columns)
             ->orderBy('id')
             ->get()
             ->map(fn ($row) => $this->rowToGeoStore($row, $columns))
@@ -337,7 +337,7 @@ class ServicioPostgresql
             $this->aplicarBounds($query, $bounds, 'Latitud', 'Longitud');
         }
 
-        $rows = $query->select(array_values(array_unique(array_merge($columns, ['estado_geo']))))
+        $rows = $this->selectMapaColumns($query, $columns)
             ->whereNotNull('Latitud')
             ->whereNotNull('Longitud')
             ->where('Latitud', '!=', '0')
@@ -953,8 +953,27 @@ class ServicioPostgresql
     {
         $store = $this->rowToStore($row, $columns);
         $store['_geo'] = $this->geo()->evaluarGeo($store);
+        $store['_cxc'] = [
+            'esTiendaBienestar' => (bool) ($row->es_tienda_salud_bienestar ?? false),
+            'esTiendaSaludBienestar' => (bool) ($row->es_tienda_salud_bienestar ?? false),
+        ];
 
         return $store;
+    }
+
+    private function selectMapaColumns(Builder $query, array $columns): Builder
+    {
+        return $query
+            ->select(array_values(array_unique(array_merge($columns, ['estado_geo']))))
+            ->selectRaw('EXISTS (
+                SELECT 1
+                FROM tiendas_casa_x_casa cxc
+                WHERE cxc.no_tienda::text = tiendas."No_Tienda_Actual"::text
+                  AND cxc.almacen = tiendas."Nombre_Almacen"
+                  AND cxc.estado = tiendas."Estado"
+                  AND cxc.municipio = tiendas."Municipio"
+                LIMIT 1
+            ) as es_tienda_salud_bienestar');
     }
 
     private function filtrarGeoCalculado(array $rows, string $estadoGeo): array
