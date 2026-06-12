@@ -18,6 +18,19 @@
  <div class="bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-6">{{ $error }}</div>
  @endisset
 
+ <div class="page-shell">
+
+  <section class="page-hero">
+  <div class="page-hero-content">
+  <div>
+  <p class="eyebrow">Cobertura territorial</p>
+  <h1 class="page-heading">Mapa de tiendas</h1>
+  <p class="page-subheading">Ubica tiendas con coordenadas validas y prioriza registros con problemas de georreferencia para mejorar el analisis territorial.</p>
+  </div>
+  <a href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}" class="btn-export">Exportar CSV</a>
+  </div>
+  </section>
+
  {{-- Stats --}}
  <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-blue-500">
@@ -40,11 +53,11 @@
  <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Almacén</label>
  <input type="text" name="almacen" value="{{ $filters['almacen'] }}"
  placeholder="Buscar..."
- class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+  class="input-filter">
  </div>
  <div class="min-w-[180px]">
  <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Estado geolocalización</label>
- <select name="estado_geo" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800">
+  <select name="estado_geo" class="input-filter">
  <option value="">Todos</option>
  @foreach($geoLabels as $key => $g)
  <option value="{{ $key }}" {{ $filters['estado_geo'] === $key ? 'selected' : '' }}>{{ $g['icon'] }} {{ $g['label'] }}</option>
@@ -52,9 +65,9 @@
  </select>
  </div>
  <div class="flex gap-2">
- <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Filtrar</button>
- <a href="{{ url('/mapa') }}" class="bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-semibold transition inline-block">Limpiar</a>
- <a href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition inline-block">⬇ CSV</a>
+  <button type="submit" class="btn-filter">Filtrar</button>
+  <a href="{{ url('/mapa') }}" class="btn-secondary">Limpiar</a>
+  <a href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}" class="btn-export">⬇ CSV</a>
  </div>
  </form>
  </div>
@@ -67,14 +80,43 @@
  @endif
  </div>
 
- {{-- Map --}}
- <div class="bg-white dark:bg-gray-800 rounded-xl shadow mb-6">
- <div id="map"></div>
- </div>
+  {{-- Map --}}
+  <div class="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_20rem]">
+  <div class="institutional-card p-2">
+  <div id="map"></div>
+  </div>
+  <aside class="priority-panel">
+  <p class="eyebrow">Incidencias</p>
+  <h2 class="text-lg font-extrabold text-gray-900 dark:text-gray-100">Calidad de coordenadas</h2>
+  <div class="mt-4 space-y-3">
+  <div class="priority-item">
+  <div>
+  <p class="text-sm font-extrabold text-gray-900 dark:text-gray-100">Sin coordenadas</p>
+  <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Registros que no pueden mostrarse en el mapa.</p>
+  </div>
+  <span class="status-pill {{ ($stats['SIN_COORDENADAS'] ?? 0) > 0 ? 'status-warning' : 'status-ok' }}">{{ $stats['SIN_COORDENADAS'] ?? 0 }}</span>
+  </div>
+  <div class="priority-item">
+  <div>
+  <p class="text-sm font-extrabold text-gray-900 dark:text-gray-100">Fuera de Mexico</p>
+  <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Coordenadas fuera del rango geografico esperado.</p>
+  </div>
+  <span class="status-pill {{ ($stats['FUERA_MEXICO'] ?? 0) > 0 ? 'status-critical' : 'status-ok' }}">{{ $stats['FUERA_MEXICO'] ?? 0 }}</span>
+  </div>
+  <div class="priority-item">
+  <div>
+  <p class="text-sm font-extrabold text-gray-900 dark:text-gray-100">Fuera de estado</p>
+  <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Tiendas con posible error de captura territorial.</p>
+  </div>
+  <span class="status-pill {{ ($stats['FUERA_ESTADO'] ?? 0) > 0 ? 'status-warning' : 'status-ok' }}">{{ $stats['FUERA_ESTADO'] ?? 0 }}</span>
+  </div>
+  </div>
+  </aside>
+  </div>
 
  {{-- CRÍTICAS list --}}
  @if(count($criticales) > 0)
- <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-x-auto">
+  <div class="table-shell">
  <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
  <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">⚠️ Tiendas sin coordenadas</p>
  <span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 font-semibold px-2.5 py-0.5 rounded-full">{{ count($criticales) }}</span>
@@ -116,10 +158,11 @@
  </table>
  </div>
  @elseif(count($stores) > 0)
- <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 text-center text-gray-500 dark:text-gray-400">
- ✅ Todas las tiendas filtradas tienen coordenadas válidas.
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 text-center text-gray-500 dark:text-gray-400">
+  ✅ Todas las tiendas filtradas tienen coordenadas válidas.
+  </div>
+  @endif
  </div>
- @endif
 @endsection
 
 @push('footer')
