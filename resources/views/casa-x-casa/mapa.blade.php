@@ -92,6 +92,9 @@
             var hasMarkers = false;
             var initialLoad = true;
             var fetchTimer = null;
+            var latestRequestId = 0;
+            var activeRequest = null;
+            var suppressNextMoveFetch = false;
             var visibleCount = document.getElementById('visible-count');
             var limitedLabel = document.getElementById('limited-label');
 
@@ -161,12 +164,16 @@
                 limitedLabel.classList.toggle('hidden', !limited);
 
                 if (hasMarkers && initialLoad) {
+                    suppressNextMoveFetch = true;
                     map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
                 }
                 initialLoad = false;
             }
 
             function fetchViewportStores() {
+                var requestId = ++latestRequestId;
+                if (activeRequest) activeRequest.abort();
+                activeRequest = new AbortController();
                 var mapBounds = map.getBounds();
                 var dataUrl = new URL(@json(route('casa-x-casa.mapa.data')), window.location.origin);
                 dataUrl.searchParams.set('north', mapBounds.getNorth());
@@ -174,13 +181,22 @@
                 dataUrl.searchParams.set('east', mapBounds.getEast());
                 dataUrl.searchParams.set('west', mapBounds.getWest());
 
-                fetch(dataUrl.toString(), { headers: { 'Accept': 'application/json' } })
+                fetch(dataUrl.toString(), { headers: { 'Accept': 'application/json' }, signal: activeRequest.signal })
                     .then(function (response) { return response.json(); })
-                    .then(function (payload) { renderStores(payload.stores || [], payload.limited || false); })
-                    .catch(function () { renderStores([], false); });
+                    .then(function (payload) {
+                        if (requestId !== latestRequestId) return;
+                        renderStores(payload.stores || [], payload.limited || false);
+                    })
+                    .catch(function (error) {
+                        if (error.name === 'AbortError') return;
+                    });
             }
 
             function scheduleViewportFetch() {
+                if (suppressNextMoveFetch) {
+                    suppressNextMoveFetch = false;
+                    return;
+                }
                 clearTimeout(fetchTimer);
                 fetchTimer = setTimeout(fetchViewportStores, 250);
             }
