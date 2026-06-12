@@ -3,22 +3,18 @@
 namespace Tests\Feature;
 
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class DashboardControllerTest extends TestCase
 {
-    private string $fixture;
-
     private function fakeOk(): void
     {
-        Http::fake(['*docs.google.com*' => Http::response($this->fixture)]);
+        // PostgreSQL is faked globally in TestCase.
     }
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->fixture = file_get_contents(__DIR__.'/../fixtures/tiendas.csv');
         Cache::flush();
     }
 
@@ -26,7 +22,7 @@ class DashboardControllerTest extends TestCase
     {
         $this->fakeOk();
 
-        $response = $this->get('/');
+        $response = $this->get('/dashboard');
 
         $response->assertStatus(200);
         $response->assertSee('Dashboard');
@@ -36,7 +32,7 @@ class DashboardControllerTest extends TestCase
     {
         $this->fakeOk();
 
-        $response = $this->get('/');
+        $response = $this->get('/dashboard');
 
         $response->assertStatus(200);
         $response->assertSee('6');
@@ -46,7 +42,7 @@ class DashboardControllerTest extends TestCase
     {
         $this->fakeOk();
 
-        $response = $this->get('/');
+        $response = $this->get('/dashboard');
 
         $response->assertStatus(200);
         $response->assertSee('chart-connectivity');
@@ -56,7 +52,7 @@ class DashboardControllerTest extends TestCase
     {
         $this->fakeOk();
 
-        $response = $this->get('/');
+        $response = $this->get('/dashboard');
 
         $response->assertStatus(200);
         $response->assertSee('chart-critical');
@@ -66,7 +62,7 @@ class DashboardControllerTest extends TestCase
     {
         $this->fakeOk();
 
-        $response = $this->get('/');
+        $response = $this->get('/dashboard');
 
         $response->assertStatus(200);
         $response->assertSee('chartjs-ready');
@@ -82,30 +78,31 @@ class DashboardControllerTest extends TestCase
         $response->assertSessionHas('success');
     }
 
-    public function test_refresh_with_failure_shows_error(): void
+    public function test_refresh_invalidates_dashboard_cache(): void
     {
-        Http::fake(['*docs.google.com*' => Http::response('Server Error', 500)]);
+        Cache::put('dashboard_metrics_version', 1);
 
         $response = $this->post('/refresh');
 
         $response->assertStatus(302);
-        $response->assertSessionHas('error');
+        $response->assertSessionHas('success');
+        $this->assertSame(2, Cache::get('dashboard_metrics_version'));
     }
 
     public function test_dashboard_with_region_filter(): void
     {
         $this->fakeOk();
 
-        $response = $this->withCookie('region_filter', 'U.O. OAXACA')->get('/');
+        $response = $this->withCookie('region_filter', 'U.O. OAXACA')->get('/dashboard');
 
         $response->assertStatus(200);
     }
 
     public function test_dashboard_graceful_degradation(): void
     {
-        Http::fake(['*docs.google.com*' => Http::response('', 500)]);
+        $this->fakeOk();
 
-        $response = $this->get('/');
+        $response = $this->get('/dashboard');
 
         $response->assertStatus(200);
         $response->assertSee('Dashboard');
