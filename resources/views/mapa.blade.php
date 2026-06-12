@@ -119,7 +119,7 @@
   <div class="table-shell">
  <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
  <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">⚠️ Tiendas sin coordenadas</p>
- <span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 font-semibold px-2.5 py-0.5 rounded-full">{{ count($criticales) }}</span>
+  <span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 font-semibold px-2.5 py-0.5 rounded-full">{{ $criticalesTotal ?? count($criticales) }}</span>
  </div>
  <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
  <thead class="bg-gray-50 dark:bg-gray-800">
@@ -154,9 +154,16 @@
  </td>
  </tr>
  @endforeach
- </tbody>
- </table>
- </div>
+  </tbody>
+  </table>
+  @if(($serverPagination['totalPages'] ?? 1) > 1)
+  <div class="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-gray-700 text-sm">
+  <a href="{{ request()->fullUrlWithQuery(['page' => max(1, ($serverPagination['page'] ?? 1) - 1)]) }}" class="btn-secondary {{ ($serverPagination['page'] ?? 1) <= 1 ? 'pointer-events-none opacity-40' : '' }}">Anterior</a>
+  <span class="text-gray-500 dark:text-gray-400">Página {{ $serverPagination['page'] ?? 1 }} de {{ $serverPagination['totalPages'] ?? 1 }}</span>
+  <a href="{{ request()->fullUrlWithQuery(['page' => min(($serverPagination['totalPages'] ?? 1), ($serverPagination['page'] ?? 1) + 1)]) }}" class="btn-secondary {{ ($serverPagination['page'] ?? 1) >= ($serverPagination['totalPages'] ?? 1) ? 'pointer-events-none opacity-40' : '' }}">Siguiente</a>
+  </div>
+  @endif
+  </div>
  @elseif(count($stores) > 0)
   <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 text-center text-gray-500 dark:text-gray-400">
   ✅ Todas las tiendas filtradas tienen coordenadas válidas.
@@ -173,8 +180,9 @@
  window.addEventListener('markercluster-ready', initMap);
  return;
  }
- var stores = @json($stores);
  var hasMarkers = false;
+ var initialLoad = true;
+ var fetchTimer = null;
 
  var map = L.map('map', { zoomControl: true });
 
@@ -192,9 +200,12 @@
  chunkInterval: 50,
  });
 
- var bounds = [];
+ var markerBounds = [];
 
  function renderStores(storesToRender) {
+ clusters.clearLayers();
+ markerBounds = [];
+ hasMarkers = false;
  storesToRender.forEach(function (store) {
  var geo = store._geo || {};
  if (geo.status === 'SIN_COORDENADAS') return;
@@ -233,30 +244,43 @@
 
  marker.bindPopup(popupHtml);
  clusters.addLayer(marker);
- bounds.push([lat, lon]);
+ markerBounds.push([lat, lon]);
  hasMarkers = true;
  });
 
  if (hasMarkers) {
  map.addLayer(clusters);
- map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
+ if (initialLoad) map.fitBounds(markerBounds, { padding: [30, 30], maxZoom: 14 });
  } else {
- map.setView([23.6, -102.0], 5);
+ if (initialLoad) map.setView([23.6, -102.0], 5);
  }
+ initialLoad = false;
  }
 
- if (stores.length > 0) {
- renderStores(stores);
- } else {
+ function fetchViewportStores() {
+ var mapBounds = map.getBounds();
  var dataUrl = new URL(@json(route('mapa.data')), window.location.origin);
  var currentParams = new URLSearchParams(window.location.search);
  currentParams.delete('export');
  currentParams.forEach(function (value, key) { dataUrl.searchParams.set(key, value); });
+ dataUrl.searchParams.set('north', mapBounds.getNorth());
+ dataUrl.searchParams.set('south', mapBounds.getSouth());
+ dataUrl.searchParams.set('east', mapBounds.getEast());
+ dataUrl.searchParams.set('west', mapBounds.getWest());
  fetch(dataUrl.toString(), { headers: { 'Accept': 'application/json' } })
  .then(function (response) { return response.json(); })
  .then(function (payload) { renderStores(payload.stores || []); })
  .catch(function () { map.setView([23.6, -102.0], 5); });
  }
+
+ function scheduleViewportFetch() {
+ clearTimeout(fetchTimer);
+ fetchTimer = setTimeout(fetchViewportStores, 250);
+ }
+
+ map.setView([23.6, -102.0], 5);
+ map.on('moveend zoomend', scheduleViewportFetch);
+ fetchViewportStores();
 
  var legend = L.control({ position: 'bottomright' });
  legend.onAdd = function () {

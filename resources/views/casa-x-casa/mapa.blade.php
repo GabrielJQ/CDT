@@ -42,8 +42,9 @@
                 return;
             }
 
-            var stores = @json($stores);
             var hasMarkers = false;
+            var initialLoad = true;
+            var fetchTimer = null;
 
             var map = L.map('map', { zoomControl: true });
 
@@ -62,6 +63,11 @@
             });
 
             var bounds = [];
+
+            function renderStores(stores) {
+            clusters.clearLayers();
+            bounds = [];
+            hasMarkers = false;
 
             stores.forEach(function (s) {
                 var lat = parseFloat(s.latitud);
@@ -100,10 +106,34 @@
 
             if (hasMarkers) {
                 map.addLayer(clusters);
-                map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
+                if (initialLoad) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
             } else {
-                map.setView([23.6, -102.0], 5);
+                if (initialLoad) map.setView([23.6, -102.0], 5);
             }
+            initialLoad = false;
+            }
+
+            function fetchViewportStores() {
+                var mapBounds = map.getBounds();
+                var dataUrl = new URL(@json(route('casa-x-casa.mapa.data')), window.location.origin);
+                dataUrl.searchParams.set('north', mapBounds.getNorth());
+                dataUrl.searchParams.set('south', mapBounds.getSouth());
+                dataUrl.searchParams.set('east', mapBounds.getEast());
+                dataUrl.searchParams.set('west', mapBounds.getWest());
+                fetch(dataUrl.toString(), { headers: { 'Accept': 'application/json' } })
+                    .then(function (response) { return response.json(); })
+                    .then(function (payload) { renderStores(payload.stores || []); })
+                    .catch(function () { map.setView([23.6, -102.0], 5); });
+            }
+
+            function scheduleViewportFetch() {
+                clearTimeout(fetchTimer);
+                fetchTimer = setTimeout(fetchViewportStores, 250);
+            }
+
+            map.setView([23.6, -102.0], 5);
+            map.on('moveend zoomend', scheduleViewportFetch);
+            fetchViewportStores();
 
             setTimeout(function () { map.invalidateSize(); }, 300);
         }

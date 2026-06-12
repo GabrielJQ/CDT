@@ -3,22 +3,18 @@
 namespace Tests\Feature;
 
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class MapaControllerTest extends TestCase
 {
-    private string $fixture;
-
     private function fakeOk(): void
     {
-        Http::fake(['*docs.google.com*' => Http::response($this->fixture)]);
+        // PostgreSQL is faked globally in TestCase.
     }
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->fixture = file_get_contents(__DIR__.'/../fixtures/tiendas.csv');
         Cache::flush();
     }
 

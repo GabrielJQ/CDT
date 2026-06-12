@@ -155,18 +155,42 @@ class CasaPorCasaController extends Controller
             $baseQuery->whereIn('unidad_operativa', $uoFilter);
         }
 
-        $stores = (clone $baseQuery)
+        $conCoordenadas = (clone $baseQuery)
             ->whereNotNull('latitud')
             ->whereNotNull('longitud')
             ->where('latitud', '!=', 0)
             ->where('longitud', '!=', 0)
-            ->orderBy('estado')
-            ->get();
+            ->count();
 
         $totalCount = (clone $baseQuery)->count();
-        $conCoordenadas = $stores->count();
 
-        return view('casa-x-casa.mapa', compact('stores', 'totalCount', 'conCoordenadas'));
+        return view('casa-x-casa.mapa', compact('totalCount', 'conCoordenadas'));
+    }
+
+    public function mapaData(Request $request)
+    {
+        $conn = DB::connection('pgsql_imports');
+        $uoFilter = $this->resolveUoFilter();
+
+        $query = $conn->table('tiendas_casa_x_casa')
+            ->select([
+                'id', 'almacen', 'no_tienda', 'municipio', 'estado', 'unidad_operativa',
+                'tipo_anaquel', 'anaqueles_instalados', 'latitud', 'longitud',
+            ])
+            ->whereNotNull('latitud')
+            ->whereNotNull('longitud')
+            ->where('latitud', '!=', 0)
+            ->where('longitud', '!=', 0);
+
+        if (! empty($uoFilter)) {
+            $query->whereIn('unidad_operativa', $uoFilter);
+        }
+
+        $this->applyNumericBounds($query, $request, 'latitud', 'longitud');
+
+        $stores = $query->orderBy('id')->limit(3000)->get();
+
+        return response()->json(['stores' => $stores, 'limited' => $stores->count() >= 3000]);
     }
 
     public function show(int $id)
@@ -229,5 +253,31 @@ class CasaPorCasaController extends Controller
         ', [$store->no_tienda, $store->almacen, $store->estado, $store->municipio]);
 
         return $rows[0] ?? null;
+    }
+
+    private function applyNumericBounds($query, Request $request, string $latColumn, string $lonColumn): void
+    {
+        $values = [];
+        foreach (['north', 'south', 'east', 'west'] as $key) {
+            $value = $request->query($key);
+            if (! is_numeric($value)) {
+                return;
+            }
+            $values[$key] = (float) $value;
+        }
+
+        $north = min(90, $values['north']);
+        $south = max(-90, $values['south']);
+        $east = min(180, $values['east']);
+        $west = max(-180, $values['west']);
+
+        $query->whereBetween($latColumn, [min($south, $north), max($south, $north)]);
+        if ($west <= $east) {
+            $query->whereBetween($lonColumn, [$west, $east]);
+        } else {
+            $query->where(function ($query) use ($lonColumn, $west, $east) {
+                $query->whereBetween($lonColumn, [$west, 180])->orWhereBetween($lonColumn, [-180, $east]);
+            });
+        }
     }
 }

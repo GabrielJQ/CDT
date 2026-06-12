@@ -3,9 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Servicios\ServicioExportacion;
-use App\Servicios\ServicioFiltro;
 use App\Servicios\ServicioGeo;
-use App\Servicios\ServicioGoogleSheet;
+use App\Servicios\ServicioPostgresql;
 use Illuminate\Http\Request;
 
 class MapaController extends Controller
@@ -16,50 +15,30 @@ class MapaController extends Controller
     ];
 
     public function __construct(
-        private ServicioGoogleSheet $sheet,
         private ServicioGeo $geo,
-        private ServicioFiltro $filtro,
+        private ServicioPostgresql $postgres,
     ) {}
 
     public function index(Request $request)
     {
         $regionFilter = $this->applyRegionFilter();
-        $stores = $this->sheet->obtenerTiendas($regionFilter, self::COLUMNS);
-        $totalCount = count($stores);
-        $geoLabels = ServicioGeo::GEO_LABELS;
-        $geoLabels['FUERA_ESTADO']['label'] = $this->geoMismatchLabel($stores, $regionFilter);
-
-        $evaluated = collect($stores)->map(function ($store) {
-            $store['_geo'] = $this->geo->evaluarGeo($store);
-
-            return $store;
-        });
-
         $filters = [
             'almacen' => trim($request->query('almacen', '')),
             'estado_geo' => $request->query('estado_geo', ''),
         ];
 
-        $filtered = $evaluated->filter(function ($store) use ($filters) {
-            if ($filters['almacen'] !== '') {
-                $nombre = $store['Nombre_Almacen'] ?? '';
-                if (! str_contains(mb_strtoupper($nombre), mb_strtoupper($filters['almacen']))) {
-                    return false;
-                }
-            }
-            if ($filters['estado_geo'] !== '' && ($store['_geo']['status'] ?? '') !== $filters['estado_geo']) {
-                return false;
-            }
+        $allStores = $this->postgres->obtenerMapa($regionFilter, [], self::COLUMNS);
+        $filtered = $this->postgres->obtenerMapa($regionFilter, $filters, self::COLUMNS);
+        $geoLabels = ServicioGeo::GEO_LABELS;
+        $geoLabels['FUERA_ESTADO']['label'] = $this->geoMismatchLabel($allStores, $regionFilter);
 
-            return true;
-        })->values()->all();
-
-        $criticales = collect($filtered)->filter(function ($s) {
+        $criticalesAll = collect($filtered)->filter(function ($s) {
             return ($s['_geo']['status'] ?? 'OK') !== 'OK';
         })->values()->all();
+        $criticalesPagination = $this->paginateArray($criticalesAll);
 
         if ($request->query('export') === 'csv') {
-            return ServicioExportacion::csvResponse($filtered, [
+            return ServicioExportacion::csvStream($this->postgres->exportarTiendas($regionFilter, $filters, self::COLUMNS, 'mapa'), [
                 'Nombre_Almacen' => 'Almacén',
                 'No_Tienda_Actual' => 'Tienda #',
                 'Municipio' => 'Municipio',
@@ -73,10 +52,12 @@ class MapaController extends Controller
 
         return view('mapa', [
             'stores' => [],
-            'criticales' => $criticales,
-            'totalCount' => $totalCount,
+            'criticales' => $criticalesPagination['items'],
+            'criticalesTotal' => count($criticalesAll),
+            'serverPagination' => $criticalesPagination['meta'],
+            'totalCount' => count($allStores),
             'filteredCount' => count($filtered),
-            'stats' => $this->geo->calcularStats($evaluated->all()),
+            'stats' => $this->geo->calcularStats($allStores),
             'filters' => $filters,
             'geoLabels' => $geoLabels,
             'geoMismatchLabel' => $geoLabels['FUERA_ESTADO']['label'],
@@ -87,33 +68,19 @@ class MapaController extends Controller
     public function data(Request $request)
     {
         $regionFilter = $this->applyRegionFilter();
-        $stores = $this->sheet->obtenerTiendas($regionFilter, self::COLUMNS);
-        $evaluated = collect($stores)->map(function ($store) {
-            $store['_geo'] = $this->geo->evaluarGeo($store);
-
-            return $store;
-        });
-
         $filters = [
             'almacen' => trim($request->query('almacen', '')),
             'estado_geo' => $request->query('estado_geo', ''),
         ];
 
-        $filtered = $evaluated->filter(function ($store) use ($filters) {
-            if ($filters['almacen'] !== '') {
-                $nombre = $store['Nombre_Almacen'] ?? '';
-                if (! str_contains(mb_strtoupper($nombre), mb_strtoupper($filters['almacen']))) {
-                    return false;
-                }
-            }
-            if ($filters['estado_geo'] !== '' && ($store['_geo']['status'] ?? '') !== $filters['estado_geo']) {
-                return false;
-            }
+        $filtered = $this->postgres->obtenerMapaViewport(
+            $regionFilter,
+            $filters,
+            $request->only(['north', 'south', 'east', 'west']),
+            self::COLUMNS,
+        );
 
-            return true;
-        })->values()->all();
-
-        return response()->json(['stores' => $filtered]);
+        return response()->json(['stores' => $filtered, 'limited' => count($filtered) >= 3000]);
     }
 
     private function geoMismatchLabel(array $stores, array $regionFilter): string

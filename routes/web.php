@@ -36,6 +36,7 @@ Route::prefix('casa-x-casa')->name('casa-x-casa.')->controller(CasaPorCasaContro
     Route::get('/', 'dashboard')->name('dashboard');
     Route::get('/directorio', 'directorio')->name('directorio');
     Route::get('/mapa', 'mapa')->name('mapa');
+    Route::get('/mapa/data', 'mapaData')->name('mapa.data');
     Route::get('/tienda/{id}', 'show')->name('show');
 });
 
