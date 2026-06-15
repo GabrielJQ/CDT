@@ -47,7 +47,9 @@ class AuditoriaController extends Controller
         }
 
         [$page, $perPage] = $this->paginationInput();
-        $result = $this->postgres->obtenerAuditoriaPaginada($this->applyRegionFilter(), $filters, $page, $perPage, self::COLUMNS);
+        $sortableColumns = array_merge(self::COLUMNS, ['Comite', 'Estado_Aud', 'Rotacion', 'Riesgo']);
+        $sort = $this->tableSortInput($sortableColumns);
+        $result = $this->postgres->obtenerAuditoriaPaginada($this->applyRegionFilter(), $filters, $page, $perPage, self::COLUMNS, $sort);
 
         return view('auditoria', [
             'stores' => $result['rows'],
@@ -56,6 +58,7 @@ class AuditoriaController extends Controller
             'serverPagination' => $this->paginationMeta($page, $perPage, $result['filtered']),
             'kpis' => $result['kpis'],
             'filters' => $filters,
+            'sort' => $sort,
             'updatedAt' => now()->toDateTimeString(),
         ]);
     }

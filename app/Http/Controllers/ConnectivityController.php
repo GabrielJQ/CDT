@@ -39,7 +39,8 @@ class ConnectivityController extends Controller
         }
 
         [$page, $perPage] = $this->paginationInput();
-        $result = $this->postgres->obtenerConectividadPaginada($this->applyRegionFilter(), $filters, $page, $perPage);
+        $sort = $this->tableSortInput(self::COLUMNS);
+        $result = $this->postgres->obtenerConectividadPaginada($this->applyRegionFilter(), $filters, $page, $perPage, $sort);
 
         return view('connectivity', [
             'kpis' => $result['kpis'],
@@ -52,6 +53,7 @@ class ConnectivityController extends Controller
                 'companias' => $result['companias'],
             ],
             'filters' => $filters,
+            'sort' => $sort,
             'updatedAt' => now()->toDateTimeString(),
         ]);
     }

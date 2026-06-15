@@ -64,7 +64,9 @@ class CriticalStoresController extends Controller
         ];
 
         [$page, $perPage] = $this->paginationInput();
-        $result = $this->postgres->obtenerCriticidadPaginada($this->applyRegionFilter(), $filters, $page, $perPage, self::COLUMNS);
+        $sortableColumns = array_merge(self::COLUMNS, ['Factores', 'Detalle']);
+        $sort = $this->tableSortInput($sortableColumns);
+        $result = $this->postgres->obtenerCriticidadPaginada($this->applyRegionFilter(), $filters, $page, $perPage, self::COLUMNS, $sort);
 
         return view('critical-stores', [
             'stores' => $result['rows'],
@@ -74,6 +76,7 @@ class CriticalStoresController extends Controller
             'summary' => $result['summary'],
             'filters' => $filters,
             'indicadores' => $indicadores,
+            'sort' => $sort,
             'updatedAt' => now()->toDateTimeString(),
         ]);
     }

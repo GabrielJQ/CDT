@@ -21,12 +21,14 @@ class CasaPorCasaController extends Controller
 
         if (! empty($uo)) {
             $names = $conn->table('tiendas')
+                ->where('es_activo', true)
                 ->where('Clave_UniOpe', $uo)
                 ->distinct()
                 ->pluck('Nombre_UniOpe')
                 ->toArray();
         } else {
             $names = $conn->table('tiendas')
+                ->where('es_activo', true)
                 ->where('Clave_Regional', $region)
                 ->distinct()
                 ->pluck('Nombre_UniOpe')
@@ -41,7 +43,7 @@ class CasaPorCasaController extends Controller
         $conn = DB::connection('pgsql_imports');
         $uoFilter = $this->resolveUoFilter();
 
-        $query = $conn->table('tiendas_casa_x_casa');
+        $query = $this->activeCxcQuery($conn);
         if (! empty($uoFilter)) {
             $query->whereIn('unidad_operativa', $uoFilter);
         }
@@ -103,7 +105,7 @@ class CasaPorCasaController extends Controller
         $conn = DB::connection('pgsql_imports');
         $uoFilter = $this->resolveUoFilter();
 
-        $query = $conn->table('tiendas_casa_x_casa');
+        $query = $this->activeCxcQuery($conn);
         if (! empty($uoFilter)) {
             $query->whereIn('unidad_operativa', $uoFilter);
         }
@@ -126,10 +128,19 @@ class CasaPorCasaController extends Controller
             });
         }
 
+        $sortableColumns = ['no_tienda', 'almacen', 'municipio', 'estado', 'unidad_operativa', 'encargado', 'tipo_anaquel', 'estatus'];
+        $sort = $this->tableSortInput($sortableColumns, ['no_tienda', 'almacen', 'municipio']);
         $totalCount = $query->count();
-        $stores = $query->orderBy('estado')->orderBy('municipio')->paginate(50);
 
-        $baseQuery = $conn->table('tiendas_casa_x_casa');
+        if ($sort['column'] !== null) {
+            $query->orderBy($sort['column'], $sort['direction'])->orderBy('id');
+        } else {
+            $query->orderBy('estado')->orderBy('municipio');
+        }
+
+        $stores = $query->paginate(50);
+
+        $baseQuery = $this->activeCxcQuery($conn);
         if (! empty($uoFilter)) {
             $baseQuery->whereIn('unidad_operativa', $uoFilter);
         }
@@ -141,7 +152,7 @@ class CasaPorCasaController extends Controller
             ->whereNotNull('estatus')->distinct()->orderBy('estatus')->pluck('estatus');
 
         return view('casa-x-casa.directorio', compact(
-            'stores', 'totalCount', 'estados', 'unidadesOperativas', 'estatusList',
+            'stores', 'totalCount', 'estados', 'unidadesOperativas', 'estatusList', 'sort',
         ));
     }
 
@@ -150,7 +161,7 @@ class CasaPorCasaController extends Controller
         $conn = DB::connection('pgsql_imports');
         $uoFilter = $this->resolveUoFilter();
 
-        $baseQuery = $conn->table('tiendas_casa_x_casa');
+        $baseQuery = $this->activeCxcQuery($conn);
         if (! empty($uoFilter)) {
             $baseQuery->whereIn('unidad_operativa', $uoFilter);
         }
@@ -184,7 +195,8 @@ class CasaPorCasaController extends Controller
             ->whereNotNull('latitud')
             ->whereNotNull('longitud')
             ->where('latitud', '!=', 0)
-            ->where('longitud', '!=', 0);
+            ->where('longitud', '!=', 0)
+            ->where('es_activo', true);
 
         if (! empty($uoFilter)) {
             $query->whereIn('unidad_operativa', $uoFilter);
@@ -201,7 +213,7 @@ class CasaPorCasaController extends Controller
     {
         $conn = DB::connection('pgsql_imports');
 
-        $store = $conn->table('tiendas_casa_x_casa')->where('id', $id)->first();
+        $store = $this->activeCxcQuery($conn)->where('id', $id)->first();
         if (! $store) {
             abort(404);
         }
@@ -221,6 +233,8 @@ class CasaPorCasaController extends Controller
                 AND t."Nombre_Almacen" = cxc.almacen
                 AND t."Estado" = cxc.estado
                 AND t."Municipio" = cxc.municipio
+                AND t.es_activo = true
+            WHERE cxc.es_activo = true
             '.$this->whereUoFilterSql($uoFilter, 'cxc').'
         ');
 
@@ -232,7 +246,8 @@ class CasaPorCasaController extends Controller
                 AND t."Nombre_Almacen" = cxc.almacen
                 AND t."Estado" = cxc.estado
                 AND t."Municipio" = cxc.municipio
-            WHERE t.id IS NULL
+                AND t.es_activo = true
+            WHERE cxc.es_activo = true AND t.id IS NULL
             '.$this->whereUoFilterSql($uoFilter, 'cxc').'
         ');
 
@@ -253,6 +268,7 @@ class CasaPorCasaController extends Controller
               AND "Nombre_Almacen" = ?
               AND "Estado" = ?
               AND "Municipio" = ?
+              AND es_activo = true
             LIMIT 1
         ', [$store->no_tienda, $store->almacen, $store->estado, $store->municipio]);
 
@@ -283,5 +299,10 @@ class CasaPorCasaController extends Controller
                 $query->whereBetween($lonColumn, [$west, 180])->orWhereBetween($lonColumn, [-180, $east]);
             });
         }
+    }
+
+    private function activeCxcQuery($conn)
+    {
+        return $conn->table('tiendas_casa_x_casa')->where('es_activo', true);
     }
 }

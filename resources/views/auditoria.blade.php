@@ -232,6 +232,8 @@
  var PAGE_SIZE = serverPagination.perPage;
  var allStores = @json($stores);
  var currentPage = serverPagination.page;
+ var sortState = @json($sort ?? ['column' => null, 'direction' => 'asc']);
+ var excludedSortColumns = ['Nombre_Almacen', 'No_Tienda_Actual', 'Localidad', 'Municipio'];
 
  var columnGroups = {
  General: ['Nombre_Almacen', 'No_Tienda_Actual', 'Localidad', 'Municipio'],
@@ -384,7 +386,7 @@
 
  var headerRow = document.getElementById('audit-header');
  headerRow.innerHTML = cols.map(function (c) {
- return '<th class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase bg-gray-50 dark:bg-gray-800">' + (columnLabels[c] || c) + '</th>';
+ return window.CdtTables.sortableHeader(c, columnLabels[c] || c, sortState, excludedSortColumns);
  }).join('');
 
  var body = document.getElementById('audit-body');
@@ -456,6 +458,8 @@
  document.getElementById('page-next').addEventListener('click', function () {
  if (currentPage < serverPagination.totalPages) goToPage(currentPage + 1);
  });
+
+ window.CdtTables.bindServerSort(document.getElementById('audit-header'), sortState);
 
  function goToPage(page) {
  var url = new URL(window.location.href);

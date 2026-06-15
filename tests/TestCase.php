@@ -29,28 +29,28 @@ abstract class TestCase extends BaseTestCase
                     return $this->filterRows($this->rows($columns), $filters);
                 }
 
-                public function obtenerConectividadPaginada(array $regionFilters, array $filters, int $page, int $perPage): array
+                public function obtenerConectividadPaginada(array $regionFilters, array $filters, int $page, int $perPage, array $sort = []): array
                 {
                     $rows = array_values(array_filter($this->filterRows($this->rows(), $regionFilters), fn (array $row) => $this->matchText($row, $filters['almacen'] ?? '')));
 
                     return $this->paged($rows, $page, $perPage, ['kpis' => $this->kpisConectividad($rows), 'companias' => ['AT&T', 'Movistar', 'Ninguno', 'Telcel']]);
                 }
 
-                public function obtenerDirectorioPaginado(array $regionFilters, array $filters, int $page, int $perPage, array $columns, array $trackedColumns): array
+                public function obtenerDirectorioPaginado(array $regionFilters, array $filters, int $page, int $perPage, array $columns, array $trackedColumns, array $sort = []): array
                 {
                     $rows = $this->filterRows($this->rows($columns), $regionFilters);
 
                     return $this->paged($rows, $page, $perPage, ['stats' => ['incompletos' => 1, 'sinCapital' => 0]]);
                 }
 
-                public function obtenerCriticidadPaginada(array $regionFilters, array $filters, int $page, int $perPage, array $columns): array
+                public function obtenerCriticidadPaginada(array $regionFilters, array $filters, int $page, int $perPage, array $columns, array $sort = []): array
                 {
                     $rows = array_map(fn (array $row) => $this->withCritical($row), $this->filterRows($this->rows($columns), $regionFilters));
 
                     return $this->paged($rows, $page, $perPage, ['summary' => ['rojo' => 1, 'amarillo' => 2, 'verde' => 3, 'desgloseLabels' => []]]);
                 }
 
-                public function obtenerAuditoriaPaginada(array $regionFilters, array $filters, int $page, int $perPage, array $columns): array
+                public function obtenerAuditoriaPaginada(array $regionFilters, array $filters, int $page, int $perPage, array $columns, array $sort = []): array
                 {
                     $rows = array_map(fn (array $row) => $this->withAudit($row), $this->filterRows($this->rows($columns), $regionFilters));
 
@@ -61,7 +61,7 @@ abstract class TestCase extends BaseTestCase
                     ]]);
                 }
 
-                public function obtenerAperturasPaginada(array $regionFilters, array $filters, int $page, int $perPage, array $columns): array
+                public function obtenerAperturasPaginada(array $regionFilters, array $filters, int $page, int $perPage, array $columns, array $sort = []): array
                 {
                     $rows = array_map(fn (array $row) => $this->withApertura($row), $this->filterRows($this->rows($columns), $regionFilters));
 

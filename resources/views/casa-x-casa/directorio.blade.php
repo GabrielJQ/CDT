@@ -3,6 +3,22 @@
 @section('title', 'Directorio Casa por Casa — CDT')
 
 @section('content')
+    @php
+        $sort = $sort ?? ['column' => null, 'direction' => 'asc'];
+        $excludedSortColumns = ['no_tienda', 'almacen', 'municipio'];
+        $sortHeader = function (string $column, string $label) use ($sort, $excludedSortColumns) {
+            if (in_array($column, $excludedSortColumns, true)) {
+                return e($label);
+            }
+
+            $direction = ($sort['column'] ?? null) === $column && ($sort['direction'] ?? 'asc') === 'asc' ? 'desc' : 'asc';
+            $arrow = ($sort['column'] ?? null) === $column ? (($sort['direction'] ?? 'asc') === 'asc' ? ' ▲' : ' ▼') : ' ↕';
+            $url = request()->fullUrlWithQuery(['sort' => $column, 'direction' => $direction, 'page' => 1]);
+
+            return '<a href="'.e($url).'" class="inline-flex items-center gap-1 hover:text-gray-800 dark:hover:text-gray-100" title="Ordenar columna">'.e($label).'<span class="text-[10px]">'.$arrow.'</span></a>';
+        };
+    @endphp
+
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 lg:p-6 mb-6">
         <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
             <h3 class="text-base lg:text-lg font-bold text-gray-800 dark:text-gray-100">🏪 Directorio Tiendas Salud Casa por Casa</h3>
@@ -48,14 +64,14 @@
             <table class="w-full text-sm text-left">
                 <thead>
                     <tr class="border-b border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 text-xs uppercase">
-                        <th class="py-2 pr-3">Tienda</th>
-                        <th class="py-2 pr-3">Almacén</th>
-                        <th class="py-2 pr-3">Municipio</th>
-                        <th class="py-2 pr-3">Estado</th>
-                        <th class="py-2 pr-3">U. Operativa</th>
-                        <th class="py-2 pr-3">Encargado</th>
-                        <th class="py-2 pr-3">Anaquel</th>
-                        <th class="py-2 pr-3">Estatus</th>
+                        <th class="py-2 pr-3">{!! $sortHeader('no_tienda', 'Tienda') !!}</th>
+                        <th class="py-2 pr-3">{!! $sortHeader('almacen', 'Almacén') !!}</th>
+                        <th class="py-2 pr-3">{!! $sortHeader('municipio', 'Municipio') !!}</th>
+                        <th class="py-2 pr-3">{!! $sortHeader('estado', 'Estado') !!}</th>
+                        <th class="py-2 pr-3">{!! $sortHeader('unidad_operativa', 'U. Operativa') !!}</th>
+                        <th class="py-2 pr-3">{!! $sortHeader('encargado', 'Encargado') !!}</th>
+                        <th class="py-2 pr-3">{!! $sortHeader('tipo_anaquel', 'Anaquel') !!}</th>
+                        <th class="py-2 pr-3">{!! $sortHeader('estatus', 'Estatus') !!}</th>
                         <th class="py-2 pr-3"></th>
                     </tr>
                 </thead>

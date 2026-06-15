@@ -125,6 +125,8 @@
  var PAGE_SIZE = serverPagination.perPage;
  var allStores = @json($stores);
  var currentPage = serverPagination.page;
+ var sortState = @json($sort ?? ['column' => null, 'direction' => 'asc']);
+ var excludedSortColumns = ['Nombre_Almacen', 'No_Tienda_Actual', 'Localidad', 'Municipio'];
 
  var columnGroups = {
  General: ['Nombre_Almacen', 'Localidad', 'No_Tienda_Actual', 'Municipio'],
@@ -203,7 +205,7 @@
  var end = Math.min(start + pageData.length, total);
 
  document.getElementById('aper-header').innerHTML = cols.map(function (c) {
- return '<th class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase bg-gray-50 dark:bg-gray-800">' + (columnLabels[c] || c) + '</th>';
+ return window.CdtTables.sortableHeader(c, columnLabels[c] || c, sortState, excludedSortColumns);
  }).join('');
 
  document.getElementById('aper-body').innerHTML = pageData.map(function (store) {
@@ -281,6 +283,8 @@
  document.getElementById('page-next').addEventListener('click', function () {
  if (currentPage < serverPagination.totalPages) goToPage(currentPage + 1);
  });
+
+ window.CdtTables.bindServerSort(document.getElementById('aper-header'), sortState);
 
  function goToPage(page) {
  var url = new URL(window.location.href);

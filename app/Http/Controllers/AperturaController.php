@@ -39,7 +39,9 @@ class AperturaController extends Controller
         }
 
         [$page, $perPage] = $this->paginationInput();
-        $result = $this->postgres->obtenerAperturasPaginada($this->applyRegionFilter(), $filters, $page, $perPage, self::COLUMNS);
+        $sortableColumns = array_merge(self::COLUMNS, ['_fecha_apertura', '_antiguedad']);
+        $sort = $this->tableSortInput($sortableColumns);
+        $result = $this->postgres->obtenerAperturasPaginada($this->applyRegionFilter(), $filters, $page, $perPage, self::COLUMNS, $sort);
 
         return view('aperturas', [
             'stores' => $result['rows'],
@@ -52,6 +54,7 @@ class AperturaController extends Controller
                 'desde' => $request->query('desde', ''),
                 'hasta' => $request->query('hasta', ''),
             ],
+            'sort' => $sort,
             'updatedAt' => now()->toDateTimeString(),
         ]);
     }

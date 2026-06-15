@@ -149,10 +149,10 @@
  var serverPagination = @json($paginationPayload);
  var PAGE_SIZE = serverPagination.perPage;
   var allStores = @json($stores);
-  var filtered = [];
-  var currentPage = serverPagination.page;
-  var sortColumn = null;
-  var sortDirection = 'asc';
+   var filtered = [];
+   var currentPage = serverPagination.page;
+   var sortState = @json($sort ?? ['column' => null, 'direction' => 'asc']);
+   var excludedSortColumns = ['Nombre_Almacen', 'No_Tienda_Actual', 'Localidad', 'Municipio'];
 
  var columnGroups = {
  ID: ['Nombre_Almacen', 'No_Tienda_Actual', 'Municipio', 'Fecha_Apertura'],
@@ -220,18 +220,16 @@
  var totalPages = serverPagination.totalPages;
  if (currentPage > totalPages) currentPage = totalPages;
 
-  var sorted = sortData(filtered);
-  var start = (currentPage - 1) * PAGE_SIZE;
-  var pageData = sorted;
+   var start = (currentPage - 1) * PAGE_SIZE;
+   var pageData = filtered;
   var end = Math.min(start + pageData.length, serverPagination.total);
 
  var header = document.getElementById('dir-header');
  var body = document.getElementById('dir-body');
 
-  header.innerHTML = cols.map(function (c) {
-  var arrow = c === sortColumn ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : '';
-  return '<th data-col="' + c + '" class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase bg-gray-50 dark:bg-gray-800 cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-200">' + (columnLabels[c] || c) + arrow + '</th>';
-  }).join('');
+   header.innerHTML = cols.map(function (c) {
+   return window.CdtTables.sortableHeader(c, columnLabels[c] || c, sortState, excludedSortColumns);
+   }).join('');
 
  body.innerHTML = pageData.map(function (store) {
  var noCapital = isEmpty(getValue(store, 'Cap_Tot'));
@@ -264,27 +262,9 @@
  return '$' + num.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
  }
 
-  function sortData(arr) {
-  if (!sortColumn) return arr;
-  var sorted = arr.slice().sort(function (a, b) {
-  var va = getValue(a, sortColumn);
-  var vb = getValue(b, sortColumn);
-  if (isEmpty(va) && isEmpty(vb)) return 0;
-  if (isEmpty(va)) return 1;
-  if (isEmpty(vb)) return -1;
-  if (moneyColumns[sortColumn]) {
-  var na = parseFloat(String(va).replace(/,/g, '')) || 0;
-  var nb = parseFloat(String(vb).replace(/,/g, '')) || 0;
-  return sortDirection === 'asc' ? na - nb : nb - na;
-  }
-  return sortDirection === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
-  });
-  return sorted;
-  }
-
-  function escapeHtml(str) {
-  return window.CdtTables.escapeHtml(str);
-  }
+   function escapeHtml(str) {
+   return window.CdtTables.escapeHtml(str);
+   }
 
  function renderPagination(totalPages) {
  var container = document.getElementById('page-numbers');
@@ -347,18 +327,7 @@
  window.location.href = url.toString();
  }
 
-  document.getElementById('dir-header').addEventListener('click', function (e) {
-  var th = e.target.closest('th[data-col]');
-  if (!th) return;
-  var col = th.dataset.col;
-  if (sortColumn === col) {
-  sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-  } else {
-  sortColumn = col;
-  sortDirection = 'asc';
-  }
-  renderTable();
-  });
+   window.CdtTables.bindServerSort(document.getElementById('dir-header'), sortState);
 
   var storageKey = 'col_prefs_directorio';
   function saveColPrefs() {

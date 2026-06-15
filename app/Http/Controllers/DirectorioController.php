@@ -81,6 +81,7 @@ class DirectorioController extends Controller
         }
 
         [$page, $perPage] = $this->paginationInput();
+        $sort = $this->tableSortInput(self::COLUMNS);
         $result = $this->postgres->obtenerDirectorioPaginado(
             $this->applyRegionFilter(),
             $filters,
@@ -88,6 +89,7 @@ class DirectorioController extends Controller
             $perPage,
             self::COLUMNS,
             $this->trackedColumns,
+            $sort,
         );
 
         return view('directorio', [
@@ -96,6 +98,7 @@ class DirectorioController extends Controller
             'filteredCount' => $result['filtered'],
             'serverPagination' => $this->paginationMeta($page, $perPage, $result['filtered']),
             'filters' => $filters,
+            'sort' => $sort,
             'globalStats' => $result['stats'],
             'updatedAt' => now()->toDateTimeString(),
         ]);

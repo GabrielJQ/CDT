@@ -6,6 +6,13 @@ abstract class Controller
 {
     protected const DEFAULT_PAGE_SIZE = 50;
 
+    protected const DEFAULT_UNSORTABLE_COLUMNS = [
+        'Nombre_Almacen',
+        'No_Tienda_Actual',
+        'Localidad',
+        'Municipio',
+    ];
+
     protected function applyRegionFilter(): array
     {
         return [
@@ -49,5 +56,22 @@ abstract class Controller
             max(1, (int) request()->query('page', 1)),
             max(10, min(100, (int) request()->query('per_page', self::DEFAULT_PAGE_SIZE))),
         ];
+    }
+
+    /**
+     * @param  array<int, string>  $allowedColumns
+     * @param  array<int, string>  $excludedColumns
+     * @return array{column: string|null, direction: string}
+     */
+    protected function tableSortInput(array $allowedColumns, array $excludedColumns = self::DEFAULT_UNSORTABLE_COLUMNS): array
+    {
+        $column = (string) request()->query('sort', '');
+        $direction = strtolower((string) request()->query('direction', 'asc')) === 'desc' ? 'desc' : 'asc';
+
+        if ($column === '' || ! in_array($column, $allowedColumns, true) || in_array($column, $excludedColumns, true)) {
+            return ['column' => null, 'direction' => $direction];
+        }
+
+        return ['column' => $column, 'direction' => $direction];
     }
 }

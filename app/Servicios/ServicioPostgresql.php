@@ -39,7 +39,9 @@ class ServicioPostgresql
     public function fetchDesdePostgres(array $filters = [], ?array $columns = null): array
     {
         $conn = $this->conexion();
-        $count = $conn->table('tiendas')->count();
+        $countQuery = $conn->table('tiendas');
+        $this->aplicarPeriodoActivo($countQuery);
+        $count = $countQuery->count();
         if ($count === 0) {
             throw new \RuntimeException('La tabla tiendas está vacía en PostgreSQL');
         }
@@ -52,6 +54,7 @@ class ServicioPostgresql
         $dbColumns = array_values(array_unique(array_map(fn (string $csvColumn) => $reverseMap[$csvColumn], $csvColumns)));
 
         $query = $conn->table('tiendas')->select($dbColumns);
+        $this->aplicarPeriodoActivo($query);
 
         if (! empty($filters['region'])) {
             $query->where('Clave_Regional', $filters['region']);
@@ -86,7 +89,7 @@ class ServicioPostgresql
                     \"Clave_UniOpe\", \"Nombre_UniOpe\",
                     COUNT(*) as total
                 FROM tiendas
-                WHERE \"Nombre_Regional\" IS NOT NULL AND TRIM(\"Nombre_Regional\") != ''
+                WHERE es_activo = true AND \"Nombre_Regional\" IS NOT NULL AND TRIM(\"Nombre_Regional\") != ''
                 GROUP BY \"Clave_Regional\", \"Nombre_Regional\", \"Clave_UniOpe\", \"Nombre_UniOpe\"
                 ORDER BY \"Clave_Regional\", \"Clave_UniOpe\"
             ");
@@ -121,13 +124,14 @@ class ServicioPostgresql
     /**
      * @return array{rows: array<int, array<string, string>>, total: int, filtered: int, kpis: array<string, mixed>, companias: array<int, string>}
      */
-    public function obtenerConectividadPaginada(array $regionFilters, array $filters, int $page, int $perPage): array
+    public function obtenerConectividadPaginada(array $regionFilters, array $filters, int $page, int $perPage, array $sort = []): array
     {
         $this->ultimoError = null;
 
         try {
             $conn = $this->conexion();
             $base = $conn->table('tiendas');
+            $this->aplicarPeriodoActivo($base);
             $this->aplicarFiltroRegional($base, $regionFilters);
 
             $filtered = clone $base;
@@ -137,10 +141,10 @@ class ServicioPostgresql
                 'Nombre_Almacen', 'No_Tienda_Actual', 'Municipio', 'TELEFONIA', 'Señal de celular', 'Compañía', 'INTERNET',
             ];
 
-            $rows = (clone $filtered)
-                ->select($selectColumns)
-                ->orderBy('id')
-                ->offset(($page - 1) * $perPage)
+            $rowsQuery = (clone $filtered)->select($selectColumns);
+            $this->aplicarOrdenTabla($rowsQuery, $sort, $selectColumns);
+
+            $rows = $rowsQuery->offset(($page - 1) * $perPage)
                 ->limit($perPage)
                 ->get()
                 ->map(fn ($row) => $this->rowToStore($row, $selectColumns))
@@ -164,22 +168,23 @@ class ServicioPostgresql
     /**
      * @return array{rows: array<int, array<string, string>>, total: int, filtered: int, stats: array<string, mixed>}
      */
-    public function obtenerDirectorioPaginado(array $regionFilters, array $filters, int $page, int $perPage, array $columns, array $trackedColumns): array
+    public function obtenerDirectorioPaginado(array $regionFilters, array $filters, int $page, int $perPage, array $columns, array $trackedColumns, array $sort = []): array
     {
         $this->ultimoError = null;
 
         try {
             $conn = $this->conexion();
             $base = $conn->table('tiendas');
+            $this->aplicarPeriodoActivo($base);
             $this->aplicarFiltroRegional($base, $regionFilters);
 
             $filtered = clone $base;
             $this->aplicarFiltrosDirectorio($filtered, $filters, $trackedColumns);
 
-            $rows = (clone $filtered)
-                ->select($columns)
-                ->orderBy('id')
-                ->offset(($page - 1) * $perPage)
+            $rowsQuery = (clone $filtered)->select($columns);
+            $this->aplicarOrdenTabla($rowsQuery, $sort, $columns);
+
+            $rows = $rowsQuery->offset(($page - 1) * $perPage)
                 ->limit($perPage)
                 ->get()
                 ->map(fn ($row) => $this->rowToStore($row, $columns))
@@ -202,13 +207,14 @@ class ServicioPostgresql
     /**
      * @return array{rows: array<int, array<string, mixed>>, total: int, filtered: int, summary: array<string, mixed>}
      */
-    public function obtenerCriticidadPaginada(array $regionFilters, array $filters, int $page, int $perPage, array $columns): array
+    public function obtenerCriticidadPaginada(array $regionFilters, array $filters, int $page, int $perPage, array $columns, array $sort = []): array
     {
         $this->ultimoError = null;
 
         try {
             $conn = $this->conexion();
             $base = $conn->table('tiendas');
+            $this->aplicarPeriodoActivo($base);
             $this->aplicarFiltroRegional($base, $regionFilters);
             $usarDerivados = $this->derivadosCompletos($regionFilters);
 
@@ -216,15 +222,10 @@ class ServicioPostgresql
             $this->aplicarFiltrosCriticidad($filtered, $filters, $usarDerivados);
 
             $selectColumns = array_values(array_unique(array_merge($columns, ['nivel_critico', 'factores_criticos_count'])));
-            $rows = (clone $filtered)
-                ->select($selectColumns)
-                ->when(
-                    $usarDerivados,
-                    fn (Builder $query) => $query->orderByDesc('factores_criticos_count'),
-                    fn (Builder $query) => $query->orderByRaw($this->factoresCriticosCountSql().' DESC'),
-                )
-                ->orderBy('id')
-                ->offset(($page - 1) * $perPage)
+            $rowsQuery = (clone $filtered)->select($selectColumns);
+            $this->aplicarOrdenCriticidad($rowsQuery, $sort, $columns, $usarDerivados);
+
+            $rows = $rowsQuery->offset(($page - 1) * $perPage)
                 ->limit($perPage)
                 ->get()
                 ->map(fn ($row) => $this->rowToCriticalStore($row, $columns))
@@ -247,13 +248,14 @@ class ServicioPostgresql
     /**
      * @return array{rows: array<int, array<string, mixed>>, total: int, filtered: int, kpis: array<string, mixed>}
      */
-    public function obtenerAuditoriaPaginada(array $regionFilters, array $filters, int $page, int $perPage, array $columns): array
+    public function obtenerAuditoriaPaginada(array $regionFilters, array $filters, int $page, int $perPage, array $columns, array $sort = []): array
     {
         $this->ultimoError = null;
 
         try {
             $conn = $this->conexion();
             $base = $conn->table('tiendas');
+            $this->aplicarPeriodoActivo($base);
             $this->aplicarFiltroRegional($base, $regionFilters);
             $usarDerivados = $this->derivadosCompletos($regionFilters);
 
@@ -261,15 +263,10 @@ class ServicioPostgresql
             $this->aplicarFiltrosAuditoria($filtered, $filters, $usarDerivados);
 
             $selectColumns = array_values(array_unique(array_merge($columns, ['nivel_critico', 'estado_comite', 'rango_rotacion', 'auditoria_pendiente'])));
-            $rows = (clone $filtered)
-                ->select($selectColumns)
-                ->when(
-                    $usarDerivados,
-                    fn (Builder $query) => $query->orderByDesc('auditoria_pendiente'),
-                    fn (Builder $query) => $query->orderByRaw('CASE WHEN '.$this->auditoriaPendienteSql().' THEN 1 ELSE 0 END DESC'),
-                )
-                ->orderBy('id')
-                ->offset(($page - 1) * $perPage)
+            $rowsQuery = (clone $filtered)->select($selectColumns);
+            $this->aplicarOrdenAuditoria($rowsQuery, $sort, $columns, $usarDerivados);
+
+            $rows = $rowsQuery->offset(($page - 1) * $perPage)
                 ->limit($perPage)
                 ->get()
                 ->map(fn ($row) => $this->rowToAuditStore($row, $columns))
@@ -292,23 +289,23 @@ class ServicioPostgresql
     /**
      * @return array{rows: array<int, array<string, mixed>>, total: int, filtered: int, kpis: array<string, int>}
      */
-    public function obtenerAperturasPaginada(array $regionFilters, array $filters, int $page, int $perPage, array $columns): array
+    public function obtenerAperturasPaginada(array $regionFilters, array $filters, int $page, int $perPage, array $columns, array $sort = []): array
     {
         $this->ultimoError = null;
 
         try {
             $conn = $this->conexion();
             $base = $conn->table('tiendas');
+            $this->aplicarPeriodoActivo($base);
             $this->aplicarFiltroRegional($base, $regionFilters);
 
             $filtered = clone $base;
             $this->aplicarFiltrosAperturas($filtered, $filters);
 
-            $rows = (clone $filtered)
-                ->select($columns)
-                ->orderByDesc('Fecha_Apertura')
-                ->orderBy('id')
-                ->offset(($page - 1) * $perPage)
+            $rowsQuery = (clone $filtered)->select($columns);
+            $this->aplicarOrdenAperturas($rowsQuery, $sort, $columns);
+
+            $rows = $rowsQuery->offset(($page - 1) * $perPage)
                 ->limit($perPage)
                 ->get()
                 ->map(fn ($row) => $this->rowToAperturaStore($row, $columns))
@@ -331,6 +328,7 @@ class ServicioPostgresql
     public function obtenerMapa(array $regionFilters, array $filters, array $columns): array
     {
         $query = $this->conexion()->table('tiendas');
+        $this->aplicarPeriodoActivo($query);
         $this->aplicarFiltroRegional($query, $regionFilters);
         $this->aplicarFiltrosMapa($query, array_diff_key($filters, ['estado_geo' => true]));
 
@@ -346,6 +344,7 @@ class ServicioPostgresql
     public function obtenerMapaViewport(array $regionFilters, array $filters, array $bounds, array $columns, int $limit = 3000): array
     {
         $query = $this->conexion()->table('tiendas');
+        $this->aplicarPeriodoActivo($query);
         $this->aplicarFiltroRegional($query, $regionFilters);
         $this->aplicarFiltrosMapa($query, array_diff_key($filters, ['estado_geo' => true]));
         if (! in_array($filters['estado_geo'] ?? '', ['FUERA_MEXICO', 'INCIDENCIAS'], true)) {
@@ -369,6 +368,7 @@ class ServicioPostgresql
     public function obtenerDashboardMetricas(array $regionFilters): array
     {
         $base = $this->conexion()->table('tiendas');
+        $this->aplicarPeriodoActivo($base);
         $this->aplicarFiltroRegional($base, $regionFilters);
 
         $total = (clone $base)->count();
@@ -394,6 +394,7 @@ class ServicioPostgresql
     public function exportarTiendas(array $regionFilters, array $filters, array $columns, string $module): \Generator
     {
         $query = $this->conexion()->table('tiendas');
+        $this->aplicarPeriodoActivo($query);
         $this->aplicarFiltroRegional($query, $regionFilters);
 
         if ($module === 'conectividad') {
@@ -427,7 +428,10 @@ class ServicioPostgresql
     public function tieneDatos(): bool
     {
         try {
-            return $this->conexion()->table('tiendas')->count() > 0;
+            $query = $this->conexion()->table('tiendas');
+            $this->aplicarPeriodoActivo($query);
+
+            return $query->count() > 0;
         } catch (\Throwable) {
             return false;
         }
@@ -458,6 +462,7 @@ class ServicioPostgresql
     {
         try {
             $query = $this->conexion()->table('tiendas');
+            $this->aplicarPeriodoActivo($query);
             $this->aplicarFiltroRegional($query, $regionFilters);
             $row = $query->selectRaw('
                 COUNT(*) as total,
@@ -501,6 +506,11 @@ class ServicioPostgresql
         if (! empty($filters['uo'])) {
             $query->where('Clave_UniOpe', $filters['uo']);
         }
+    }
+
+    private function aplicarPeriodoActivo(Builder $query): void
+    {
+        $query->where('es_activo', true);
     }
 
     private function aplicarFiltrosConectividad(Builder $query, array $filters): void
@@ -1095,6 +1105,124 @@ class ServicioPostgresql
             ->implode(' OR ');
     }
 
+    /**
+     * @param  array{column?: string|null, direction?: string}  $sort
+     * @param  array<int, string>  $allowedColumns
+     * @param  array<string, string>  $expressionColumns
+     */
+    private function aplicarOrdenTabla(Builder $query, array $sort, array $allowedColumns, array $expressionColumns = []): void
+    {
+        $column = $sort['column'] ?? null;
+        $direction = ($sort['direction'] ?? 'asc') === 'desc' ? 'desc' : 'asc';
+
+        if ($column !== null && isset($expressionColumns[$column])) {
+            $query->orderByRaw($expressionColumns[$column].' '.$direction.' NULLS LAST')->orderBy('id');
+
+            return;
+        }
+
+        if ($column !== null && in_array($column, $allowedColumns, true)) {
+            $query->orderBy($column, $direction)->orderBy('id');
+
+            return;
+        }
+
+        $query->orderBy('id');
+    }
+
+    /**
+     * @param  array{column?: string|null, direction?: string}  $sort
+     * @param  array<int, string>  $columns
+     */
+    private function aplicarOrdenCriticidad(Builder $query, array $sort, array $columns, bool $usarDerivados): void
+    {
+        $countSql = $usarDerivados ? 'factores_criticos_count' : $this->factoresCriticosCountSql();
+        $levelSql = $usarDerivados
+            ? "CASE nivel_critico WHEN 'verde' THEN 1 WHEN 'amarillo' THEN 2 WHEN 'rojo' THEN 3 ELSE 0 END"
+            : "CASE ({$this->nivelCriticoSql()}) WHEN 'verde' THEN 1 WHEN 'amarillo' THEN 2 WHEN 'rojo' THEN 3 ELSE 0 END";
+
+        $expressions = [
+            'Estado' => $levelSql,
+            'Factores' => $countSql,
+            'Detalle' => $countSql,
+        ];
+
+        $column = $sort['column'] ?? null;
+        if ($column !== null) {
+            $this->aplicarOrdenTabla($query, $sort, $columns, $expressions);
+
+            return;
+        }
+
+        $query->orderByRaw($countSql.' DESC NULLS LAST')->orderBy('id');
+    }
+
+    /**
+     * @param  array{column?: string|null, direction?: string}  $sort
+     * @param  array<int, string>  $columns
+     */
+    private function aplicarOrdenAuditoria(Builder $query, array $sort, array $columns, bool $usarDerivados): void
+    {
+        $auditoriaPendienteSql = $usarDerivados ? 'CASE WHEN auditoria_pendiente THEN 1 ELSE 0 END' : 'CASE WHEN '.$this->auditoriaPendienteSql().' THEN 1 ELSE 0 END';
+        $estadoComiteSql = $usarDerivados
+            ? "CASE estado_comite WHEN 'vigente' THEN 1 WHEN 'proximo_a_vencer' THEN 2 WHEN 'vencido' THEN 3 ELSE 0 END"
+            : "CASE ({$this->estadoComiteSql()}) WHEN 'vigente' THEN 1 WHEN 'proximo_a_vencer' THEN 2 WHEN 'vencido' THEN 3 ELSE 0 END";
+        $rangoRotacionSql = $usarDerivados
+            ? "CASE rango_rotacion WHEN 'cero' THEN 0 WHEN 'critico' THEN 1 WHEN 'amarillo' THEN 2 WHEN 'optimo' THEN 3 ELSE 0 END"
+            : "CASE ({$this->rangoRotacionSql()}) WHEN 'cero' THEN 0 WHEN 'critico' THEN 1 WHEN 'amarillo' THEN 2 WHEN 'optimo' THEN 3 ELSE 0 END";
+        $rotacionSql = 'CASE WHEN COALESCE("Cap_Dic", 0) > 0 THEN COALESCE("Vta_Mes", 0) / NULLIF("Cap_Dic", 0) ELSE 0 END';
+        $nivelSql = $usarDerivados
+            ? "CASE nivel_critico WHEN 'verde' THEN 1 WHEN 'amarillo' THEN 2 WHEN 'rojo' THEN 3 ELSE 0 END"
+            : "CASE ({$this->nivelCriticoSql()}) WHEN 'verde' THEN 1 WHEN 'amarillo' THEN 2 WHEN 'rojo' THEN 3 ELSE 0 END";
+
+        $expressions = [
+            'Comite' => $estadoComiteSql,
+            'Estado_Aud' => $auditoriaPendienteSql,
+            'Rotacion' => $rotacionSql,
+            'Riesgo' => $nivelSql,
+            'rango_rotacion' => $rangoRotacionSql,
+        ];
+
+        $column = $sort['column'] ?? null;
+        if ($column !== null) {
+            $this->aplicarOrdenTabla($query, $sort, $columns, $expressions);
+
+            return;
+        }
+
+        $query->orderByRaw($auditoriaPendienteSql.' DESC NULLS LAST')->orderBy('id');
+    }
+
+    /**
+     * @param  array{column?: string|null, direction?: string}  $sort
+     * @param  array<int, string>  $columns
+     */
+    private function aplicarOrdenAperturas(Builder $query, array $sort, array $columns): void
+    {
+        $column = $sort['column'] ?? null;
+        $direction = ($sort['direction'] ?? 'asc') === 'desc' ? 'desc' : 'asc';
+
+        if ($column === '_fecha_apertura') {
+            $query->orderBy('Fecha_Apertura', $direction)->orderBy('id');
+
+            return;
+        }
+
+        if ($column === '_antiguedad') {
+            $query->orderBy('Fecha_Apertura', $direction === 'asc' ? 'desc' : 'asc')->orderBy('id');
+
+            return;
+        }
+
+        if ($column !== null) {
+            $this->aplicarOrdenTabla($query, $sort, $columns);
+
+            return;
+        }
+
+        $query->orderByDesc('Fecha_Apertura')->orderBy('id');
+    }
+
     private function sinCapitalSql(): string
     {
         return '"Cap_Tot" IS NULL OR COALESCE("Cap_Tot", 0) = 0';
@@ -1195,6 +1323,7 @@ class ServicioPostgresql
                   AND cxc.almacen = tiendas."Nombre_Almacen"
                   AND cxc.estado = tiendas."Estado"
                   AND cxc.municipio = tiendas."Municipio"
+                  AND cxc.es_activo = true
                 LIMIT 1
             ) as es_tienda_salud_bienestar');
     }
