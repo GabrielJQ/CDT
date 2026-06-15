@@ -65,11 +65,11 @@
 
         {{-- Sidebar --}}
         <aside id="sidebar" class="institutional-sidebar expanded shrink-0 text-white flex flex-col z-30 overflow-hidden">
-            <div class="institutional-sidebar-brand flex items-center justify-between shrink-0" style="height:3.5rem">
-                <div class="px-4 flex items-center gap-2 overflow-hidden">
-                    <span class="text-xl font-extrabold tracking-tight shrink-0">CDT</span>
-                    <span class="nav-label text-xs font-semibold uppercase tracking-widest text-[#988256] whitespace-nowrap">Panel de Monitoreo</span>
-                </div>
+            <div class="institutional-sidebar-brand flex items-center justify-between gap-2 shrink-0" style="height:3.75rem">
+                <a href="{{ url('/') }}" class="flex min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-lg transition hover:opacity-90" title="Ir al inicio">
+                    <span class="text-xl font-extrabold tracking-tight shrink-0 leading-none">CDT</span>
+                    <span class="nav-label min-w-0 text-[0.64rem] font-semibold uppercase leading-tight tracking-[0.18em] text-[#988256] whitespace-normal break-words">Panel de Monitoreo</span>
+                </a>
                 <button onclick="toggleSidebar()" class="lg:hidden text-white/70 hover:text-white text-xl leading-none px-2">&times;</button>
             </div>
             <nav class="flex-1 p-2 space-y-1 overflow-y-auto overflow-x-hidden">
