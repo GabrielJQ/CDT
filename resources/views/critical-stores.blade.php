@@ -149,6 +149,8 @@
  var PAGE_SIZE = serverPagination.perPage;
  var allStores = @json($stores);
  var currentPage = serverPagination.page;
+ var sortState = @json($sort ?? ['column' => null, 'direction' => 'asc']);
+ var excludedSortColumns = ['Nombre_Almacen', 'No_Tienda_Actual', 'Localidad', 'Municipio'];
 
   var FACTOR_KEYS = ['capital_bajo', 'capital_dictaminado_bajo', 'comite_vencido', 'auditoria_elevada', 'pagare_vencido', 'rotacion_baja', 'asamblea_pendiente'];
   var FACTOR_LABELS = {
@@ -160,6 +162,10 @@
   rotacion_baja: 'Rotación baja',
   asamblea_pendiente: 'Asamblea pendiente',
   };
+
+  function cleanFactorLabel(label) {
+  return String(label || '').replace(/^[^\p{L}\p{N}]+\s*/u, '');
+  }
 
   var columnGroups = {
   General: ['Estado', 'Nombre_Almacen', 'No_Tienda_Actual', 'Municipio'],
@@ -199,7 +205,7 @@
  if (col === 'Factores') {
  return FACTOR_KEYS.map(function (key) {
  var active = e.conditions && e.conditions[key];
- var lbl = (e.labels && e.labels[key] && e.labels[key].label) || FACTOR_LABELS[key] || key;
+  var lbl = cleanFactorLabel((e.labels && e.labels[key] && e.labels[key].label) || FACTOR_LABELS[key] || key);
  var title = active ? '🔴 ' + lbl : '⚪ ' + lbl;
  var html = active ? '<span class="text-base cursor-help" title="' + esc(title) + '">🔴</span>' : '<span class="text-base text-gray-300 cursor-help" title="' + esc(title) + '">⚪</span>';
  return html;
@@ -224,7 +230,7 @@
  var info = e.labels[k] || {};
  var st = factorStyles[k] || ['bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600', '▪'];
  return '<span class="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-lg border ' + st[0] + '">' +
- st[1] + ' ' + esc(info.label || k) +
+  st[1] + ' ' + esc(cleanFactorLabel(info.label || k)) +
  '<span class="font-normal opacity-70 ml-0.5">' + esc(info.detail || '') + '</span>' +
  '</span>';
  }).join('') +
@@ -259,7 +265,7 @@
 
  var headerRow = document.getElementById('cs-header');
  headerRow.innerHTML = cols.map(function (c) {
- return '<th class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase bg-gray-50 dark:bg-gray-800">' + (columnLabels[c] || c) + '</th>';
+ return window.CdtTables.sortableHeader(c, columnLabels[c] || c, sortState, excludedSortColumns);
  }).join('');
 
  var body = document.getElementById('cs-body');
@@ -331,6 +337,8 @@
  document.getElementById('page-next').addEventListener('click', function () {
  if (currentPage < serverPagination.totalPages) goToPage(currentPage + 1);
  });
+
+ window.CdtTables.bindServerSort(document.getElementById('cs-header'), sortState);
 
  function goToPage(page) {
  var url = new URL(window.location.href);

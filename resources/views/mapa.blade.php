@@ -10,6 +10,10 @@
  .leaflet-popup-content strong { color: #166534; }
     .geo-badge { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; }
     .dark .leaflet-popup-content strong { color: #4ade80; }
+    .map-legend { background: #fff; color: #1f2937; border: 1px solid rgba(229, 231, 235, 0.95); border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 8px 12px; font-size: 12px; }
+    .dark .map-legend { background: #111827; color: #e5e7eb; border-color: rgba(75, 85, 99, 0.95); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.45); }
+    .map-legend-title { font-weight: 700; margin-bottom: 4px; color: #111827; }
+    .dark .map-legend-title { color: #f9fafb; }
 </style>
 @endpush
 
@@ -302,18 +306,13 @@
  map.on('moveend zoomend', scheduleViewportFetch);
  fetchViewportStores();
 
- var legend = L.control({ position: 'bottomright' });
- legend.onAdd = function () {
- var div = L.DomUtil.create('div', '');
- div.style.background = 'white';
- div.style.borderRadius = '0.5rem';
- div.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.1)';
- div.style.padding = '8px 12px';
- div.style.fontSize = '12px';
- div.innerHTML =
-  '<div style="font-weight:600;margin-bottom:4px">Leyenda</div>' +
-  '<div><span style="color:#22c55e">●</span> Válidas</div>' +
-  '<div><span style="color:#7c3aed">●</span> Tienda de Salud Bienestar CxC</div>' +
+  var legend = L.control({ position: 'bottomright' });
+  legend.onAdd = function () {
+  var div = L.DomUtil.create('div', 'map-legend');
+  div.innerHTML =
+   '<div class="map-legend-title">Leyenda</div>' +
+   '<div><span style="color:#22c55e">●</span> Válidas</div>' +
+   '<div><span style="color:#7c3aed">●</span> Tienda de Salud Bienestar CxC</div>' +
   '<div><span style="color:#f59e0b">●</span> ' + @json($geoMismatchLabel ?? ($geoLabels['FUERA_ESTADO']['label'] ?? 'No corresponde al filtro territorial')) + '</div>' +
  '<div><span style="color:#ef4444">●</span> Fuera de México</div>';
  return div;
