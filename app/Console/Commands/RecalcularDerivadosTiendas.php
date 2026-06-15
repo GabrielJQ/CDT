@@ -28,7 +28,7 @@ class RecalcularDerivadosTiendas extends Command
         $chunk = max(1, (int) $this->option('chunk'));
         $dryRun = (bool) $this->option('dry-run');
         $conn = DB::connection('pgsql_imports');
-        $total = $conn->table('tiendas')->count();
+        $total = $conn->table('tiendas')->where('es_activo', true)->count();
 
         if ($total === 0) {
             $this->warn('No hay tiendas para recalcular.');
@@ -45,6 +45,7 @@ class RecalcularDerivadosTiendas extends Command
         $bar->start();
 
         $conn->table('tiendas')
+            ->where('es_activo', true)
             ->orderBy('id')
             ->chunkById($chunk, function ($rows) use ($conn, $derivados, $only, $dryRun, &$procesadas, &$actualizadas, &$errores, $bar) {
                 $updates = [];
@@ -105,7 +106,7 @@ class RecalcularDerivadosTiendas extends Command
      */
     private function diagnostico($conn): array
     {
-        $row = $conn->table('tiendas')->selectRaw('
+        $row = $conn->table('tiendas')->where('es_activo', true)->selectRaw('
             COUNT(*) as total,
             SUM(CASE WHEN nivel_critico IS NULL THEN 1 ELSE 0 END) as nivel_critico_nulos,
             SUM(CASE WHEN factores_criticos_count IS NULL THEN 1 ELSE 0 END) as factores_criticos_count_nulos,

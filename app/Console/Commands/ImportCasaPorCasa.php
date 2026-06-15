@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Servicios\ServicioPeriodosImportacion;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -11,11 +12,12 @@ class ImportCasaPorCasa extends Command
 {
     protected $signature = 'casa-x-casa:import
                             {file : Ruta absoluta al archivo XLSX}
-                            {--truncate : Vaciar la tabla antes de importar}';
+                            {--truncate : Vaciar la tabla antes de importar}
+                            {--periodo= : ID del periodo de importación}';
 
     protected $description = 'Importa el directorio Salud Casa por Casa desde Excel a la tabla tiendas_casa_x_casa';
 
-    public function handle(): int
+    public function handle(ServicioPeriodosImportacion $periodos): int
     {
         $path = $this->argument('file');
 
@@ -44,6 +46,7 @@ class ImportCasaPorCasa extends Command
         $this->info('Total filas a importar: '.count($rows));
 
         $conn = DB::connection('pgsql_imports');
+        $periodoId = $this->option('periodo') !== null ? (int) $this->option('periodo') : null;
 
         if ($this->option('truncate')) {
             $conn->table('tiendas_casa_x_casa')->truncate();
@@ -56,14 +59,27 @@ class ImportCasaPorCasa extends Command
         $bar->start();
 
         foreach (array_chunk($rows, 500) as $chunk) {
+            if ($periodoId !== null) {
+                $chunk = array_map(function (array $row) use ($periodoId, $periodos) {
+                    $row['periodo_importacion_id'] = $periodoId;
+                    $row['es_activo'] = false;
+                    $row['llave_tienda_periodo'] = $periodos->llaveCasaPorCasa($row);
+
+                    return $row;
+                }, $chunk);
+            }
+
             $conn->table('tiendas_casa_x_casa')->upsert(
                 $chunk,
-                ['no_tienda', 'almacen', 'estado', 'municipio'],
+                $periodoId !== null
+                    ? ['periodo_importacion_id', 'llave_tienda_periodo']
+                    : ['no_tienda', 'almacen', 'estado', 'municipio'],
                 [
                     'edo', 'mpio', 'loc', 'localidad', 'unidad_operativa',
                     'direccion', 'encargado', 'latitud', 'longitud',
                     'tipo_anaquel', 'estatus', 'anaqueles_instalados',
-                    'aviso_funcionamiento', 'comentarios', 'updated_at',
+                    'aviso_funcionamiento', 'comentarios', 'periodo_importacion_id',
+                    'es_activo', 'llave_tienda_periodo', 'updated_at',
                 ]
             );
             $insertados += count($chunk);
@@ -74,6 +90,10 @@ class ImportCasaPorCasa extends Command
         $this->newLine(2);
 
         $this->info("Importación completada: {$insertados} filas procesadas.");
+
+        if ($periodoId !== null) {
+            $periodos->activar(ServicioPeriodosImportacion::TIPO_CASA_X_CASA, $periodoId, $insertados);
+        }
 
         Log::info('Importacion CxC completada', ['total' => $insertados]);
 

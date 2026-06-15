@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Http\Controllers\DashboardController;
 use App\Servicios\ServicioDerivadosTienda;
 use App\Servicios\ServicioMapeoColumnas;
+use App\Servicios\ServicioPeriodosImportacion;
 use Carbon\Carbon;
 use Illuminate\Bus\Batchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -26,8 +27,9 @@ class FinalizarImportacionJob implements ShouldQueue
         'Fec_CRA', 'Vigencia',
     ];
 
-    public function __construct()
-    {
+    public function __construct(
+        public ?int $periodoImportacionId = null,
+    ) {
         $this->onQueue('imports');
     }
 
@@ -35,6 +37,7 @@ class FinalizarImportacionJob implements ShouldQueue
     {
         $mapper = ServicioMapeoColumnas::make();
         $derivados = app(ServicioDerivadosTienda::class);
+        $periodos = app(ServicioPeriodosImportacion::class);
         $conn = DB::connection('pgsql_imports');
 
         $total = $conn->table('staging_import')->where('_status', 'staged')->count();
@@ -60,6 +63,11 @@ class FinalizarImportacionJob implements ShouldQueue
                     try {
                         $data = $this->convertirFechas($mapper->mapear($fila));
                         $data = $derivados->agregar($data);
+                        if ($this->periodoImportacionId !== null) {
+                            $data['periodo_importacion_id'] = $this->periodoImportacionId;
+                            $data['es_activo'] = false;
+                            $data['llave_tienda_periodo'] = $periodos->llaveRegular($data);
+                        }
                         $data = $this->truncarValores($data, $limites);
                         $batch[] = $data;
                         $idsOk[] = $fila->id;
@@ -120,6 +128,10 @@ class FinalizarImportacionJob implements ShouldQueue
 
         if ($errores > 0) {
             $this->exportarErrores($conn);
+        }
+
+        if ($this->periodoImportacionId !== null) {
+            $periodos->activar(ServicioPeriodosImportacion::TIPO_REGULAR, $this->periodoImportacionId, $exitos, $errores);
         }
 
         DashboardController::invalidateDashboardCache();

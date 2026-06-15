@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Jobs\FinalizarImportacionJob;
 use App\Jobs\ProcesarChunkCsvJob;
 use App\Servicios\ServicioMapeoColumnas;
+use App\Servicios\ServicioPeriodosImportacion;
 use App\Servicios\ServicioSanitizadorCsv;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Bus;
@@ -16,12 +17,16 @@ class ImportCsv extends Command
         {file : Ruta relativa al archivo en storage/app/imports/}
         {--chunk=100000 : Filas por chunk}
         {--delimiter=, : Delimitador del CSV}
+        {--anio= : Año del periodo}
+        {--trimestre= : Trimestre T1, T2, T3 o T4}
+        {--fecha-corte= : Fecha de corte del periodo}
+        {--reemplazar : Reemplaza el periodo si ya existe}
         {--dry-run : Solo validar, no importar}
     ';
 
     protected $description = 'Carga masiva de CSV a Supabase vía COPY';
 
-    public function handle(ServicioSanitizadorCsv $sanitizer): int
+    public function handle(ServicioSanitizadorCsv $sanitizer, ServicioPeriodosImportacion $periodos): int
     {
         $originalPath = storage_path('app/imports/'.$this->argument('file'));
         $dryRun = (bool) $this->option('dry-run');
@@ -66,6 +71,30 @@ class ImportCsv extends Command
             return self::SUCCESS;
         }
 
+        $periodo = null;
+        if ($this->option('anio') !== null || $this->option('trimestre') !== null) {
+            if ($this->option('anio') === null || $this->option('trimestre') === null) {
+                $this->error('Debes enviar --anio y --trimestre juntos.');
+
+                return self::FAILURE;
+            }
+
+            try {
+                $periodo = $periodos->preparar(
+                    ServicioPeriodosImportacion::TIPO_REGULAR,
+                    (int) $this->option('anio'),
+                    $this->option('trimestre'),
+                    $this->option('fecha-corte'),
+                    basename($this->argument('file')),
+                    (bool) $this->option('reemplazar'),
+                );
+            } catch (\Throwable $e) {
+                $this->error($e->getMessage());
+
+                return self::FAILURE;
+            }
+        }
+
         // 3. Contar filas
         $totalRows = $sanitizer->contarFilas($sanitizedPath);
         $totalChunks = (int) ceil($totalRows / $chunkSize);
@@ -93,8 +122,8 @@ class ImportCsv extends Command
             ->name("Importación CSV: {$filename}")
             ->allowFailures()
             ->onQueue('imports')
-            ->then(function () {
-                FinalizarImportacionJob::dispatch()->onQueue('imports');
+            ->then(function () use ($periodo) {
+                FinalizarImportacionJob::dispatch($periodo ? (int) $periodo->id : null)->onQueue('imports');
             })
             ->finally(function () use ($filename) {
                 Log::info("Batch de importación '{$filename}' completado");
