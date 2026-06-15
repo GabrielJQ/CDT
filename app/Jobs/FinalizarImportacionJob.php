@@ -3,10 +3,8 @@
 namespace App\Jobs;
 
 use App\Http\Controllers\DashboardController;
-use App\Servicios\ServicioAuditoria;
-use App\Servicios\ServicioGeo;
+use App\Servicios\ServicioDerivadosTienda;
 use App\Servicios\ServicioMapeoColumnas;
-use App\Servicios\ServicioTiendaCritica;
 use Carbon\Carbon;
 use Illuminate\Bus\Batchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -36,9 +34,7 @@ class FinalizarImportacionJob implements ShouldQueue
     public function handle(): void
     {
         $mapper = ServicioMapeoColumnas::make();
-        $auditoria = app(ServicioAuditoria::class);
-        $critica = app(ServicioTiendaCritica::class);
-        $geo = app(ServicioGeo::class);
+        $derivados = app(ServicioDerivadosTienda::class);
         $conn = DB::connection('pgsql_imports');
 
         $total = $conn->table('staging_import')->where('_status', 'staged')->count();
@@ -54,7 +50,7 @@ class FinalizarImportacionJob implements ShouldQueue
 
         $conn->table('staging_import')
             ->where('_status', 'staged')
-            ->chunkById(300, function ($filas) use ($conn, $mapper, $limites, $auditoria, $critica, $geo, &$exitos, &$errores) {
+            ->chunkById(300, function ($filas) use ($conn, $mapper, $limites, $derivados, &$exitos, &$errores) {
                 $batch = [];
                 $idsOk = [];
                 $idsError = [];
@@ -63,7 +59,7 @@ class FinalizarImportacionJob implements ShouldQueue
                 foreach ($filas as $fila) {
                     try {
                         $data = $this->convertirFechas($mapper->mapear($fila));
-                        $data = $this->agregarDerivados($data, $critica, $auditoria, $geo);
+                        $data = $derivados->agregar($data);
                         $data = $this->truncarValores($data, $limites);
                         $batch[] = $data;
                         $idsOk[] = $fila->id;
@@ -165,22 +161,6 @@ class FinalizarImportacionJob implements ShouldQueue
                 }
             }
         }
-
-        return $data;
-    }
-
-    private function agregarDerivados(array $data, ServicioTiendaCritica $critica, ServicioAuditoria $auditoria, ServicioGeo $geo): array
-    {
-        $critico = $critica->evaluarTienda($data);
-        $audit = $auditoria->evaluarTienda($data);
-        $geoStatus = $geo->evaluarGeo($data);
-
-        $data['nivel_critico'] = $critico['level'] ?? null;
-        $data['factores_criticos_count'] = $critico['count'] ?? null;
-        $data['estado_geo'] = $geoStatus['status'] ?? null;
-        $data['estado_comite'] = $audit['estadoComite'] ?? null;
-        $data['rango_rotacion'] = $audit['rangoRotacion'] ?? null;
-        $data['auditoria_pendiente'] = $audit['auditoriaPendiente'] ?? null;
 
         return $data;
     }

@@ -7,9 +7,11 @@
         $criticalPct = $totalCount > 0 ? round($criticalSummary['rojo'] / $totalCount * 100, 1) : 0;
         $sinConectividadPct = $totalCount > 0 ? round($sinConectividad / $totalCount * 100, 1) : 0;
         $aperturasPct = $totalCount > 0 ? round($aperturasEsteMes / $totalCount * 100, 1) : 0;
-        $geoSinCoordenadas = $geoStats['sinCoordenadas'] ?? 0;
-        $geoTotal = ($geoStats['conCoordenadas'] ?? 0) + $geoSinCoordenadas;
-        $geoPct = $geoTotal > 0 ? round($geoSinCoordenadas / $geoTotal * 100, 1) : 0;
+        $geoSinCoordenadas = $geoStats['SIN_COORDENADAS'] ?? ($geoStats['sinCoordenadas'] ?? 0);
+        $geoFueraMexico = $geoStats['FUERA_MEXICO'] ?? 0;
+        $geoIncidencias = $geoStats['incidencias'] ?? ($geoSinCoordenadas + $geoFueraMexico);
+        $geoTotal = ($geoStats['OK'] ?? 0) + $geoSinCoordenadas + $geoFueraMexico + ($geoStats['FUERA_ESTADO'] ?? 0);
+        $geoPct = $geoTotal > 0 ? round($geoIncidencias / $geoTotal * 100, 1) : 0;
     @endphp
 
     <div class="page-shell">
@@ -74,12 +76,12 @@
                         </div>
                         <span class="status-pill status-warning">{{ number_format($sinConectividad) }} · {{ $sinConectividadPct }}%</span>
                     </a>
-                    <a href="{{ url('/mapa?estado_geo=SIN_COORDENADAS') }}" class="priority-item">
+                    <a href="{{ url('/mapa?estado_geo=INCIDENCIAS') }}" class="priority-item">
                         <div>
                             <p class="text-sm font-extrabold text-gray-900 dark:text-gray-100">Georreferencia</p>
-                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Registros que impiden visualizar cobertura territorial.</p>
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Sin coordenadas o fuera de México.</p>
                         </div>
-                        <span class="status-pill {{ $geoSinCoordenadas > 0 ? 'status-warning' : 'status-ok' }}">{{ number_format($geoSinCoordenadas) }} · {{ $geoPct }}%</span>
+                        <span class="status-pill {{ $geoIncidencias > 0 ? 'status-warning' : 'status-ok' }}">{{ number_format($geoIncidencias) }} · {{ $geoPct }}%</span>
                     </a>
                 </div>
             </div>
@@ -97,8 +99,8 @@
                         <strong class="text-green-600">{{ number_format($criticalSummary['verde']) }} <span class="text-xs font-semibold text-gray-400">({{ $totalCount > 0 ? round($criticalSummary['verde'] / $totalCount * 100, 1) : 0 }}%)</span></strong>
                     </div>
                     <div class="flex items-center justify-between gap-3">
-                        <span class="text-sm text-gray-500 dark:text-gray-400">Sin coordenadas</span>
-                        <strong class="text-amber-600">{{ number_format($geoSinCoordenadas) }} <span class="text-xs font-semibold text-gray-400">({{ $geoPct }}%)</span></strong>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">Incidencias de georreferencia</span>
+                        <strong class="text-amber-600">{{ number_format($geoIncidencias) }} <span class="text-xs font-semibold text-gray-400">({{ $geoPct }}%)</span></strong>
                     </div>
                 </div>
                 @isset($updatedAt)
@@ -146,7 +148,7 @@
                         <h3 class="module-title">Mapa territorial</h3>
                         <span class="module-link">Ver mas</span>
                     </div>
-                    @if($geoStats && ($geoStats['conCoordenadas'] + $geoStats['sinCoordenadas']) > 0)
+                    @if($geoStats && $geoTotal > 0)
                         <canvas id="chart-mapa" class="w-full max-h-52"></canvas>
                     @else
                         <p class="py-8 text-center text-sm text-gray-400 dark:text-gray-500">Sin datos</p>
@@ -269,14 +271,14 @@ document.addEventListener('DOMContentLoaded', function () {
             options: { ...chartOpts, cutout: '55%', plugins: { ...chartOpts.plugins, legend: { display: true, position: 'bottom', labels: { font: { size: 10 } } } } },
         });
 
-        // 3. Mapa — doughnut (Con/Sin coordenadas)
+        // 3. Mapa — doughnut (estatus geográfico)
         new Chart(document.getElementById('chart-mapa'), {
             type: 'doughnut',
             data: {
-                labels: ['Con coordenadas', 'Sin coordenadas'],
+                labels: ['Válidas', 'Sin coordenadas', 'Fuera de México', 'Fuera de territorio'],
                 datasets: [{
-                    data: [geo.conCoordenadas, geo.sinCoordenadas],
-                    backgroundColor: ['#10b981', '#9ca3af'],
+                    data: [geo.OK || 0, geo.SIN_COORDENADAS || geo.sinCoordenadas || 0, geo.FUERA_MEXICO || 0, geo.FUERA_ESTADO || 0],
+                    backgroundColor: ['#10b981', '#9ca3af', '#ef4444', '#f59e0b'],
                     borderWidth: 2,
                     borderColor: '#ffffff',
                 }],

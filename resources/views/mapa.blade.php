@@ -58,10 +58,11 @@
  <div class="min-w-[180px]">
  <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Estado geolocalización</label>
   <select name="estado_geo" class="input-filter">
- <option value="">Todos</option>
- @foreach($geoLabels as $key => $g)
- <option value="{{ $key }}" {{ $filters['estado_geo'] === $key ? 'selected' : '' }}>{{ $g['icon'] }} {{ $g['label'] }}</option>
- @endforeach
+  <option value="">Todos</option>
+  <option value="INCIDENCIAS" {{ $filters['estado_geo'] === 'INCIDENCIAS' ? 'selected' : '' }}>⚠️ Incidencias (sin coordenadas + fuera de México)</option>
+  @foreach($geoLabels as $key => $g)
+  <option value="{{ $key }}" {{ $filters['estado_geo'] === $key ? 'selected' : '' }}>{{ $g['icon'] }} {{ $g['label'] }}</option>
+  @endforeach
  </select>
  </div>
  <div class="flex gap-2">
@@ -117,7 +118,7 @@
  @if(count($criticales) > 0)
   <div class="table-shell">
  <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
- <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">⚠️ Tiendas sin coordenadas</p>
+  <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">⚠️ Tiendas con incidencias de georreferencia</p>
   <span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 font-semibold px-2.5 py-0.5 rounded-full">{{ $criticalesTotal ?? count($criticales) }}</span>
  </div>
  <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">

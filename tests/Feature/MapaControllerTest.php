@@ -65,4 +65,16 @@ class MapaControllerTest extends TestCase
 
         $response->assertStatus(200);
     }
+
+    public function test_data_endpoint_returns_map_points(): void
+    {
+        $this->fakeOk();
+
+        $response = $this->getJson('/mapa/data?north=32.7&south=14.5&east=-86.7&west=-118.4');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure(['stores', 'limited']);
+
+        $this->assertNotEmpty($response->json('stores'));
+    }
 }
