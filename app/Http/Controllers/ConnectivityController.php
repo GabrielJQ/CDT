@@ -24,6 +24,7 @@ class ConnectivityController extends Controller
             'senial' => $request->query('senial', ''),
             'compania' => $request->query('compania', ''),
             'internet' => $request->query('internet', ''),
+            'tienda_salud' => $request->query('tienda_salud', ''),
         ];
 
         if ($request->query('export') === 'csv') {

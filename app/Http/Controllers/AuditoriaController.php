@@ -28,6 +28,7 @@ class AuditoriaController extends Controller
             'rango_rotacion' => $request->query('rango_rotacion', ''),
             'tiempo_auditoria' => $request->query('tiempo_auditoria', ''),
             'asambleas_mes' => $request->query('asambleas_mes', ''),
+            'tienda_salud' => $request->query('tienda_salud', ''),
         ];
 
         if ($request->query('export') === 'csv') {

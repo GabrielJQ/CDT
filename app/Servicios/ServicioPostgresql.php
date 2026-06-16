@@ -140,6 +140,7 @@ class ServicioPostgresql
 
             $filtered = clone $base;
             $this->aplicarFiltrosConectividad($filtered, $filters);
+            $this->aplicarFiltroTiendaSalud($filtered, $filters['tienda_salud'] ?? '');
 
             $selectColumns = [
                 'Nombre_Almacen', 'No_Tienda_Actual', 'Municipio', 'TELEFONIA', 'Señal de celular', 'Compañía', 'INTERNET',
@@ -184,6 +185,7 @@ class ServicioPostgresql
 
             $filtered = clone $base;
             $this->aplicarFiltrosDirectorio($filtered, $filters, $trackedColumns);
+            $this->aplicarFiltroTiendaSalud($filtered, $filters['tienda_salud'] ?? '');
 
             $rowsQuery = $this->addTiendaSaludFlag((clone $filtered)->select($columns));
             $this->aplicarOrdenTabla($rowsQuery, $sort, $columns);
@@ -224,6 +226,7 @@ class ServicioPostgresql
 
             $filtered = clone $base;
             $this->aplicarFiltrosCriticidad($filtered, $filters, $usarDerivados);
+            $this->aplicarFiltroTiendaSalud($filtered, $filters['tienda_salud'] ?? '');
 
             $selectColumns = array_values(array_unique(array_merge($columns, ['nivel_critico', 'factores_criticos_count'])));
             $rowsQuery = $this->addTiendaSaludFlag((clone $filtered)->select($selectColumns));
@@ -265,6 +268,7 @@ class ServicioPostgresql
 
             $filtered = clone $base;
             $this->aplicarFiltrosAuditoria($filtered, $filters, $usarDerivados);
+            $this->aplicarFiltroTiendaSalud($filtered, $filters['tienda_salud'] ?? '');
 
             $selectColumns = array_values(array_unique(array_merge($columns, ['nivel_critico', 'estado_comite', 'rango_rotacion', 'auditoria_pendiente'])));
             $rowsQuery = $this->addTiendaSaludFlag((clone $filtered)->select($selectColumns));
@@ -305,6 +309,7 @@ class ServicioPostgresql
 
             $filtered = clone $base;
             $this->aplicarFiltrosAperturas($filtered, $filters);
+            $this->aplicarFiltroTiendaSalud($filtered, $filters['tienda_salud'] ?? '');
 
             $rowsQuery = $this->addTiendaSaludFlag((clone $filtered)->select($columns));
             $this->aplicarOrdenAperturas($rowsQuery, $sort, $columns);
@@ -335,6 +340,7 @@ class ServicioPostgresql
         $this->aplicarPeriodoActivo($query);
         $this->aplicarFiltroRegional($query, $regionFilters);
         $this->aplicarFiltrosMapa($query, array_diff_key($filters, ['estado_geo' => true]));
+        $this->aplicarFiltroTiendaSalud($query, $filters['tienda_salud'] ?? '');
 
         $rows = $this->selectMapaColumns($query, $columns)
             ->orderBy('id')
@@ -351,6 +357,7 @@ class ServicioPostgresql
         $this->aplicarPeriodoActivo($query);
         $this->aplicarFiltroRegional($query, $regionFilters);
         $this->aplicarFiltrosMapa($query, array_diff_key($filters, ['estado_geo' => true]));
+        $this->aplicarFiltroTiendaSalud($query, $filters['tienda_salud'] ?? '');
         if (! in_array($filters['estado_geo'] ?? '', ['FUERA_MEXICO', 'INCIDENCIAS'], true)) {
             $this->aplicarBounds($query, $bounds, 'Latitud', 'Longitud');
         }
@@ -417,6 +424,8 @@ class ServicioPostgresql
             $this->aplicarFiltrosMapa($query, $filters);
             $columns = array_values(array_unique(array_merge($columns, ['estado_geo'])));
         }
+
+        $this->aplicarFiltroTiendaSalud($query, $filters['tienda_salud'] ?? '');
 
         foreach ($this->addTiendaSaludFlag($query->select($columns))->orderBy('id')->cursor() as $row) {
             yield match ($module) {
@@ -1348,6 +1357,28 @@ class ServicioPostgresql
         }
 
         return array_values(array_filter($rows, fn (array $row) => ($row['_geo']['status'] ?? '') === $estadoGeo));
+    }
+
+    private function aplicarFiltroTiendaSalud(Builder $query, string $filter): void
+    {
+        if ($filter === '') {
+            return;
+        }
+
+        $subquery = 'EXISTS (
+            SELECT 1 FROM tiendas_casa_x_casa cxc
+            WHERE cxc.no_tienda::text = tiendas."No_Tienda_Actual"::text
+              AND cxc.almacen = tiendas."Nombre_Almacen"
+              AND cxc.estado = tiendas."Estado"
+              AND cxc.municipio = tiendas."Municipio"
+              AND cxc.es_activo = true
+        )';
+
+        if ($filter === 'salud') {
+            $query->whereRaw($subquery);
+        } elseif ($filter === 'regular') {
+            $query->whereRaw('NOT ('.$subquery.')');
+        }
     }
 
     private function geo(): ServicioGeo

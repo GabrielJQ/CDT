@@ -25,9 +25,10 @@ class MapaController extends Controller
         $filters = [
             'almacen' => trim($request->query('almacen', '')),
             'estado_geo' => $request->query('estado_geo', ''),
+            'tienda_salud' => $request->query('tienda_salud', ''),
         ];
 
-        $allStores = $this->postgres->obtenerMapa($regionFilter, [], self::COLUMNS);
+        $allStores = $this->postgres->obtenerMapa($regionFilter, ['tienda_salud' => $filters['tienda_salud']], self::COLUMNS);
         $filtered = $this->postgres->obtenerMapa($regionFilter, $filters, self::COLUMNS);
         $geoLabels = ServicioGeo::GEO_LABELS;
         $geoLabels['FUERA_ESTADO']['label'] = $this->geoMismatchLabel($allStores, $regionFilter);
@@ -71,6 +72,7 @@ class MapaController extends Controller
         $filters = [
             'almacen' => trim($request->query('almacen', '')),
             'estado_geo' => $request->query('estado_geo', ''),
+            'tienda_salud' => $request->query('tienda_salud', ''),
         ];
 
         $filtered = $this->postgres->obtenerMapaViewport(

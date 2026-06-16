@@ -24,6 +24,7 @@ class AperturaController extends Controller
             'almacen' => trim($request->query('almacen', '')),
             'desde' => $this->fecha->parsear($request->query('desde', ''))?->toDateString() ?? '',
             'hasta' => $this->fecha->parsear($request->query('hasta', ''))?->toDateString() ?? '',
+            'tienda_salud' => $request->query('tienda_salud', ''),
         ];
 
         if ($request->query('export') === 'csv') {

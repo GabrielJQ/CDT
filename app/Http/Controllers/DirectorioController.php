@@ -28,6 +28,7 @@ class DirectorioController extends Controller
                 'q' => trim($request->query('q', '')),
                 'incompletos' => $request->boolean('incompletos'),
                 'sinCapital' => $request->boolean('sinCapital'),
+                'tienda_salud' => $request->query('tienda_salud', ''),
             ];
 
             return ServicioExportacion::csvStream($this->postgres->exportarTiendas($this->applyRegionFilter(), $filters, self::COLUMNS, 'directorio'), [

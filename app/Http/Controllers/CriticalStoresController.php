@@ -23,6 +23,7 @@ class CriticalStoresController extends Controller
             'almacen' => trim($request->query('almacen', '')),
             'nivel' => $request->query('nivel', ''),
             'indicador' => $request->query('indicador', ''),
+            'tienda_salud' => $request->query('tienda_salud', ''),
         ];
 
         if ($request->query('export') === 'csv') {
