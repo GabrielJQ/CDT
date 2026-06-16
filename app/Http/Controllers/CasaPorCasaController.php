@@ -158,28 +158,7 @@ class CasaPorCasaController extends Controller
 
     public function mapa()
     {
-        $conn = DB::connection('pgsql_imports');
-        $uoFilter = $this->resolveUoFilter();
-
-        $baseQuery = $this->activeCxcQuery($conn);
-        if (! empty($uoFilter)) {
-            $baseQuery->whereIn('unidad_operativa', $uoFilter);
-        }
-
-        $conCoordenadas = (clone $baseQuery)
-            ->whereNotNull('latitud')
-            ->whereNotNull('longitud')
-            ->where('latitud', '!=', 0)
-            ->where('longitud', '!=', 0)
-            ->count();
-
-        $anaqueles = [
-            'instalados' => (clone $baseQuery)->where('anaqueles_instalados', true)->count(),
-            'pendientes' => (clone $baseQuery)->where('anaqueles_instalados', false)->count(),
-        ];
-        $totalCount = (clone $baseQuery)->count();
-
-        return view('casa-x-casa.mapa', compact('totalCount', 'conCoordenadas', 'anaqueles'));
+        return view('casa-x-casa.mapa');
     }
 
     public function mapaData(Request $request)
