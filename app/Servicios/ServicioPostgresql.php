@@ -87,7 +87,8 @@ class ServicioPostgresql
                 SELECT
                     \"Clave_Regional\", \"Nombre_Regional\",
                     \"Clave_UniOpe\", \"Nombre_UniOpe\",
-                    COUNT(*) as total
+                    COUNT(*) as total,
+                    COUNT(DISTINCT \"Nombre_Almacen\") as almacenes
                 FROM tiendas
                 WHERE es_activo = true AND \"Nombre_Regional\" IS NOT NULL AND TRIM(\"Nombre_Regional\") != ''
                 GROUP BY \"Clave_Regional\", \"Nombre_Regional\", \"Clave_UniOpe\", \"Nombre_UniOpe\"
@@ -102,14 +103,17 @@ class ServicioPostgresql
                         'clave' => $claveReg,
                         'nombre' => $row->{'Nombre_Regional'},
                         'total' => 0,
+                        'almacenes' => 0,
                         'uos' => [],
                     ];
                 }
                 $jerarquia[$claveReg]['total'] += (int) $row->total;
+                $jerarquia[$claveReg]['almacenes'] += (int) $row->almacenes;
                 $jerarquia[$claveReg]['uos'][] = [
                     'clave' => $row->{'Clave_UniOpe'},
                     'nombre' => $row->{'Nombre_UniOpe'},
                     'total' => (int) $row->total,
+                    'almacenes' => (int) $row->almacenes,
                 ];
             }
 
@@ -141,7 +145,7 @@ class ServicioPostgresql
                 'Nombre_Almacen', 'No_Tienda_Actual', 'Municipio', 'TELEFONIA', 'Señal de celular', 'Compañía', 'INTERNET',
             ];
 
-            $rowsQuery = (clone $filtered)->select($selectColumns);
+            $rowsQuery = $this->addTiendaSaludFlag((clone $filtered)->select($selectColumns));
             $this->aplicarOrdenTabla($rowsQuery, $sort, $selectColumns);
 
             $rows = $rowsQuery->offset(($page - 1) * $perPage)
@@ -181,7 +185,7 @@ class ServicioPostgresql
             $filtered = clone $base;
             $this->aplicarFiltrosDirectorio($filtered, $filters, $trackedColumns);
 
-            $rowsQuery = (clone $filtered)->select($columns);
+            $rowsQuery = $this->addTiendaSaludFlag((clone $filtered)->select($columns));
             $this->aplicarOrdenTabla($rowsQuery, $sort, $columns);
 
             $rows = $rowsQuery->offset(($page - 1) * $perPage)
@@ -222,7 +226,7 @@ class ServicioPostgresql
             $this->aplicarFiltrosCriticidad($filtered, $filters, $usarDerivados);
 
             $selectColumns = array_values(array_unique(array_merge($columns, ['nivel_critico', 'factores_criticos_count'])));
-            $rowsQuery = (clone $filtered)->select($selectColumns);
+            $rowsQuery = $this->addTiendaSaludFlag((clone $filtered)->select($selectColumns));
             $this->aplicarOrdenCriticidad($rowsQuery, $sort, $columns, $usarDerivados);
 
             $rows = $rowsQuery->offset(($page - 1) * $perPage)
@@ -263,7 +267,7 @@ class ServicioPostgresql
             $this->aplicarFiltrosAuditoria($filtered, $filters, $usarDerivados);
 
             $selectColumns = array_values(array_unique(array_merge($columns, ['nivel_critico', 'estado_comite', 'rango_rotacion', 'auditoria_pendiente'])));
-            $rowsQuery = (clone $filtered)->select($selectColumns);
+            $rowsQuery = $this->addTiendaSaludFlag((clone $filtered)->select($selectColumns));
             $this->aplicarOrdenAuditoria($rowsQuery, $sort, $columns, $usarDerivados);
 
             $rows = $rowsQuery->offset(($page - 1) * $perPage)
@@ -302,7 +306,7 @@ class ServicioPostgresql
             $filtered = clone $base;
             $this->aplicarFiltrosAperturas($filtered, $filters);
 
-            $rowsQuery = (clone $filtered)->select($columns);
+            $rowsQuery = $this->addTiendaSaludFlag((clone $filtered)->select($columns));
             $this->aplicarOrdenAperturas($rowsQuery, $sort, $columns);
 
             $rows = $rowsQuery->offset(($page - 1) * $perPage)
@@ -414,7 +418,7 @@ class ServicioPostgresql
             $columns = array_values(array_unique(array_merge($columns, ['estado_geo'])));
         }
 
-        foreach ($query->select($columns)->orderBy('id')->cursor() as $row) {
+        foreach ($this->addTiendaSaludFlag($query->select($columns))->orderBy('id')->cursor() as $row) {
             yield match ($module) {
                 'criticidad' => $this->rowToCriticalStore($row, $columns),
                 'auditoria' => $this->rowToAuditStore($row, $columns),
@@ -1314,18 +1318,23 @@ class ServicioPostgresql
 
     private function selectMapaColumns(Builder $query, array $columns): Builder
     {
-        return $query
-            ->select(array_values(array_unique(array_merge($columns, ['estado_geo']))))
-            ->selectRaw('EXISTS (
-                SELECT 1
-                FROM tiendas_casa_x_casa cxc
-                WHERE cxc.no_tienda::text = tiendas."No_Tienda_Actual"::text
-                  AND cxc.almacen = tiendas."Nombre_Almacen"
-                  AND cxc.estado = tiendas."Estado"
-                  AND cxc.municipio = tiendas."Municipio"
-                  AND cxc.es_activo = true
-                LIMIT 1
-            ) as es_tienda_salud_bienestar');
+        return $this->addTiendaSaludFlag(
+            $query->select(array_values(array_unique(array_merge($columns, ['estado_geo'])))),
+        );
+    }
+
+    private function addTiendaSaludFlag(Builder $query): Builder
+    {
+        return $query->selectRaw('EXISTS (
+            SELECT 1
+            FROM tiendas_casa_x_casa cxc
+            WHERE cxc.no_tienda::text = tiendas."No_Tienda_Actual"::text
+              AND cxc.almacen = tiendas."Nombre_Almacen"
+              AND cxc.estado = tiendas."Estado"
+              AND cxc.municipio = tiendas."Municipio"
+              AND cxc.es_activo = true
+            LIMIT 1
+        ) as es_tienda_salud_bienestar');
     }
 
     private function filtrarGeoCalculado(array $rows, string $estadoGeo): array
@@ -1444,6 +1453,7 @@ class ServicioPostgresql
         foreach ($columns as $column) {
             $store[$column] = $this->valorAString($row->{$column} ?? null);
         }
+        $store['es_tienda_salud_bienestar'] = ! empty($row->es_tienda_salud_bienestar ?? false);
 
         return $store;
     }

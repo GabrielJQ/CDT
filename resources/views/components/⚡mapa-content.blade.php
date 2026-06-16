@@ -163,7 +163,7 @@ new class extends Component
         $val = $store[$column] ?? '';
 
         if ($column === 'Nombre_Almacen') {
-            return '<strong class="text-gray-900 dark:text-gray-100">' . e($val ?: '—') . '</strong>';
+            return $this->renderStoreName($val, ! empty($store['es_tienda_salud_bienestar']));
         }
 
         if ($column === 'No_Tienda_Actual') {
@@ -175,6 +175,19 @@ new class extends Component
         }
 
         return e($val ?: '');
+    }
+
+    private function renderStoreName(string $name, bool $esTiendaSalud): string
+    {
+        $name = e($name ?: '—');
+        if ($esTiendaSalud) {
+            $dot = '<span class="inline-block w-3 h-3 rounded-full bg-purple-500 flex-shrink-0 ring-2 ring-purple-300 dark:ring-purple-700" title="Tienda de Salud"></span>';
+            $badge = '<span class="text-[10px] font-semibold text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/50 px-1.5 py-0.5 rounded leading-tight">Tienda de Salud</span>';
+
+            return '<span class="inline-flex items-center gap-1.5 flex-wrap">'.$dot.'<strong class="text-gray-900 dark:text-gray-100">'.$name.'</strong>'.$badge.'</span>';
+        }
+
+        return '<strong class="text-gray-900 dark:text-gray-100">'.$name.'</strong>';
     }
 
     private function firstNonEmptyValue(array $stores, string $key): string
@@ -379,7 +392,7 @@ new class extends Component
                             $gLabel = $geoLabels[$geo['status'] ?? ''] ?? [];
                             $badgeClass = $geo['status'] === 'SIN_COORDENADAS' ? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' : ($geo['status'] === 'FUERA_MEXICO' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300');
                         @endphp
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                        <tr class="{{ ! empty($store['es_tienda_salud_bienestar']) ? 'bg-purple-50/80 dark:bg-purple-900/10' : '' }} hover:bg-gray-50 dark:hover:bg-gray-700/30">
                             <td class="px-4 py-3 font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">{!! $this->renderCell('Nombre_Almacen', $store) !!}</td>
                             <td class="px-4 py-3 text-center font-mono text-gray-700 dark:text-gray-300">{!! $this->renderCell('No_Tienda_Actual', $store) !!}</td>
                             <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{!! $this->renderCell('Municipio', $store) !!}</td>

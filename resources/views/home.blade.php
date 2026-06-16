@@ -35,9 +35,20 @@
                             </span>
                         </div>
                         <h2 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-1">{{ $reg['nombre'] }}</h2>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                            {{ count($reg['uos']) }} unidades · {{ number_format($reg['total']) }} tiendas
-                        </p>
+                        <div class="grid grid-cols-3 gap-1.5 mb-3">
+                            <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2 text-center border-l-2 border-blue-500">
+                                <p class="text-xl font-bold text-blue-600 dark:text-blue-400">{{ number_format($reg['almacenes']) }}</p>
+                                <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-tight">Almacenes</p>
+                            </div>
+                            <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-2 text-center border-l-2 border-green-500">
+                                <p class="text-xl font-bold text-green-600 dark:text-green-400">{{ count($reg['uos']) }}</p>
+                                <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-tight">Unidades</p>
+                            </div>
+                            <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-2 text-center border-l-2 border-purple-500">
+                                <p class="text-xl font-bold text-purple-600 dark:text-purple-400">{{ number_format($reg['total']) }}</p>
+                                <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-tight">Tiendas</p>
+                            </div>
+                        </div>
                         <div class="flex flex-wrap gap-1.5">
                             @foreach($reg['uos'] as $uo)
                                 <span class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded">
