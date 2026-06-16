@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Dashboard CDT')</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @livewireStyles
     <style>
         #sidebar { width: 4rem; transition: width .2s ease; }
         #sidebar.expanded { width: 16rem; }
@@ -343,6 +344,7 @@
             }
         });
     </script>
+    @livewireScripts
     @stack('footer')
 </body>
 </html>
