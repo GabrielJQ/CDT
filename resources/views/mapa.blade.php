@@ -18,162 +18,7 @@
 @endpush
 
 @section('content')
- @isset($error)
- <div class="bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-6">{{ $error }}</div>
- @endisset
-
- <div class="page-shell">
-
-  <section class="page-hero">
-  <div class="page-hero-content">
-  <div>
-  <p class="eyebrow">Cobertura territorial</p>
-  <h1 class="page-heading">Mapa de tiendas</h1>
-  <p class="page-subheading">Ubica tiendas con coordenadas validas y prioriza registros con problemas de georreferencia para mejorar el analisis territorial.</p>
-  </div>
-  <a href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}" class="btn-export">Exportar CSV</a>
-  </div>
-  </section>
-
- {{-- Stats --}}
- <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
- <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-blue-500">
- <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">🏪 Total</p>
- <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ $totalCount }}</p>
- </div>
- @foreach(['OK' => 'border-green-500', 'SIN_COORDENADAS' => 'border-gray-400', 'FUERA_MEXICO' => 'border-red-500', 'FUERA_ESTADO' => 'border-orange-400'] as $status => $border)
- @php $g = $geoLabels[$status] ?? []; @endphp
- <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 {{ $border }}">
- <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{{ $g['icon'] ?? '' }} {{ $g['label'] ?? $status }}</p>
- <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ $stats[$status] ?? 0 }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round(($stats[$status] ?? 0) / $totalCount * 100, 1) : 0 }}%)</span></p>
- </div>
- @endforeach
- </div>
-
- {{-- Filters --}}
- <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 mb-6">
- <form method="GET" action="{{ url('/mapa') }}" class="flex flex-wrap items-end gap-3">
- <div class="flex-1 min-w-[160px]">
- <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Almacén</label>
- <input type="text" name="almacen" value="{{ $filters['almacen'] }}"
- placeholder="Buscar..."
-  class="input-filter">
- </div>
- <div class="min-w-[180px]">
- <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Estado geolocalización</label>
-  <select name="estado_geo" class="input-filter">
-  <option value="">Todos</option>
-  <option value="INCIDENCIAS" {{ $filters['estado_geo'] === 'INCIDENCIAS' ? 'selected' : '' }}>⚠️ Incidencias (sin coordenadas + fuera de México)</option>
-  @foreach($geoLabels as $key => $g)
-  <option value="{{ $key }}" {{ $filters['estado_geo'] === $key ? 'selected' : '' }}>{{ $g['icon'] }} {{ $g['label'] }}</option>
-  @endforeach
- </select>
- </div>
- <div class="flex gap-2">
-  <button type="submit" class="btn-filter">Filtrar</button>
-  <a href="{{ url('/mapa') }}" class="btn-secondary">Limpiar</a>
- </div>
- </form>
- </div>
-
-  {{-- Información de conteo --}}
-  <div class="text-sm text-gray-500 dark:text-gray-400 mb-2">
-  Mostrando <strong>{{ $filteredCount }}</strong> tiendas filtradas. El mapa carga los puntos visibles segun la zona actual
-  @if($filteredCount !== $totalCount)
-  (filtradas de <strong>{{ $totalCount }}</strong>)
-  @endif
- </div>
-
-  {{-- Map --}}
-  <div class="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_20rem]">
-  <div class="institutional-card p-2">
-  <div id="map"></div>
-  </div>
-  <aside class="priority-panel">
-  <p class="eyebrow">Incidencias</p>
-  <h2 class="text-lg font-extrabold text-gray-900 dark:text-gray-100">Calidad de coordenadas</h2>
-  <div class="mt-4 space-y-3">
-  <div class="priority-item">
-  <div>
-  <p class="text-sm font-extrabold text-gray-900 dark:text-gray-100">Sin coordenadas</p>
-  <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Registros que no pueden mostrarse en el mapa.</p>
-  </div>
-  <span class="status-pill {{ ($stats['SIN_COORDENADAS'] ?? 0) > 0 ? 'status-warning' : 'status-ok' }}">{{ $stats['SIN_COORDENADAS'] ?? 0 }} · {{ $totalCount > 0 ? round(($stats['SIN_COORDENADAS'] ?? 0) / $totalCount * 100, 1) : 0 }}%</span>
-  </div>
-  <div class="priority-item">
-  <div>
-  <p class="text-sm font-extrabold text-gray-900 dark:text-gray-100">Fuera de Mexico</p>
-  <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Coordenadas fuera del rango geografico esperado.</p>
-  </div>
-  <span class="status-pill {{ ($stats['FUERA_MEXICO'] ?? 0) > 0 ? 'status-critical' : 'status-ok' }}">{{ $stats['FUERA_MEXICO'] ?? 0 }} · {{ $totalCount > 0 ? round(($stats['FUERA_MEXICO'] ?? 0) / $totalCount * 100, 1) : 0 }}%</span>
-  </div>
-  <div class="priority-item">
-  <div>
-  <p class="text-sm font-extrabold text-gray-900 dark:text-gray-100">{{ $geoMismatchLabel ?? ($geoLabels['FUERA_ESTADO']['label'] ?? 'No corresponde al filtro territorial') }}</p>
-  <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Tiendas con posible error de captura territorial.</p>
-  </div>
-  <span class="status-pill {{ ($stats['FUERA_ESTADO'] ?? 0) > 0 ? 'status-warning' : 'status-ok' }}">{{ $stats['FUERA_ESTADO'] ?? 0 }} · {{ $totalCount > 0 ? round(($stats['FUERA_ESTADO'] ?? 0) / $totalCount * 100, 1) : 0 }}%</span>
-  </div>
-  </div>
-  </aside>
-  </div>
-
- {{-- CRÍTICAS list --}}
- @if(count($criticales) > 0)
-  <div class="table-shell">
- <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-  <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">⚠️ Tiendas con incidencias de georreferencia</p>
-  <span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 font-semibold px-2.5 py-0.5 rounded-full">{{ $criticalesTotal ?? count($criticales) }}</span>
- </div>
- <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
- <thead class="bg-gray-50 dark:bg-gray-800">
- <tr>
- <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Almacén</th>
- <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tienda #</th>
- <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Municipio</th>
- <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Estado</th>
- <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden md:table-cell">Latitud</th>
- <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden md:table-cell">Longitud</th>
- <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Problema</th>
- </tr>
- </thead>
- <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
- @foreach($criticales as $store)
- @php
- $geo = $store['_geo'] ?? [];
- $gLabel = $geoLabels[$geo['status'] ?? ''] ?? [];
- $badgeClass = $geo['status'] === 'SIN_COORDENADAS' ? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' : ($geo['status'] === 'FUERA_MEXICO' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300');
- @endphp
- <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30">
- <td class="px-4 py-3 font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ $store['Nombre_Almacen'] ?? '—' }}</td>
- <td class="px-4 py-3 text-center font-mono text-gray-700 dark:text-gray-300">{{ $store['No_Tienda_Actual'] ?? '—' }}</td>
- <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ $store['Municipio'] ?? '—' }}</td>
- <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ $store['Estado'] ?? '—' }}</td>
- <td class="px-4 py-3 text-center font-mono text-xs text-gray-600 dark:text-gray-300 hidden md:table-cell">{{ $geo['lat'] ?? '—' }}</td>
- <td class="px-4 py-3 text-center font-mono text-xs text-gray-600 dark:text-gray-300 hidden md:table-cell">{{ $geo['lon'] ?? '—' }}</td>
- <td class="px-4 py-3">
- <span class="geo-badge {{ $badgeClass }}">
- {{ $gLabel['icon'] ?? '' }} {{ $geo['mensaje'] ?? $geo['status'] ?? '—' }}
- </span>
- </td>
- </tr>
- @endforeach
-  </tbody>
-  </table>
-  @if(($serverPagination['totalPages'] ?? 1) > 1)
-  <div class="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-gray-700 text-sm">
-  <a href="{{ request()->fullUrlWithQuery(['page' => max(1, ($serverPagination['page'] ?? 1) - 1)]) }}" class="btn-secondary {{ ($serverPagination['page'] ?? 1) <= 1 ? 'pointer-events-none opacity-40' : '' }}">Anterior</a>
-  <span class="text-gray-500 dark:text-gray-400">Página {{ $serverPagination['page'] ?? 1 }} de {{ $serverPagination['totalPages'] ?? 1 }}</span>
-  <a href="{{ request()->fullUrlWithQuery(['page' => min(($serverPagination['totalPages'] ?? 1), ($serverPagination['page'] ?? 1) + 1)]) }}" class="btn-secondary {{ ($serverPagination['page'] ?? 1) >= ($serverPagination['totalPages'] ?? 1) ? 'pointer-events-none opacity-40' : '' }}">Siguiente</a>
-  </div>
-  @endif
-  </div>
- @elseif(count($stores) > 0)
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 text-center text-gray-500 dark:text-gray-400">
-  ✅ Todas las tiendas filtradas tienen coordenadas válidas.
-  </div>
-  @endif
- </div>
+    <livewire:mapa-content />
 @endsection
 
 @push('footer')
@@ -289,11 +134,12 @@
   renderStores(payload.stores || []);
   })
   .catch(function (error) {
-  if (error.name === 'AbortError') return;
-  });
- }
+   if (error.name === 'AbortError') return;
+   });
+  }
+  window.__fetchViewportStores = fetchViewportStores;
 
- function scheduleViewportFetch() {
+  function scheduleViewportFetch() {
  if (suppressNextMoveFetch) {
  suppressNextMoveFetch = false;
  return;
@@ -321,8 +167,15 @@
 
  setTimeout(function () { map.invalidateSize(); }, 300);
  }
- initMap();
- });
+  initMap();
+
+  document.addEventListener('livewire:init', function () {
+   Livewire.on('mapa-filters-updated', function () {
+    if (window.__fetchViewportStores) window.__fetchViewportStores();
+   });
+  });
+  });
+
 </script>
 @endpush
 
