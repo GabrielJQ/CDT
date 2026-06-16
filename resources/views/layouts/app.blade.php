@@ -30,7 +30,7 @@
     @stack('head')
 </head>
 <body class="bg-gray-100 dark:bg-gray-900">
-    <div class="min-h-screen flex">
+    <div class="h-screen flex overflow-hidden">
         @php
             $currentPath = request()->path();
             $navItems = [
@@ -159,7 +159,7 @@
 
         <main class="flex-1 flex flex-col min-w-0">
             {{-- Top bar --}}
-            <div class="institutional-topbar flex flex-wrap items-center gap-2 lg:gap-3">
+            <div class="institutional-topbar shrink-0 flex flex-wrap items-center gap-2 lg:gap-3">
                 <button onclick="toggleSidebar()" class="rounded-lg px-2 py-1 text-xl leading-none text-white/80 transition hover:bg-white/10 hover:text-white">☰</button>
                 <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-2">
@@ -209,22 +209,24 @@
                 </div>
             </div>
 
-            {{-- Alerts --}}
-            <div class="px-4 lg:px-6 pt-3 lg:pt-4">
-                @session('success')
-                    <div class="bg-green-100 dark:bg-green-900/50 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-300 px-4 py-3 rounded mb-4 text-sm">{{ $value }}</div>
-                @endsession
-                @session('error')
-                    <div class="bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-4 text-sm">{{ $value }}</div>
-                @endsession
-                @isset($error)
-                    <div class="bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-4 text-sm">{{ $error }}</div>
-                @endisset
-            </div>
+            <div class="flex-1 overflow-y-auto">
+                {{-- Alerts --}}
+                <div class="px-4 lg:px-6 pt-3 lg:pt-4">
+                    @session('success')
+                        <div class="bg-green-100 dark:bg-green-900/50 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-300 px-4 py-3 rounded mb-4 text-sm">{{ $value }}</div>
+                    @endsession
+                    @session('error')
+                        <div class="bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-4 text-sm">{{ $value }}</div>
+                    @endsession
+                    @isset($error)
+                        <div class="bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-4 text-sm">{{ $error }}</div>
+                    @endisset
+                </div>
 
-            {{-- Content --}}
-            <div class="p-3 lg:p-6 flex-1">
-                @yield('content')
+                {{-- Content --}}
+                <div class="p-3 lg:p-6">
+                    @yield('content')
+                </div>
             </div>
         </main>
     </div>
