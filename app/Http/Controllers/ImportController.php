@@ -18,47 +18,17 @@ class ImportController extends Controller
     public function index()
     {
         $periodos = app(ServicioPeriodosImportacion::class);
-        $importsDir = storage_path('app/imports');
-
-        $archivos = [];
-        if (is_dir($importsDir)) {
-            $files = glob($importsDir.'/*.csv');
-            $archivos = array_map(function ($f) {
-                return [
-                    'name' => basename($f),
-                    'size' => filesize($f),
-                    'modified' => filemtime($f),
-                ];
-            }, $files);
-            rsort($archivos);
-        }
-
-        $chunksDir = storage_path('app/imports/_chunks');
-        $chunkCount = 0;
-        if (is_dir($chunksDir)) {
-            $chunkCount = count(glob($chunksDir.'/chunk_*.csv'));
-        }
-
-        $stagingCount = false;
-        try {
-            $stagingCount = DB::connection('pgsql_imports')
-                ->table('staging_import')
-                ->count();
-        } catch (\Throwable) {
-        }
 
         $cxcCount = 0;
         try {
             $cxcCount = DB::connection('pgsql_imports')
                 ->table('tiendas_casa_x_casa')
+                ->where('es_activo', true)
                 ->count();
         } catch (\Throwable) {
         }
 
         return view('imports', [
-            'archivos' => $archivos,
-            'chunkCount' => $chunkCount,
-            'stagingCount' => $stagingCount,
             'cxcCount' => $cxcCount,
             'periodosActivos' => $periodos->activos(),
             'trimestres' => $periodos->trimestres(),
