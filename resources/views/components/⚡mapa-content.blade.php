@@ -23,6 +23,8 @@ new class extends Component
 
     public string $estado_geo = '';
 
+    public string $tiendaSalud = '';
+
     public ?string $sort = null;
 
     public string $direction = 'asc';
@@ -36,6 +38,7 @@ new class extends Component
     protected $queryString = [
         'almacen' => ['except' => ''],
         'estado_geo' => ['except' => ''],
+        'tiendaSalud' => ['except' => ''],
         'sort' => ['except' => null],
         'direction' => ['except' => 'asc'],
         'page' => ['except' => 1],
@@ -55,6 +58,7 @@ new class extends Component
         return [
             'almacen' => $this->almacen,
             'estado_geo' => $this->estado_geo,
+            'tienda_salud' => $this->tiendaSalud,
         ];
     }
 
@@ -62,7 +66,7 @@ new class extends Component
     {
         $postgres = app(ServicioPostgresql::class);
 
-        return $postgres->obtenerMapa($this->regionFilters(), [], self::COLUMNS);
+        return $postgres->obtenerMapa($this->regionFilters(), ['tienda_salud' => $this->tiendaSalud], self::COLUMNS);
     }
 
     private function filteredStores(): array
@@ -74,11 +78,11 @@ new class extends Component
 
     public function updated($property): void
     {
-        if (in_array($property, ['almacen', 'estado_geo', 'perPage'], true)) {
+        if (in_array($property, ['almacen', 'estado_geo', 'tiendaSalud', 'perPage'], true)) {
             $this->page = 1;
         }
 
-        if (in_array($property, ['almacen', 'estado_geo'], true)) {
+        if (in_array($property, ['almacen', 'estado_geo', 'tiendaSalud'], true)) {
             $this->dispatch('mapa-filters-updated');
         }
     }
@@ -103,6 +107,7 @@ new class extends Component
     {
         $this->almacen = '';
         $this->estado_geo = '';
+        $this->tiendaSalud = '';
         $this->sort = null;
         $this->direction = 'asc';
         $this->page = 1;
@@ -151,6 +156,7 @@ new class extends Component
         return url('/mapa?' . http_build_query(array_filter([
             'almacen' => $this->almacen,
             'estado_geo' => $this->estado_geo,
+            'tienda_salud' => $this->tiendaSalud,
             'sort' => $this->sort,
             'direction' => $this->direction,
             'per_page' => $this->perPage,
@@ -320,6 +326,14 @@ new class extends Component
                     @endforeach
                 </select>
             </div>
+            <div class="min-w-[160px]">
+                <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Tipo de tienda</label>
+                <select wire:model.live="tiendaSalud" class="input-filter">
+                    <option value="">Todas</option>
+                    <option value="salud">Tiendas de Salud / Bienestar</option>
+                    <option value="regular">Tiendas Bienestar</option>
+                </select>
+            </div>
             <div class="flex gap-2">
                 <button type="button" wire:click="clearFilters" class="btn-secondary">Limpiar</button>
             </div>
@@ -368,13 +382,14 @@ new class extends Component
     </div>
 
     @if(count($criticales) > 0)
-        <div class="table-shell">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-200 dark:border-gray-700">
             <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
                 <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">⚠️ Tiendas con incidencias de georreferencia</p>
                 <span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 font-semibold px-2.5 py-0.5 rounded-full">{{ $criticalesTotal }}</span>
             </div>
+            <div x-data="{ page: @entangle('page') }" x-init="$watch('page', () => $nextTick(() => $el.scrollTop = 0))" class="max-h-[65vh] overflow-y-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
-                <thead class="bg-gray-50 dark:bg-gray-800">
+                <thead class="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800">
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Almacén</th>
                         <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tienda #</th>
@@ -408,6 +423,7 @@ new class extends Component
                     @endforeach
                 </tbody>
             </table>
+            </div>
             @if($totalPages > 1)
                 <div class="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-gray-700 text-sm">
                     <button type="button" wire:click="previousTablePage({{ $totalPages }})" @disabled($page <= 1) class="btn-secondary {{ $page <= 1 ? 'pointer-events-none opacity-40' : '' }}">Anterior</button>

@@ -18,6 +18,8 @@ new class extends Component
 
     public string $hasta = '';
 
+    public string $tiendaSalud = '';
+
     public ?string $sort = null;
 
     public string $direction = 'asc';
@@ -32,6 +34,7 @@ new class extends Component
         'almacen' => ['except' => ''],
         'desde' => ['except' => ''],
         'hasta' => ['except' => ''],
+        'tiendaSalud' => ['except' => ''],
         'sort' => ['except' => null],
         'direction' => ['except' => 'asc'],
         'page' => ['except' => 1],
@@ -49,6 +52,7 @@ new class extends Component
             'almacen' => trim($this->almacen),
             'desde' => $fecha->parsear($this->desde)?->toDateString() ?? '',
             'hasta' => $fecha->parsear($this->hasta)?->toDateString() ?? '',
+            'tienda_salud' => $this->tiendaSalud,
         ];
     }
 
@@ -79,7 +83,7 @@ new class extends Component
 
     public function updated($property): void
     {
-        if (in_array($property, ['almacen', 'desde', 'hasta', 'perPage'], true)) {
+        if (in_array($property, ['almacen', 'desde', 'hasta', 'tiendaSalud', 'perPage'], true)) {
             $this->page = 1;
         }
     }
@@ -105,6 +109,7 @@ new class extends Component
         $this->almacen = '';
         $this->desde = '';
         $this->hasta = '';
+        $this->tiendaSalud = '';
         $this->sort = null;
         $this->direction = 'asc';
         $this->page = 1;
@@ -250,6 +255,7 @@ new class extends Component
             'almacen' => trim($this->almacen),
             'desde' => $this->desde,
             'hasta' => $this->hasta,
+            'tienda_salud' => $this->tiendaSalud,
             'sort' => $this->sort,
             'direction' => $this->direction,
             'per_page' => $this->perPage,
@@ -337,6 +343,14 @@ new class extends Component
                 <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Hasta</label>
                 <input type="date" wire:model.live="hasta" class="input-filter">
             </div>
+            <div class="min-w-[160px]">
+                <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Tipo de tienda</label>
+                <select wire:model.live="tiendaSalud" class="input-filter">
+                    <option value="">Todas</option>
+                    <option value="salud">Tiendas de Salud / Bienestar</option>
+                    <option value="regular">Tiendas Bienestar</option>
+                </select>
+            </div>
             <button type="button" wire:click="clearFilters" class="btn-secondary">Limpiar</button>
         </div>
     </div>
@@ -359,9 +373,9 @@ new class extends Component
         <span wire:loading class="ml-2 text-[#988256] font-semibold">Actualizando...</span>
     </div>
 
-    <div class="table-shell">
+    <div x-data="{ page: @entangle('page') }" x-init="$watch('page', () => $nextTick(() => $el.scrollTop = 0))" class="max-h-[65vh] overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800">
         <table id="aper-table" class="w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm dark:text-gray-200">
-            <thead class="bg-gray-50 dark:bg-gray-800">
+            <thead class="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800">
                 <tr>
                     @foreach($columns as $column)
                         @php

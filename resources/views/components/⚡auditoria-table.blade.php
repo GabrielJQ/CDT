@@ -33,6 +33,8 @@ new class extends Component
 
     public string $asambleas_mes = '';
 
+    public string $tiendaSalud = '';
+
     public ?string $sort = null;
 
     public string $direction = 'asc';
@@ -56,6 +58,7 @@ new class extends Component
         'rango_rotacion' => ['except' => ''],
         'tiempo_auditoria' => ['except' => ''],
         'asambleas_mes' => ['except' => ''],
+        'tiendaSalud' => ['except' => ''],
         'sort' => ['except' => null],
         'direction' => ['except' => 'asc'],
         'page' => ['except' => 1],
@@ -76,6 +79,7 @@ new class extends Component
             'rango_rotacion' => $this->rango_rotacion,
             'tiempo_auditoria' => $this->tiempo_auditoria,
             'asambleas_mes' => $this->asambleas_mes,
+            'tienda_salud' => $this->tiendaSalud,
         ];
     }
 
@@ -98,7 +102,7 @@ new class extends Component
 
     public function updated($property): void
     {
-        if (in_array($property, ['almacen', 'nivel', 'estado_comite', 'estado_auditoria', 'filtro_500k', 'rango_rotacion', 'tiempo_auditoria', 'asambleas_mes', 'perPage'], true)) {
+        if (in_array($property, ['almacen', 'nivel', 'estado_comite', 'estado_auditoria', 'filtro_500k', 'rango_rotacion', 'tiempo_auditoria', 'asambleas_mes', 'tiendaSalud', 'perPage'], true)) {
             $this->page = 1;
         }
     }
@@ -129,6 +133,7 @@ new class extends Component
         $this->rango_rotacion = '';
         $this->tiempo_auditoria = '';
         $this->asambleas_mes = '';
+        $this->tiendaSalud = '';
         $this->sort = null;
         $this->direction = 'asc';
         $this->page = 1;
@@ -395,6 +400,7 @@ new class extends Component
             'rango_rotacion' => $this->rango_rotacion,
             'tiempo_auditoria' => $this->tiempo_auditoria,
             'asambleas_mes' => $this->asambleas_mes,
+            'tienda_salud' => $this->tiendaSalud,
             'sort' => $this->sort,
             'direction' => $this->direction,
             'per_page' => $this->perPage,
@@ -583,6 +589,14 @@ new class extends Component
                     <option value="no">Sin asambleas</option>
                 </select>
             </div>
+            <div class="min-w-[160px]">
+                <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Tipo de tienda</label>
+                <select wire:model.live="tiendaSalud" class="input-filter">
+                    <option value="">Todas</option>
+                    <option value="salud">Tiendas de Salud / Bienestar</option>
+                    <option value="regular">Tiendas Bienestar</option>
+                </select>
+            </div>
             <div class="flex gap-2">
                 <button type="button" wire:click="clearFilters" class="btn-secondary">Limpiar</button>
             </div>
@@ -613,9 +627,9 @@ new class extends Component
         <span wire:loading class="ml-2 text-[#988256] font-semibold">Actualizando...</span>
     </div>
 
-    <div class="table-shell">
+    <div x-data="{ page: @entangle('page') }" x-init="$watch('page', () => $nextTick(() => $el.scrollTop = 0))" class="max-h-[65vh] overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800">
         <table class="w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm dark:text-gray-200" style="table-layout:auto">
-            <thead class="bg-gray-50 dark:bg-gray-800">
+            <thead class="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800">
                 <tr>
                     @foreach($columns as $column)
                         @php
