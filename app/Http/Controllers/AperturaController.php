@@ -38,23 +38,7 @@ class AperturaController extends Controller
             ], 'aperturas.csv');
         }
 
-        [$page, $perPage] = $this->paginationInput();
-        $sortableColumns = array_merge(self::COLUMNS, ['_fecha_apertura', '_antiguedad']);
-        $sort = $this->tableSortInput($sortableColumns);
-        $result = $this->postgres->obtenerAperturasPaginada($this->applyRegionFilter(), $filters, $page, $perPage, self::COLUMNS, $sort);
-
         return view('aperturas', [
-            'stores' => $result['rows'],
-            'totalCount' => $result['total'],
-            'filteredCount' => $result['filtered'],
-            'serverPagination' => $this->paginationMeta($page, $perPage, $result['filtered']),
-            'kpis' => $result['kpis'],
-            'filters' => [
-                'almacen' => $request->query('almacen', ''),
-                'desde' => $request->query('desde', ''),
-                'hasta' => $request->query('hasta', ''),
-            ],
-            'sort' => $sort,
             'updatedAt' => now()->toDateTimeString(),
         ]);
     }

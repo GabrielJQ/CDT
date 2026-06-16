@@ -38,22 +38,7 @@ class ConnectivityController extends Controller
             ], 'conectividad.csv');
         }
 
-        [$page, $perPage] = $this->paginationInput();
-        $sort = $this->tableSortInput(self::COLUMNS);
-        $result = $this->postgres->obtenerConectividadPaginada($this->applyRegionFilter(), $filters, $page, $perPage, $sort);
-
         return view('connectivity', [
-            'kpis' => $result['kpis'],
-            'stores' => $result['rows'],
-            'totalCount' => $result['total'],
-            'filteredCount' => $result['filtered'],
-            'serverPagination' => $this->paginationMeta($page, $perPage, $result['filtered']),
-            'filterOptions' => [
-                'almacenes' => [],
-                'companias' => $result['companias'],
-            ],
-            'filters' => $filters,
-            'sort' => $sort,
             'updatedAt' => now()->toDateTimeString(),
         ]);
     }

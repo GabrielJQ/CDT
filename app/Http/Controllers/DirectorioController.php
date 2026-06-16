@@ -4,22 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Servicios\ServicioExportacion;
 use App\Servicios\ServicioPostgresql;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class DirectorioController extends Controller
 {
-    public const TRACKED_COLUMNS = [
-        'TELEFONIA', 'CORREO', 'Señal de celular', 'Compañía', 'INTERNET',
-        'Vta_Mes', 'VtaNeta_Mes', 'Cap_Tot', 'Cap_Com', 'Cap_Dic',
-        'Pagare_Monto', 'Pagare_Fecha', 'Fec_CRA', 'Vigencia', 'Fch_Audit', 'Imp_Res_Audi_Mes',
-        'Audit_Realiza_Mes', 'Latitud', 'Longitud', 'Direccion',
-        'Nom_Pre_CRA', 'Nom_Pre_Sup_CRA', 'Nom_Sec_CRA', 'Nom_Sec_Sup_CRA',
-        'Nom_Tes_CRA', 'Nom_Vcv_CRA', 'Nom_Voc_Gen_CRA',
-    ];
-
-    private array $trackedColumns = self::TRACKED_COLUMNS;
-
     private const COLUMNS = [
         'Nombre_Almacen', 'No_Tienda_Actual', 'Municipio', 'Fecha_Apertura', 'TELEFONIA', 'Señal de celular',
         'Compañía', 'INTERNET', 'CORREO', 'Direccion', 'Vta_Mes', 'VtaNeta_Mes', 'Vta_Acu', 'VtaNeta_Acu',
@@ -35,13 +23,13 @@ class DirectorioController extends Controller
 
     public function index(Request $request)
     {
-        $filters = [
-            'q' => trim($request->query('q', '')),
-            'incompletos' => $request->boolean('incompletos'),
-            'sinCapital' => $request->boolean('sinCapital'),
-        ];
-
         if ($request->query('export') === 'csv') {
+            $filters = [
+                'q' => trim($request->query('q', '')),
+                'incompletos' => $request->boolean('incompletos'),
+                'sinCapital' => $request->boolean('sinCapital'),
+            ];
+
             return ServicioExportacion::csvStream($this->postgres->exportarTiendas($this->applyRegionFilter(), $filters, self::COLUMNS, 'directorio'), [
                 'Nombre_Almacen' => 'Almacén',
                 'No_Tienda_Actual' => 'Tienda #',
@@ -80,115 +68,6 @@ class DirectorioController extends Controller
             ], 'directorio.csv');
         }
 
-        [$page, $perPage] = $this->paginationInput();
-        $sort = $this->tableSortInput(self::COLUMNS);
-        $result = $this->postgres->obtenerDirectorioPaginado(
-            $this->applyRegionFilter(),
-            $filters,
-            $page,
-            $perPage,
-            self::COLUMNS,
-            $this->trackedColumns,
-            $sort,
-        );
-
-        return view('directorio', [
-            'stores' => $result['rows'],
-            'totalCount' => $result['total'],
-            'filteredCount' => $result['filtered'],
-            'serverPagination' => $this->paginationMeta($page, $perPage, $result['filtered']),
-            'filters' => $filters,
-            'sort' => $sort,
-            'globalStats' => $result['stats'],
-            'updatedAt' => now()->toDateTimeString(),
-        ]);
-    }
-
-    private function calcularStats(array $stores): array
-    {
-        $incompletos = 0;
-        $sinCapital = 0;
-        $comitesIncompletos = 0;
-        $asambleasMes = 0;
-        $tiendasFaltante = 0;
-        $importeFaltante = 0.0;
-        $pagaresVencidos = 0;
-        $importePagaresVencidos = 0.0;
-
-        $columnasIncompletos = array_filter($this->trackedColumns, fn ($c) => ! str_contains($c, 'Sup_CRA'));
-
-        foreach ($stores as $store) {
-            if ($this->tieneCamposIncompletos($store, $columnasIncompletos)) {
-                $incompletos++;
-            }
-
-            $capTot = $this->capitalTotal($store);
-            if ($this->sinCapital($store)) {
-                $sinCapital++;
-            }
-
-            // Comité Incompleto (evaluamos Presidente, Secretario y Tesorero como mínimos)
-            $p = trim($store['Nom_Pre_CRA'] ?? '');
-            $s = trim($store['Nom_Sec_CRA'] ?? '');
-            $t = trim($store['Nom_Tes_CRA'] ?? '');
-            if ($p === '' || $p === '0' || $s === '' || $s === '0' || $t === '' || $t === '0') {
-                $comitesIncompletos++;
-            }
-
-            // Asambleas realizadas en el mes
-            $asamReal = (int) ($store['Asam_Real_Mes'] ?? 0);
-            if ($asamReal > 0) {
-                $asambleasMes++;
-            }
-
-            // Faltante de capital (Fórmula PROVISIONAL: Capital Dictaminado - Capital Total)
-            $capDic = (float) str_replace([',', '$', ' '], '', trim($store['Cap_Dic'] ?? '0'));
-            $faltante = $capDic - $capTot;
-            if ($faltante > 0) {
-                $tiendasFaltante++;
-                $importeFaltante += $faltante;
-            }
-
-            // Pagaré vencido (1 año de vigencia desde Pagare_Fecha)
-            $pagareFechaStr = trim($store['Pagare_Fecha'] ?? '');
-            if ($pagareFechaStr !== '' && $pagareFechaStr !== '0') {
-                $parsed = Carbon::createFromFormat('d/m/Y', $pagareFechaStr);
-                if ($parsed === false) {
-                    $parsed = Carbon::parse($pagareFechaStr);
-                }
-                if ($parsed !== false && $parsed->copy()->addYear()->isPast()) {
-                    $pagaresVencidos++;
-                    $pagareMonto = (float) str_replace([',', '$', ' '], '', trim($store['Pagare_Monto'] ?? '0'));
-                    $importePagaresVencidos += $pagareMonto;
-                }
-            }
-        }
-
-        return compact('incompletos', 'sinCapital', 'comitesIncompletos', 'asambleasMes', 'tiendasFaltante', 'importeFaltante', 'pagaresVencidos', 'importePagaresVencidos');
-    }
-
-    private function tieneCamposIncompletos(array $store, ?array $columns = null): bool
-    {
-        $columns ??= array_filter($this->trackedColumns, fn ($c) => ! str_contains($c, 'Sup_CRA'));
-        foreach ($columns as $col) {
-            $val = trim($store[$col] ?? '');
-            if ($val === '' || $val === '0') {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function sinCapital(array $store): bool
-    {
-        $capTotStr = trim($store['Cap_Tot'] ?? '');
-
-        return $capTotStr === '' || $capTotStr === '0' || $this->capitalTotal($store) === 0.0;
-    }
-
-    private function capitalTotal(array $store): float
-    {
-        return (float) str_replace([',', '$', ' '], '', trim($store['Cap_Tot'] ?? ''));
+        return view('directorio');
     }
 }
