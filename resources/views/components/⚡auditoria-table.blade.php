@@ -455,19 +455,19 @@ new class extends Component
     @if (! empty($kpis))
         {{-- KPIs ROW 1 --}}
         <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-blue-500">
+            <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-blue-500">
                 <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">🏪 Tiendas evaluadas</p>
                 <p class="text-3xl font-bold text-gray-800 dark:text-gray-100">{{ number_format($filteredCount) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">de {{ number_format($totalCount) }}</span></p>
             </div>
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-red-500">
+            <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-red-500">
                 <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">🏛️ Comités de CRA vencidos</p>
                 <p class="text-3xl font-bold text-red-600">{{ number_format($kpis['comitesVencidos']) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round($kpis['comitesVencidos'] / $totalCount * 100, 1) : 0 }}%)</span></p>
             </div>
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-orange-500">
+            <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-orange-500">
                 <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">🔍 Auditorías mayores a $500,000</p>
                 <p class="text-3xl font-bold text-orange-600">{{ number_format($kpis['auditoriaAlta']) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round($kpis['auditoriaAlta'] / $totalCount * 100, 1) : 0 }}%)</span></p>
             </div>
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-amber-500">
+            <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-amber-500">
                 <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">📉 Rotación menor a 0.5</p>
                 <p class="text-3xl font-bold text-amber-600">{{ number_format($kpis['rotacionBaja']) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round($kpis['rotacionBaja'] / $totalCount * 100, 1) : 0 }}%)</span></p>
             </div>
@@ -475,7 +475,7 @@ new class extends Component
 
         {{-- KPIs ROW 2 --}}
         <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-gray-400">
+            <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-gray-400">
                 <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">📅 Auditorías pendientes (+3 meses)</p>
                 <p class="text-3xl font-bold text-gray-600 dark:text-gray-300">{{ number_format($kpis['auditoriaPendiente']) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round($kpis['auditoriaPendiente'] / $totalCount * 100, 1) : 0 }}%)</span></p>
             </div>
@@ -484,19 +484,19 @@ new class extends Component
         {{-- Desglose Rotación --}}
         <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">Desglose de Rotación</h3>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-gray-500">
+            <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-gray-500">
                 <p class="text-xs text-gray-500 dark:text-gray-400">Rotación cero</p>
                 <p class="text-xl font-bold text-gray-600">{{ number_format($kpis['rotacionCero'] ?? 0) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round(($kpis['rotacionCero'] ?? 0) / $totalCount * 100, 1) : 0 }}%)</span></p>
             </div>
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-red-500">
+            <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-red-500">
                 <p class="text-xs text-gray-500 dark:text-gray-400">Rotación crítica (&lt;0.5)</p>
                 <p class="text-xl font-bold text-red-600">{{ number_format($kpis['rotacionCritico'] ?? 0) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round(($kpis['rotacionCritico'] ?? 0) / $totalCount * 100, 1) : 0 }}%)</span></p>
             </div>
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-amber-500">
+            <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-amber-500">
                 <p class="text-xs text-gray-500 dark:text-gray-400">Rotación media (0.5 a 0.99)</p>
                 <p class="text-xl font-bold text-amber-600">{{ number_format($kpis['rotacionAmarillo'] ?? 0) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round(($kpis['rotacionAmarillo'] ?? 0) / $totalCount * 100, 1) : 0 }}%)</span></p>
             </div>
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-green-500">
+            <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-green-500">
                 <p class="text-xs text-gray-500 dark:text-gray-400">Rotación óptima (&ge;1)</p>
                 <p class="text-xl font-bold text-green-600">{{ number_format($kpis['rotacionOptimo'] ?? 0) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round(($kpis['rotacionOptimo'] ?? 0) / $totalCount * 100, 1) : 0 }}%)</span></p>
             </div>
@@ -505,15 +505,15 @@ new class extends Component
         {{-- Desglose Auditoría --}}
         <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">Tiempos de Auditoría</h3>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-blue-500">
+            <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-blue-500">
                 <p class="text-xs text-gray-500 dark:text-gray-400">Realizadas este mes</p>
                 <p class="text-xl font-bold text-blue-600">{{ number_format($kpis['auditoriasMes'] ?? 0) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round(($kpis['auditoriasMes'] ?? 0) / $totalCount * 100, 1) : 0 }}%)</span></p>
             </div>
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-orange-500">
+            <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-orange-500">
                 <p class="text-xs text-gray-500 dark:text-gray-400">Sin auditoría &gt; 3 meses (Trimestre)</p>
                 <p class="text-xl font-bold text-orange-600">{{ number_format($kpis['sinAuditoriaTrimestre'] ?? 0) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round(($kpis['sinAuditoriaTrimestre'] ?? 0) / $totalCount * 100, 1) : 0 }}%)</span></p>
             </div>
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-red-500">
+            <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-3 border-l-4 border-red-500">
                 <p class="text-xs text-gray-500 dark:text-gray-400">Sin auditoría &gt; 1 año</p>
                 <p class="text-xl font-bold text-red-600">{{ number_format($kpis['sinAuditoriaAnio'] ?? 0) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round(($kpis['sinAuditoriaAnio'] ?? 0) / $totalCount * 100, 1) : 0 }}%)</span></p>
             </div>

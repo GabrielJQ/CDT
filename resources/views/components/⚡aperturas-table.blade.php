@@ -311,19 +311,19 @@ new class extends Component
     </div>
 
     <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-blue-500">
+        <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-blue-500">
             <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">🏪 Tiendas mostradas</p>
             <p class="text-3xl font-bold text-gray-800 dark:text-gray-100">{{ number_format($filteredCount) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">de {{ number_format($totalCount) }} totales</span></p>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-green-500">
+        <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-green-500">
             <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">📅 Abiertas este mes</p>
             <p class="text-3xl font-bold text-green-600">{{ number_format($kpis['esteMes'] ?? 0) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ ($kpis['total'] ?? 0) > 0 ? round($kpis['esteMes'] / $kpis['total'] * 100, 1) : 0 }}%)</span></p>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-amber-500">
+        <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-amber-500">
             <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">📅 Abiertas este año</p>
             <p class="text-3xl font-bold text-amber-600">{{ number_format($kpis['esteAnio'] ?? 0) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ ($kpis['total'] ?? 0) > 0 ? round($kpis['esteAnio'] / $kpis['total'] * 100, 1) : 0 }}%)</span></p>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-gray-400">
+        <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-gray-400">
             <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">⚠️ Sin fecha de apertura</p>
             <p class="text-3xl font-bold text-gray-600 dark:text-gray-300">{{ number_format($kpis['sinFecha'] ?? 0) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ ($kpis['total'] ?? 0) > 0 ? round($kpis['sinFecha'] / $kpis['total'] * 100, 1) : 0 }}%)</span></p>
         </div>

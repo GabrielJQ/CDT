@@ -441,33 +441,33 @@ new class extends Component
 
     @if(!empty($stats))
         <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-blue-500">
+            <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-blue-500">
                 <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">🏪 Tiendas mostradas</p>
                 <p class="text-3xl font-bold text-gray-800 dark:text-gray-100">{{ number_format($filteredCount) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">de {{ number_format($totalCount) }} totales</span></p>
             </div>
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-red-500">
+            <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-red-500">
                 <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">🔴 Incompletos</p>
                 <p class="text-3xl font-bold text-red-600">{{ number_format($stats['incompletos']) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round($stats['incompletos'] / $totalCount * 100, 1) : 0 }}%)</span></p>
             </div>
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-orange-400">
+            <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-orange-400">
                 <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">💰 Sin capital</p>
                 <p class="text-3xl font-bold text-orange-600">{{ number_format($stats['sinCapital']) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round($stats['sinCapital'] / $totalCount * 100, 1) : 0 }}%)</span></p>
             </div>
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-purple-500">
+            <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-purple-500">
                 <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">🏛️ Comités incomp.</p>
                 <p class="text-3xl font-bold text-purple-600">{{ number_format($stats['comitesIncompletos'] ?? 0) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round(($stats['comitesIncompletos'] ?? 0) / $totalCount * 100, 1) : 0 }}%)</span></p>
             </div>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-indigo-500">
+            <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-indigo-500">
                 <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">🗳️ Asambleas mes</p>
                 <p class="text-3xl font-bold text-indigo-600">{{ number_format($stats['asambleasMes'] ?? 0) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round(($stats['asambleasMes'] ?? 0) / $totalCount * 100, 1) : 0 }}%)</span></p>
             </div>
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-pink-500">
+            <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-pink-500">
                 <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">💸 Faltante cap.</p>
                 <p class="text-3xl font-bold text-pink-600">{{ number_format($stats['tiendasFaltante'] ?? 0) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round(($stats['tiendasFaltante'] ?? 0) / $totalCount * 100, 1) : 0 }}% · ${{ number_format($stats['importeFaltante'] ?? 0, 2) }})</span></p>
             </div>
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-blue-500">
+            <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-blue-500">
                 <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">📄 Pagarés vencidos</p>
                 <p class="text-3xl font-bold text-blue-600">{{ number_format($stats['pagaresVencidos'] ?? 0) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round(($stats['pagaresVencidos'] ?? 0) / $totalCount * 100, 1) : 0 }}% · ${{ number_format($stats['importePagaresVencidos'] ?? 0, 2) }})</span></p>
             </div>

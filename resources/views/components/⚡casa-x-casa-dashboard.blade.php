@@ -165,19 +165,19 @@ new class extends Component
     </section>
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3 mb-6">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm px-3 lg:px-4 py-2 lg:py-3">
+        <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-lg shadow-sm px-3 lg:px-4 py-2 lg:py-3">
             <div class="text-lg lg:text-xl font-bold text-gray-800 dark:text-gray-100">{{ number_format($total) }}</div>
             <div class="text-xs text-gray-500 dark:text-gray-400">🏪 Total tiendas CxC</div>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm px-3 lg:px-4 py-2 lg:py-3">
+        <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-lg shadow-sm px-3 lg:px-4 py-2 lg:py-3">
             <div class="text-lg lg:text-xl font-bold text-green-600">{{ number_format($anaqueles['instalados']) }} <span class="text-xs font-normal text-gray-400">({{ $pct($anaqueles['instalados']) }}%)</span></div>
             <div class="text-xs text-green-500">📦 Anaqueles instalados</div>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm px-3 lg:px-4 py-2 lg:py-3">
+        <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-lg shadow-sm px-3 lg:px-4 py-2 lg:py-3">
             <div class="text-lg lg:text-xl font-bold text-blue-600">{{ number_format($aviso['con_aviso']) }} <span class="text-xs font-normal text-gray-400">({{ $pct($aviso['con_aviso']) }}%)</span></div>
             <div class="text-xs text-blue-500">✅ Con aviso de funcionamiento</div>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm px-3 lg:px-4 py-2 lg:py-3">
+        <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-lg shadow-sm px-3 lg:px-4 py-2 lg:py-3">
             <div class="text-lg lg:text-xl font-bold text-purple-600">{{ number_format($cruce['enTiendas']) }} <span class="text-xs font-normal text-gray-400">({{ $pct($cruce['enTiendas']) }}%)</span></div>
             <div class="text-xs text-purple-500">🔗 También en catálogo general</div>
         </div>

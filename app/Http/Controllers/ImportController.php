@@ -10,7 +10,6 @@ use App\Servicios\ServicioSanitizadorCsv;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Bus;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class ImportController extends Controller
@@ -19,17 +18,7 @@ class ImportController extends Controller
     {
         $periodos = app(ServicioPeriodosImportacion::class);
 
-        $cxcCount = 0;
-        try {
-            $cxcCount = DB::connection('pgsql_imports')
-                ->table('tiendas_casa_x_casa')
-                ->where('es_activo', true)
-                ->count();
-        } catch (\Throwable) {
-        }
-
         return view('imports', [
-            'cxcCount' => $cxcCount,
             'periodosActivos' => $periodos->activos(),
             'trimestres' => $periodos->trimestres(),
             'currentYear' => (int) now()->year,
@@ -111,12 +100,10 @@ class ImportController extends Controller
             ->dispatch();
 
         return redirect()->route('imports.index')->with('success', sprintf(
-            'Archivo subido: %s (%d filas, %d chunks). Periodo: %s. Batch #%s',
+            'Archivo subido: %s (%d filas). Periodo: %s.',
             $originalName,
             $stats['total_lines'] - 1,
-            count($chunkFiles),
             $periodo->nombre,
-            $batch->id,
         ));
     }
 

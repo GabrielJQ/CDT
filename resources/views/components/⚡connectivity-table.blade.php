@@ -293,7 +293,7 @@ new class extends Component
 
     @if(!empty($kpis))
         <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-blue-500">
+            <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-blue-500">
                 <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">🏪 Tiendas mostradas</p>
                 <p class="text-3xl font-bold text-gray-800 dark:text-gray-100">{{ number_format($filteredCount) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">de {{ number_format($totalCount) }} totales</span></p>
             </div>
@@ -301,7 +301,7 @@ new class extends Component
                 @php $k = $kpis[$key] ?? null; @endphp
                 @if($k)
                     @php $barYes = $kpis['_total'] > 0 ? round($k['yes'] / $kpis['_total'] * 100) : 0; @endphp
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-green-500">
+                    <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-green-500">
                         <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">{{ $k['icon'] }} {{ $k['label'] }}</p>
                         <p class="text-3xl font-bold text-gray-800 dark:text-gray-100">{{ number_format($k['yes']) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">/ {{ number_format($kpis['_total']) }} ({{ $barYes }}%)</span></p>
                         <div class="mt-2 flex gap-4 text-xs">

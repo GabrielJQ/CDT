@@ -297,13 +297,13 @@ new class extends Component
     </section>
 
     <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-blue-500">
+        <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-blue-500">
             <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">🏪 Total</p>
             <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ $totalCount }}</p>
         </div>
         @foreach(['OK' => 'border-green-500', 'SIN_COORDENADAS' => 'border-gray-400', 'FUERA_MEXICO' => 'border-red-500', 'FUERA_ESTADO' => 'border-orange-400'] as $status => $border)
             @php $g = $geoLabels[$status] ?? []; @endphp
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 {{ $border }}">
+            <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 {{ $border }}">
                 <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{{ $g['icon'] ?? '' }} {{ $g['label'] ?? $status }}</p>
                 <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ $stats[$status] ?? 0 }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round(($stats[$status] ?? 0) / $totalCount * 100, 1) : 0 }}%)</span></p>
             </div>

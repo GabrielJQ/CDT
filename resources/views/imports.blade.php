@@ -8,8 +8,8 @@
         <div class="page-hero-content">
             <div>
                 <p class="eyebrow">Importaciones</p>
-                <h1 class="page-heading">Carga masiva de informacion</h1>
-                <p class="page-subheading">Centraliza la actualizacion de tiendas regulares y Tiendas de Salud Casa por Casa. Valida el archivo correcto antes de iniciar la importacion.</p>
+                <h1 class="page-heading">Carga masiva</h1>
+                <p class="page-subheading">Sube archivos de Tiendas Bienestar y Tiendas de Salud. Solo elige el archivo correcto y subelo.</p>
             </div>
             <a href="{{ route('imports.index') }}" class="btn-secondary">Recargar estado</a>
         </div>
@@ -35,7 +35,7 @@
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 lg:p-6 mb-6">
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-base lg:text-lg font-bold text-gray-800 dark:text-gray-100">📤 Subir archivo CSV — Tiendas Regulares</h3>
-            <span class="text-xs text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">135 columnas</span>
+
         </div>
         <form action="{{ route('imports.upload') }}" method="POST" enctype="multipart/form-data" id="upload-form"
             class="space-y-4">
@@ -62,7 +62,7 @@
 
             <label class="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-200">
                 <input type="checkbox" name="reemplazar_periodo" value="1" class="mt-0.5" {{ old('reemplazar_periodo') ? 'checked' : '' }}>
-                <span>Reemplazar periodo si ya existe. Esto elimina los registros actuales de ese trimestre y carga el nuevo archivo; otros periodos no se afectan.</span>
+                <span>Reemplazar datos existentes del periodo.</span>
             </label>
 
             <label for="csv_file"
@@ -96,7 +96,7 @@
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 lg:p-6 mb-6">
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-base lg:text-lg font-bold text-gray-800 dark:text-gray-100">📤 Subir Excel — Salud Casa por Casa</h3>
-            <span class="text-xs text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">18 columnas</span>
+
         </div>
         <form action="{{ route('imports.upload-casa-x-casa') }}" method="POST" enctype="multipart/form-data" id="cxc-upload-form"
             class="space-y-4">
@@ -123,7 +123,7 @@
 
             <label class="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-200">
                 <input type="checkbox" name="reemplazar_periodo" value="1" class="mt-0.5" {{ old('reemplazar_periodo') ? 'checked' : '' }}>
-                <span>Reemplazar periodo si ya existe. Esto elimina los registros actuales de ese trimestre y carga el nuevo archivo; otros periodos no se afectan.</span>
+                <span>Reemplazar datos existentes del periodo.</span>
             </label>
 
             <label for="xlsx_file"
@@ -132,7 +132,7 @@
                     <div class="text-3xl mb-2">📊</div>
                     <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Haz clic para seleccionar archivo Excel
                     </p>
-                    <p class="text-xs text-gray-400 mt-1">Directorio Nacional Tiendas Salud Casa por Casa</p>
+                    <p class="text-xs text-gray-400 mt-1">Archivo de Tiendas de Salud Casa por Casa</p>
                 </div>
                 <input type="file" name="xlsx_file" id="xlsx_file" accept=".xlsx,.xls" required class="hidden"
                     onchange="document.getElementById('cxc-submit-btn').disabled = false; document.getElementById('cxc-file-name').textContent = this.files[0]?.name;">
@@ -154,17 +154,6 @@
     </div>
     </div>
 
-
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4">
-            <div class="text-lg font-bold text-gray-800 dark:text-gray-100">{{ number_format($cxcCount) }}</div>
-            <div class="text-xs text-gray-500 dark:text-gray-400">🏪 Tiendas de Salud registradas</div>
-        </div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 flex items-center justify-center">
-            <a href="{{ route('imports.index') }}" class="btn-filter">🔄 Recargar estado</a>
-        </div>
-    </div>
 
 </div>
 @endsection

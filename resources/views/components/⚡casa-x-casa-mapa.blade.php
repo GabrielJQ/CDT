@@ -92,23 +92,23 @@ new class extends Component
     </section>
 
     <div class="grid grid-cols-1 gap-3 mb-6 md:grid-cols-5">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-blue-500">
+        <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-blue-500">
             <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">🏪 Total</p>
             <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ number_format($totalCount) }}</p>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-green-500">
+        <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-green-500">
             <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">🟢 Instalados</p>
             <p class="text-2xl font-bold text-green-600">{{ number_format($anaqueles['instalados'] ?? 0) }} <span class="text-sm font-normal text-gray-400">({{ $pct($anaqueles['instalados'] ?? 0) }}%)</span></p>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-amber-500">
+        <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-amber-500">
             <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">🟠 Pendientes</p>
             <p class="text-2xl font-bold text-amber-600">{{ number_format($anaqueles['pendientes'] ?? 0) }} <span class="text-sm font-normal text-gray-400">({{ $pct($anaqueles['pendientes'] ?? 0) }}%)</span></p>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-green-500">
+        <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-green-500">
             <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">📍 Con coordenadas</p>
             <p class="text-2xl font-bold text-green-600">{{ number_format($conCoordenadas) }} <span class="text-sm font-normal text-gray-400">({{ $pct($conCoordenadas) }}%)</span></p>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-gray-400">
+        <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-4 border-l-4 border-gray-400">
             <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">❌ Sin coordenadas</p>
             <p class="text-2xl font-bold text-gray-500">{{ number_format($sinCoordenadas) }} <span class="text-sm font-normal text-gray-400">({{ $pct($sinCoordenadas) }}%)</span></p>
         </div>

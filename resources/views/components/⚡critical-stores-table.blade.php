@@ -372,19 +372,19 @@ new class extends Component
 
     @if(!empty($summary))
         <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-red-500">
+            <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-red-500">
                 <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">🔴 Críticas</p>
                 <p class="text-3xl font-bold text-red-600">{{ number_format($summary['rojo']) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round($summary['rojo'] / $totalCount * 100) : 0 }}%)</span></p>
             </div>
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-yellow-500">
+            <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-yellow-500">
                 <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">🟡 Monitoreo</p>
                 <p class="text-3xl font-bold text-yellow-600">{{ number_format($summary['amarillo']) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round($summary['amarillo'] / $totalCount * 100) : 0 }}%)</span></p>
             </div>
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-green-500">
+            <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-green-500">
                 <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">🟢 Normales</p>
                 <p class="text-3xl font-bold text-green-600">{{ number_format($summary['verde']) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round($summary['verde'] / $totalCount * 100) : 0 }}%)</span></p>
             </div>
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-blue-500">
+            <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-blue-500">
                 <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">🏪 Total tiendas</p>
                 <p class="text-3xl font-bold text-blue-600">{{ number_format($totalCount) }}</p>
                 <p class="text-sm font-normal text-gray-400 dark:text-gray-500">{{ $filteredCount !== $totalCount ? 'Filtradas: '.number_format($filteredCount) : 'Sin filtros' }}</p>

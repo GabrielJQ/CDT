@@ -112,12 +112,23 @@ body {
     }
 
     .kpi-card {
-        @apply rounded-2xl border border-black/5 bg-white p-4 shadow-sm transition duration-200 dark:border-white/10 dark:bg-gray-800;
+        @apply relative overflow-hidden rounded-2xl border border-black/5 bg-white p-4 shadow-sm transition duration-200 dark:border-white/10 dark:bg-gray-800;
     }
 
     .kpi-card:hover {
         box-shadow: var(--soft-shadow-hover);
         transform: translateY(-1px);
+    }
+
+    .kpi-card::before,
+    .kpi-gold-accent::before {
+        content: '';
+        @apply absolute inset-x-0 top-0 h-0.5 opacity-80;
+        background: linear-gradient(90deg, var(--gob-oro), rgba(152, 130, 86, 0.15));
+    }
+
+    .kpi-gold-accent {
+        @apply relative overflow-hidden;
     }
 
     .kpi-label {
