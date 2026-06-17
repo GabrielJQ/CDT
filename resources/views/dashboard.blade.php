@@ -26,6 +26,10 @@ document.addEventListener('DOMContentLoaded', function () {
         window.__dashCharts = {};
     }
 
+    function pct(value, total) {
+        return total > 0 ? Math.round(value / total * 100) : 0;
+    }
+
     function initCharts() {
         if (typeof Chart === 'undefined') {
             window.addEventListener('chartjs-ready', initCharts);
@@ -45,125 +49,274 @@ document.addEventListener('DOMContentLoaded', function () {
         var directorio = data.directorioStats || {};
         var auditoria = data.auditoriaKpis || {};
 
+        var isDark = document.documentElement.classList.contains('dark');
+        var gridColor = isDark ? 'rgba(255,255,255,0.06)' : '#e5e7eb';
+        var tickColor = isDark ? 'rgba(255,255,255,0.5)' : '#000000';
+        var textColor = isDark ? '#ffffff' : '#000000';
+        function labelColor() { return textColor; }
         Chart.defaults.font.family = "'Montserrat', 'Instrument Sans', system-ui, sans-serif";
-        Chart.defaults.color = '#9ca3af';
+        Chart.defaults.color = tickColor;
         Chart.defaults.plugins.legend.labels.boxWidth = 12;
         Chart.defaults.plugins.legend.labels.padding = 8;
 
         var chartOpts = {
             responsive: true,
             maintainAspectRatio: true,
-            animation: false,
+            animation: { duration: 500, easing: 'easeOutQuart' },
             plugins: {
-                legend: { display: true, position: 'bottom', labels: { font: { size: 10 } } },
-                tooltip: { enabled: true, bodyFont: { size: 11 }, titleFont: { size: 11 } },
+                legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, usePointStyle: true } },
+                tooltip: {
+                    enabled: true,
+                    bodyFont: { size: 11 },
+                    titleFont: { size: 11 },
+                    backgroundColor: isDark ? 'rgba(30,41,59,0.95)' : 'rgba(0,0,0,0.8)',
+                    padding: 8,
+                    cornerRadius: 6,
+                },
+                datalabels: { display: false },
             },
         };
 
-        // 1. Connectivity — stacked bar (Sí/No for T, C, I)
+        // 1. Conectividad — horizontal stacked bar 100% (Sí / No)
         var connTotal = connKpis._total || total;
-        var connSi = [], connNo = [];
-        ['TELEFONIA', 'Señal de celular', 'INTERNET'].forEach(function (key) {
-            var k = connKpis[key] || { yes: 0 };
-            connSi.push(k.yes);
-            connNo.push(connTotal - k.yes);
-        });
+        var connKeys = ['TELEFONIA', 'Señal de celular', 'INTERNET'];
+        var connLabels = ['Teléfono fijo', 'Señal Cel.', 'Internet'];
+        var connSi = connKeys.map(function (k) { return connKpis[k] ? connKpis[k].yes : 0; });
+        var connNo = connKeys.map(function (k) { return connTotal - (connKpis[k] ? connKpis[k].yes : 0); });
+
+        var connMax = connTotal > 0 ? connTotal : 1;
 
         window.__dashCharts.connectivity = new Chart(document.getElementById('chart-connectivity'), {
             type: 'bar',
             data: {
-                labels: ['Teléfono fijo', 'Señal Cel.', 'Internet'],
+                labels: connLabels,
                 datasets: [
-                    { label: 'Sí', data: connSi, backgroundColor: '#22c55e', borderRadius: 3 },
-                    { label: 'No', data: connNo, backgroundColor: '#fca5a5', borderRadius: 3 },
+                    { label: 'Sí', data: connSi, backgroundColor: '#22c55e', borderRadius: { topLeft: 3, bottomLeft: 3 } },
+                    { label: 'No', data: connNo, backgroundColor: '#fca5a5', borderRadius: { topRight: 3, bottomRight: 3 } },
                 ],
             },
             options: {
                 ...chartOpts,
+                indexAxis: 'y',
                 scales: {
-                    x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } },
-                    y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 9 } } },
+                    x: { stacked: true, max: connMax, grid: { color: gridColor }, ticks: { font: { size: 9 } } },
+                    y: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } },
+                },
+                plugins: {
+                    ...chartOpts.plugins,
+                    datalabels: {
+                        display: function (ctx) {
+                            var v = ctx.dataset.data[ctx.dataIndex];
+                            return v > 0 && (v / connMax) > 0.06;
+                        },
+                        formatter: function (v) { return pct(v, connMax) + '%'; },
+                        color: labelColor,
+                        font: { weight: 'bold', size: 10 },
+                        anchor: 'center',
+                        align: 'center',
+                    },
                 },
             },
         });
 
-        // 2. Critical stores — doughnut (R/A/V)
+        // 2. Criticidad — horizontal stacked bar 100% (R/A/V)
+        var critRojo = critical.rojo || 0;
+        var critAmarillo = critical.amarillo || 0;
+        var critVerde = critical.verde || 0;
+        var critTotal = critRojo + critAmarillo + critVerde;
+        var critMax = critTotal > 0 ? critTotal : 1;
+
         window.__dashCharts.critical = new Chart(document.getElementById('chart-critical'), {
-            type: 'doughnut',
+            type: 'bar',
             data: {
-                labels: ['Críticas (4+ factores)', 'Monitoreo (2-3 factores)', 'Normales (0-1 factores)'],
-                datasets: [{
-                    data: [critical.rojo || 0, critical.amarillo || 0, critical.verde || 0],
-                    backgroundColor: ['#ef4444', '#eab308', '#22c55e'],
-                    borderWidth: 2,
-                    borderColor: '#ffffff',
-                }],
+                labels: ['Criticidad'],
+                datasets: [
+                    { label: 'Críticas (4+)', data: [critRojo], backgroundColor: '#ef4444', borderRadius: { topLeft: 3, bottomLeft: 3 } },
+                    { label: 'Monitoreo (2-3)', data: [critAmarillo], backgroundColor: '#eab308' },
+                    { label: 'Normales (0-1)', data: [critVerde], backgroundColor: '#22c55e', borderRadius: { topRight: 3, bottomRight: 3 } },
+                ],
             },
-            options: { ...chartOpts, cutout: '55%', plugins: { ...chartOpts.plugins, legend: { display: true, position: 'bottom', labels: { font: { size: 10 } } } } },
+            options: {
+                ...chartOpts,
+                indexAxis: 'y',
+                scales: {
+                    x: { stacked: true, max: critMax, grid: { color: gridColor }, ticks: { font: { size: 9 }, display: false } },
+                    y: { stacked: true, grid: { display: false }, ticks: { display: false } },
+                },
+                plugins: {
+                    ...chartOpts.plugins,
+                    legend: { ...chartOpts.plugins.legend, position: 'bottom' },
+                    datalabels: {
+                        display: function (ctx) {
+                            var v = ctx.dataset.data[ctx.dataIndex];
+                            return v > 0 && (v / critMax) > 0.05;
+                        },
+                        formatter: function (v) { return pct(v, critMax) + '%'; },
+                        color: labelColor,
+                        font: { weight: 'bold', size: 12 },
+                        anchor: 'center',
+                        align: 'center',
+                    },
+                },
+            },
         });
 
-        // 3. Mapa — doughnut (estatus geográfico)
+        // 3. Mapa — horizontal stacked bar 100% (estatus geográfico)
+        var geoOK = geo.OK || 0;
+        var geoSinCoord = geo.SIN_COORDENADAS || geo.sinCoordenadas || 0;
+        var geoFueraMx = geo.FUERA_MEXICO || 0;
+        var geoFueraEdo = geo.FUERA_ESTADO || 0;
+        var geoTotal = geoOK + geoSinCoord + geoFueraMx + geoFueraEdo;
+        var geoMax = geoTotal > 0 ? geoTotal : 1;
+
         window.__dashCharts.mapa = new Chart(document.getElementById('chart-mapa'), {
-            type: 'doughnut',
+            type: 'bar',
             data: {
-                labels: ['Válidas', 'Sin coordenadas', 'Fuera de México', 'Fuera de territorio'],
-                datasets: [{
-                    data: [geo.OK || 0, geo.SIN_COORDENADAS || geo.sinCoordenadas || 0, geo.FUERA_MEXICO || 0, geo.FUERA_ESTADO || 0],
-                    backgroundColor: ['#10b981', '#9ca3af', '#ef4444', '#f59e0b'],
-                    borderWidth: 2,
-                    borderColor: '#ffffff',
-                }],
+                labels: ['Georreferencia'],
+                datasets: [
+                    { label: 'Válidas', data: [geoOK], backgroundColor: '#22c55e', borderRadius: { topLeft: 3, bottomLeft: 3 } },
+                    { label: 'Sin coordenadas', data: [geoSinCoord], backgroundColor: '#9ca3af' },
+                    { label: 'Fuera de México', data: [geoFueraMx], backgroundColor: '#ef4444' },
+                    { label: 'Fuera de territorio', data: [geoFueraEdo], backgroundColor: '#f59e0b', borderRadius: { topRight: 3, bottomRight: 3 } },
+                ],
             },
-            options: { ...chartOpts, cutout: '55%', plugins: { ...chartOpts.plugins, legend: { display: true, position: 'bottom', labels: { font: { size: 10 } } } } },
+            options: {
+                ...chartOpts,
+                indexAxis: 'y',
+                scales: {
+                    x: { stacked: true, max: geoMax, grid: { color: gridColor }, ticks: { font: { size: 9 }, display: false } },
+                    y: { stacked: true, grid: { display: false }, ticks: { display: false } },
+                },
+                plugins: {
+                    ...chartOpts.plugins,
+                    datalabels: {
+                        display: function (ctx) {
+                            var v = ctx.dataset.data[ctx.dataIndex];
+                            return v > 0 && (v / geoMax) > 0.06;
+                        },
+                        formatter: function (v) { return pct(v, geoMax) + '%'; },
+                        color: labelColor,
+                        font: { weight: 'bold', size: 11 },
+                        anchor: 'center',
+                        align: 'center',
+                    },
+                },
+            },
         });
 
-        // 4. Aperturas — bar (12 months)
+        // 4. Aperturas — line with area fill
         if (aperturas && aperturas.length > 0) {
+            var aptLabels = aperturas.map(function (m) { return m.label; });
+            var aptData = aperturas.map(function (m) { return m.count; });
+
             window.__dashCharts.aperturas = new Chart(document.getElementById('chart-aperturas'), {
-                type: 'bar',
+                type: 'line',
                 data: {
-                    labels: aperturas.map(function (m) { return m.label; }),
+                    labels: aptLabels,
                     datasets: [{
                         label: 'Aperturas',
-                        data: aperturas.map(function (m) { return m.count; }),
-                        backgroundColor: '#a855f7',
-                        borderRadius: 3,
+                        data: aptData,
+                        borderColor: '#a855f7',
+                        backgroundColor: 'rgba(168, 85, 247, 0.10)',
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: '#a855f7',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
                     }],
                 },
                 options: {
                     ...chartOpts,
                     scales: {
                         x: { grid: { display: false }, ticks: { font: { size: 9 } } },
-                        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 9 }, stepSize: 1 } },
+                        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { font: { size: 9 }, stepSize: 1 } },
+                    },
+                    plugins: {
+                        ...chartOpts.plugins,
+                        datalabels: {
+                            display: function (ctx) { return ctx.dataset.data[ctx.dataIndex] > 0; },
+                            align: 'top',
+                            anchor: 'end',
+                            offset: 4,
+                            color: '#a855f7',
+                            font: { weight: 'bold', size: 10 },
+                            formatter: function (v) { return v; },
+                        },
                     },
                 },
             });
         }
 
-        // 5. Directorio — doughnut (Completos/Incompletos)
+        // 5. Directorio — ring gauge con % al centro
+        var dirCompletos = directorio.completos || 0;
+        var dirIncompletos = directorio.incompletos || 0;
+        var dirTotal = dirCompletos + dirIncompletos;
+        var dirPct = dirTotal > 0 ? Math.round(dirCompletos / dirTotal * 100) : 0;
+
+        var centerTextPlugin = {
+            id: 'centerText',
+            afterDraw: function (chart) {
+                var opts = chart.config.options.plugins.centerText;
+                if (!opts || !('text' in opts)) return;
+                var ctx = chart.ctx;
+                var area = chart.chartArea;
+                var cx = (area.left + area.right) / 2;
+                var cy = (area.top + area.bottom) / 2;
+                ctx.save();
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = opts.font || 'bold 24px Montserrat, sans-serif';
+                ctx.fillStyle = opts.color || '#9ca3af';
+                ctx.fillText(opts.text, cx, cy);
+                ctx.restore();
+            },
+        };
+
         window.__dashCharts.directorio = new Chart(document.getElementById('chart-directorio'), {
             type: 'doughnut',
             data: {
                 labels: ['Completos', 'Incompletos'],
                 datasets: [{
-                    data: [directorio.completos || 0, directorio.incompletos || 0],
+                    data: [dirCompletos, dirIncompletos],
                     backgroundColor: ['#22c55e', '#f59e0b'],
                     borderWidth: 2,
-                    borderColor: '#ffffff',
+                    borderColor: isDark ? '#1f2937' : '#ffffff',
                 }],
             },
-            options: { ...chartOpts, cutout: '55%', plugins: { ...chartOpts.plugins, legend: { display: true, position: 'bottom', labels: { font: { size: 10 } } } } },
+            options: {
+                ...chartOpts,
+                cutout: '70%',
+                plugins: {
+                    ...chartOpts.plugins,
+                    centerText: {
+                        text: dirPct + '%',
+                        font: 'bold 28px Montserrat, sans-serif',
+                        color: textColor,
+                    },
+                },
+            },
+            plugins: [centerTextPlugin],
         });
 
-        // 6. Auditoría — horizontal bar (4 metrics)
+        // 6. Auditoría — horizontal bar ordenado desc, etiquetas al final
+        var auditItems = [
+            { label: 'Comités vencidos', value: auditoria.comitesVencidos || 0, color: isDark ? '#ef4444' : '#691C32' },
+            { label: 'Auditorías > $500 mil', value: auditoria.auditoriaAlta || 0, color: isDark ? '#f59e0b' : '#988256' },
+            { label: 'Rotación baja (<0.5)', value: auditoria.rotacionBaja || 0, color: isDark ? '#22c55e' : '#13322B' },
+            { label: 'Aud. pendiente (>3 meses)', value: auditoria.auditoriaPendiente || 0, color: isDark ? '#9ca3af' : '#4D4D4D' },
+        ];
+        auditItems.sort(function (a, b) { return b.value - a.value; });
+
         window.__dashCharts.auditoria = new Chart(document.getElementById('chart-auditoria'), {
             type: 'bar',
             data: {
-                labels: ['Comités vencidos', 'Auditorías > $500 mil', 'Rotación baja (<0.5)', 'Aud. pendiente (>3 meses)'],
+                labels: auditItems.map(function (i) { return i.label; }),
                 datasets: [{
                     label: 'Tiendas',
-                    data: [auditoria.comitesVencidos || 0, auditoria.auditoriaAlta || 0, auditoria.rotacionBaja || 0, auditoria.auditoriaPendiente || 0],
-                    backgroundColor: ['#ef4444', '#f97316', '#f59e0b', '#6b7280'],
+                    data: auditItems.map(function (i) { return i.value; }),
+                    backgroundColor: auditItems.map(function (i) { return i.color; }),
                     borderRadius: 3,
                 }],
             },
@@ -171,8 +324,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 ...chartOpts,
                 indexAxis: 'y',
                 scales: {
-                    x: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 9 } } },
+                    x: { beginAtZero: true, grid: { color: gridColor }, ticks: { font: { size: 9 } } },
                     y: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                },
+                plugins: {
+                    ...chartOpts.plugins,
+                    legend: { display: false },
+                    datalabels: {
+                        display: function (ctx) { return ctx.dataset.data[ctx.dataIndex] > 0; },
+                        anchor: 'end',
+                        align: 'end',
+                        offset: 4,
+                        color: textColor,
+                        font: { weight: 'bold', size: 10 },
+                        formatter: function (v) { return v; },
+                    },
                 },
             },
         });
@@ -183,6 +349,13 @@ document.addEventListener('DOMContentLoaded', function () {
     Livewire.on('dashboard-rendered', function () {
         initCharts();
     });
+
+    var temaBtn = document.getElementById('tema-toggle');
+    if (temaBtn) {
+        temaBtn.addEventListener('click', function () {
+            setTimeout(initCharts, 50);
+        });
+    }
 });
 </script>
 @endpush
