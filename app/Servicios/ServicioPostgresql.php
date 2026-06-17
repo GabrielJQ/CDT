@@ -339,16 +339,17 @@ class ServicioPostgresql
         $query = $this->conexion()->table('tiendas');
         $this->aplicarPeriodoActivo($query);
         $this->aplicarFiltroRegional($query, $regionFilters);
-        $this->aplicarFiltrosMapa($query, array_diff_key($filters, ['estado_geo' => true]));
+        $this->aplicarFiltrosMapa($query, $filters);
         $this->aplicarFiltroTiendaSalud($query, $filters['tienda_salud'] ?? '');
 
-        $rows = $this->selectMapaColumns($query, $columns)
+        $rows = $this->selectMapaColumns($query, $columns, $filters['tienda_salud'] ?? null)
             ->orderBy('id')
+            ->limit(20000)
             ->get()
             ->map(fn ($row) => $this->rowToGeoStore($row, $columns))
             ->all();
 
-        return $this->filtrarGeoCalculado($rows, $filters['estado_geo'] ?? '');
+        return $rows;
     }
 
     public function obtenerMapaViewport(array $regionFilters, array $filters, array $bounds, array $columns, int $limit = 3000): array
@@ -356,24 +357,73 @@ class ServicioPostgresql
         $query = $this->conexion()->table('tiendas');
         $this->aplicarPeriodoActivo($query);
         $this->aplicarFiltroRegional($query, $regionFilters);
-        $this->aplicarFiltrosMapa($query, array_diff_key($filters, ['estado_geo' => true]));
+        $this->aplicarFiltrosMapa($query, $filters);
         $this->aplicarFiltroTiendaSalud($query, $filters['tienda_salud'] ?? '');
         if (! in_array($filters['estado_geo'] ?? '', ['FUERA_MEXICO', 'INCIDENCIAS'], true)) {
             $this->aplicarBounds($query, $bounds, 'Latitud', 'Longitud');
         }
 
-        $rows = $this->selectMapaColumns($query, $columns)
+        $rows = $this->selectMapaColumns($query, $columns, $filters['tienda_salud'] ?? null)
             ->whereNotNull('Latitud')
             ->whereNotNull('Longitud')
             ->where('Latitud', '!=', '0')
             ->where('Longitud', '!=', '0')
-            ->orderBy('id')
             ->limit($limit)
             ->get()
             ->map(fn ($row) => $this->rowToGeoStore($row, $columns))
             ->all();
 
-        return $this->filtrarGeoCalculado($rows, $filters['estado_geo'] ?? '');
+        return $rows;
+    }
+
+    public function contarMapaFiltrado(array $regionFilters, array $filters): int
+    {
+        $query = $this->conexion()->table('tiendas');
+        $this->aplicarPeriodoActivo($query);
+        $this->aplicarFiltroRegional($query, $regionFilters);
+        $this->aplicarFiltrosMapa($query, $filters);
+        $this->aplicarFiltroTiendaSalud($query, $filters['tienda_salud'] ?? '');
+
+        return $query->count();
+    }
+
+    public function obtenerIncidenciasMapaPaginadas(array $regionFilters, array $filters, array $columns, ?string $sort = null, string $direction = 'asc', int $page = 1, int $perPage = 50): array
+    {
+        $filters['sort'] = $sort;
+        $filters['direction'] = $direction;
+
+        $countQuery = $this->conexion()->table('tiendas');
+        $this->aplicarPeriodoActivo($countQuery);
+        $this->aplicarFiltroRegional($countQuery, $regionFilters);
+        $this->aplicarFiltrosMapa($countQuery, $filters);
+        $this->aplicarFiltroTiendaSalud($countQuery, $filters['tienda_salud'] ?? '');
+        $countQuery->whereNotIn('estado_geo', ['OK']);
+        $total = $countQuery->count();
+
+        $dataQuery = $this->conexion()->table('tiendas');
+        $this->aplicarPeriodoActivo($dataQuery);
+        $this->aplicarFiltroRegional($dataQuery, $regionFilters);
+        $this->aplicarFiltrosMapa($dataQuery, $filters);
+        $this->aplicarFiltroTiendaSalud($dataQuery, $filters['tienda_salud'] ?? '');
+        $dataQuery->whereNotIn('estado_geo', ['OK']);
+
+        $sortable = ['Nombre_Almacen', 'No_Tienda_Actual', 'Municipio', 'Estado'];
+        $direction = strtolower($direction) === 'desc' ? 'desc' : 'asc';
+        if ($sort && in_array($sort, $sortable, true)) {
+            $dataQuery->orderBy($sort, $direction);
+        } else {
+            $dataQuery->orderBy('id');
+        }
+
+        $offset = max(0, ($page - 1) * $perPage);
+        $rows = $this->selectMapaColumns($dataQuery, $columns, $filters['tienda_salud'] ?? null)
+            ->limit($perPage)
+            ->offset($offset)
+            ->get()
+            ->map(fn ($row) => $this->rowToGeoStore($row, $columns))
+            ->all();
+
+        return ['items' => $rows, 'total' => $total];
     }
 
     public function obtenerDashboardMetricas(array $regionFilters): array
@@ -427,7 +477,7 @@ class ServicioPostgresql
 
         $this->aplicarFiltroTiendaSalud($query, $filters['tienda_salud'] ?? '');
 
-        foreach ($this->addTiendaSaludFlag($query->select($columns))->orderBy('id')->cursor() as $row) {
+        foreach ($this->addTiendaSaludFlag($query->select($columns), $filters['tienda_salud'] ?? null)->orderBy('id')->cursor() as $row) {
             yield match ($module) {
                 'criticidad' => $this->rowToCriticalStore($row, $columns),
                 'auditoria' => $this->rowToAuditStore($row, $columns),
@@ -1316,7 +1366,31 @@ class ServicioPostgresql
     private function rowToGeoStore(object $row, array $columns): array
     {
         $store = $this->rowToStore($row, $columns);
-        $store['_geo'] = $this->geo()->evaluarGeo($store);
+
+        $dbStatus = strtoupper(trim((string) ($row->estado_geo ?? '')));
+        $validStatuses = ['OK', 'SIN_COORDENADAS', 'FUERA_MEXICO', 'FUERA_ESTADO'];
+
+        if ($dbStatus !== '' && in_array($dbStatus, $validStatuses, true)) {
+            $lat = $this->parseRawLatLon($store['Latitud'] ?? '');
+            $lon = $this->parseRawLatLon($store['Longitud'] ?? '');
+
+            $messages = [
+                'OK' => 'Coordenadas válidas.',
+                'SIN_COORDENADAS' => 'La tienda no tiene coordenadas registradas.',
+                'FUERA_MEXICO' => 'Coordenadas ('.($store['Latitud'] ?? '').' / '.($store['Longitud'] ?? '').') están fuera del territorio mexicano.',
+                'FUERA_ESTADO' => 'Coordenadas ('.($store['Latitud'] ?? '').' / '.($store['Longitud'] ?? '').') no corresponden al estado registrado.',
+            ];
+
+            $store['_geo'] = [
+                'status' => $dbStatus,
+                'lat' => $lat,
+                'lon' => $lon,
+                'mensaje' => $messages[$dbStatus],
+            ];
+        } else {
+            $store['_geo'] = $this->geo()->evaluarGeo($store);
+        }
+
         $store['_cxc'] = [
             'esTiendaBienestar' => (bool) ($row->es_tienda_salud_bienestar ?? false),
             'esTiendaSaludBienestar' => (bool) ($row->es_tienda_salud_bienestar ?? false),
@@ -1325,15 +1399,35 @@ class ServicioPostgresql
         return $store;
     }
 
-    private function selectMapaColumns(Builder $query, array $columns): Builder
+    private function parseRawLatLon(string $value): ?float
+    {
+        $value = trim($value);
+
+        if ($value === '' || $value === '0') {
+            return null;
+        }
+
+        return (float) $value;
+    }
+
+    private function selectMapaColumns(Builder $query, array $columns, ?string $tiendaSaludFilter = null): Builder
     {
         return $this->addTiendaSaludFlag(
             $query->select(array_values(array_unique(array_merge($columns, ['estado_geo'])))),
+            $tiendaSaludFilter,
         );
     }
 
-    private function addTiendaSaludFlag(Builder $query): Builder
+    private function addTiendaSaludFlag(Builder $query, ?string $tiendaSaludFilter = null): Builder
     {
+        if ($tiendaSaludFilter === 'salud') {
+            return $query->selectRaw('true as es_tienda_salud_bienestar');
+        }
+
+        if ($tiendaSaludFilter === 'regular') {
+            return $query->selectRaw('false as es_tienda_salud_bienestar');
+        }
+
         return $query->selectRaw('EXISTS (
             SELECT 1
             FROM tiendas_casa_x_casa cxc
@@ -1365,19 +1459,20 @@ class ServicioPostgresql
             return;
         }
 
-        $subquery = 'EXISTS (
-            SELECT 1 FROM tiendas_casa_x_casa cxc
-            WHERE cxc.no_tienda::text = tiendas."No_Tienda_Actual"::text
-              AND cxc.almacen = tiendas."Nombre_Almacen"
-              AND cxc.estado = tiendas."Estado"
-              AND cxc.municipio = tiendas."Municipio"
-              AND cxc.es_activo = true
-        )';
-
         if ($filter === 'salud') {
-            $query->whereRaw($subquery);
+            $query->whereRaw(
+                '("No_Tienda_Actual"::text, "Nombre_Almacen", "Estado", "Municipio") IN ('
+                .'SELECT cxc.no_tienda::text, cxc.almacen, cxc.estado, cxc.municipio '
+                .'FROM tiendas_casa_x_casa cxc WHERE cxc.es_activo = true)'
+            );
         } elseif ($filter === 'regular') {
-            $query->whereRaw('NOT ('.$subquery.')');
+            $query->whereRaw(
+                'NOT EXISTS (SELECT 1 FROM tiendas_casa_x_casa cxc WHERE cxc.es_activo = true '
+                .'AND cxc.no_tienda::text = tiendas."No_Tienda_Actual"::text '
+                .'AND cxc.almacen = tiendas."Nombre_Almacen" '
+                .'AND cxc.estado = tiendas."Estado" '
+                .'AND cxc.municipio = tiendas."Municipio")'
+            );
         }
     }
 

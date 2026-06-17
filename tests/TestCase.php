@@ -78,6 +78,16 @@ abstract class TestCase extends BaseTestCase
                     return array_slice($this->obtenerMapa($regionFilters, $filters, $columns), 0, $limit);
                 }
 
+                public function contarMapaFiltrado(array $regionFilters, array $filters): int
+                {
+                    return count($this->obtenerMapa($regionFilters, $filters, []));
+                }
+
+                public function obtenerIncidenciasMapaPaginadas(array $regionFilters, array $filters, array $columns, ?string $sort = null, string $direction = 'asc', int $page = 1, int $perPage = 50): array
+                {
+                    return ['items' => [], 'total' => 0];
+                }
+
                 public function obtenerDashboardMetricas(array $regionFilters): array
                 {
                     $rows = $this->filterRows($this->rows(), $regionFilters);

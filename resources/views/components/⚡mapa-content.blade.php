@@ -2,6 +2,7 @@
 
 use App\Servicios\ServicioGeo;
 use App\Servicios\ServicioPostgresql;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Component;
 
 new class extends Component
@@ -62,18 +63,18 @@ new class extends Component
         ];
     }
 
-    private function stores(): array
+    private function allStoresCached(): array
     {
-        $postgres = app(ServicioPostgresql::class);
+        $regionFilters = $this->regionFilters();
+        $cacheKey = 'mapa_all_'.md5(serialize($regionFilters).'_'.$this->tiendaSalud);
 
-        return $postgres->obtenerMapa($this->regionFilters(), ['tienda_salud' => $this->tiendaSalud], self::COLUMNS);
-    }
-
-    private function filteredStores(): array
-    {
-        $postgres = app(ServicioPostgresql::class);
-
-        return $postgres->obtenerMapa($this->regionFilters(), $this->filters(), self::COLUMNS);
+        return Cache::remember($cacheKey, 120, function () use ($regionFilters) {
+            return app(ServicioPostgresql::class)->obtenerMapa(
+                $regionFilters,
+                ['tienda_salud' => $this->tiendaSalud],
+                self::COLUMNS,
+            );
+        });
     }
 
     public function updated($property): void
@@ -83,7 +84,11 @@ new class extends Component
         }
 
         if (in_array($property, ['almacen', 'estado_geo', 'tiendaSalud'], true)) {
-            $this->dispatch('mapa-filters-updated');
+            $this->dispatch('mapa-filters-updated',
+                tienda_salud: $this->tiendaSalud,
+                estado_geo: $this->estado_geo,
+                almacen: $this->almacen,
+            );
         }
     }
 
@@ -196,28 +201,32 @@ new class extends Component
         return '<strong class="text-gray-900 dark:text-gray-100">'.$name.'</strong>';
     }
 
-    private function firstNonEmptyValue(array $stores, string $key): string
-    {
-        foreach ($stores as $store) {
-            $value = trim((string) ($store[$key] ?? ''));
-            if ($value !== '') {
-                return $value;
-            }
-        }
-
-        return '';
-    }
-
     private function geoMismatchLabel(array $stores, array $regionFilter): string
     {
         if (! empty($regionFilter['uo'])) {
-            $uoName = $this->firstNonEmptyValue($stores, 'Nombre_UniOpe');
+            $uoName = '';
+            foreach ($stores as $store) {
+                $value = trim((string) ($store['Nombre_UniOpe'] ?? ''));
+                if ($value !== '') {
+                    $uoName = $value;
+
+                    break;
+                }
+            }
 
             return $uoName !== '' ? 'No corresponde a ' . $uoName : 'No corresponde a la UO filtrada';
         }
 
         if (! empty($regionFilter['region'])) {
-            $regionName = $this->firstNonEmptyValue($stores, 'Nombre_Regional');
+            $regionName = '';
+            foreach ($stores as $store) {
+                $value = trim((string) ($store['Nombre_Regional'] ?? ''));
+                if ($value !== '') {
+                    $regionName = $value;
+
+                    break;
+                }
+            }
 
             return $regionName !== '' ? 'No corresponde a ' . $regionName : 'No corresponde a la region filtrada';
         }
@@ -227,11 +236,9 @@ new class extends Component
 
     public function computed(): array
     {
-        $allStores = $this->stores();
-        $filtered = $this->filteredStores();
+        $allStores = $this->allStoresCached();
 
         $totalCount = count($allStores);
-        $filteredCount = count($filtered);
 
         $geoLabels = ServicioGeo::GEO_LABELS;
         $regionFilters = $this->regionFilters();
@@ -239,26 +246,28 @@ new class extends Component
 
         $stats = app(ServicioGeo::class)->calcularStats($allStores);
 
-        $criticalesAll = collect($filtered)->filter(function ($s) {
-            return ($s['_geo']['status'] ?? 'OK') !== 'OK';
-        })->values()->all();
+        $postgres = app(ServicioPostgresql::class);
 
-        if ($this->sort && in_array($this->sort, self::SORTABLE_COLUMNS, true) && ! in_array($this->sort, self::EXCLUDED_SORT_COLUMNS, true)) {
-            $direction = $this->direction;
-            $sortColumn = $this->sort;
-            usort($criticalesAll, function (array $a, array $b) use ($sortColumn, $direction) {
-                $aVal = (string) ($a[$sortColumn] ?? '');
-                $bVal = (string) ($b[$sortColumn] ?? '');
-
-                return $direction === 'asc' ? strcasecmp($aVal, $bVal) : strcasecmp($bVal, $aVal);
-            });
+        $filteredCount = $totalCount;
+        if ($this->almacen !== '') {
+            $filteredCount = $postgres->contarMapaFiltrado($regionFilters, $this->filters());
         }
 
-        $totalCriticales = count($criticalesAll);
+        $incidencias = $postgres->obtenerIncidenciasMapaPaginadas(
+            $regionFilters,
+            ['almacen' => $this->almacen, 'tienda_salud' => $this->tiendaSalud],
+            self::COLUMNS,
+            $this->sort,
+            $this->direction,
+            $this->page,
+            $this->perPage,
+        );
+
+        $criticalesPage = $incidencias['items'];
+        $totalCriticales = $incidencias['total'];
         $totalPages = max(1, (int) ceil($totalCriticales / $this->perPage));
         $this->page = min($this->page, $totalPages);
         $offset = ($this->page - 1) * $this->perPage;
-        $criticalesPage = array_slice($criticalesAll, $offset, $this->perPage);
 
         return [
             'stores' => $allStores,
@@ -350,7 +359,7 @@ new class extends Component
 
     <div class="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_20rem]">
         <div class="institutional-card p-2">
-            <div id="map"></div>
+            <div wire:ignore id="map"></div>
         </div>
         <aside class="priority-panel">
             <p class="eyebrow">Incidencias</p>

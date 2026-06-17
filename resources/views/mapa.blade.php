@@ -35,6 +35,7 @@
  var latestRequestId = 0;
  var activeRequest = null;
  var suppressNextMoveFetch = false;
+ var hasError = false;
 
  var map = L.map('map', { zoomControl: true });
 
@@ -54,6 +55,55 @@
 
  var markerBounds = [];
 
+ var LoadingControl = L.Control.extend({
+ options: { position: 'topleft' },
+ onAdd: function () {
+  var div = L.DomUtil.create('div', 'map-legend');
+  div.id = 'map-loading';
+  div.style.cssText = 'display:none;background:#fff;color:#1f2937;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);z-index:1000;';
+  div.innerHTML = '<span class="loading-spinner" style="display:inline-block;width:14px;height:14px;border:2px solid #d1d5db;border-top-color:#988256;border-radius:50%;animation:map-spin 0.8s linear infinite;vertical-align:middle;margin-right:8px;"></span> Cargando...';
+  return div;
+ }
+ });
+ var loadingCtrl = new LoadingControl().addTo(map);
+
+ var ErrorControl = L.Control.extend({
+ options: { position: 'topleft' },
+ onAdd: function () {
+  var div = L.DomUtil.create('div', 'map-legend');
+  div.id = 'map-error';
+  div.style.cssText = 'display:none;background:#fef2f2;color:#991b1b;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);border:1px solid #fecaca;z-index:1000;';
+  div.innerHTML = '<span style="display:inline-block;margin-right:6px;">⚠️</span> Error al cargar datos. Reintentando...';
+  return div;
+ }
+ });
+ var errorCtrl = new ErrorControl().addTo(map);
+
+ function showLoading() {
+  var el = document.getElementById('map-loading');
+  if (el) el.style.display = 'block';
+ }
+
+ function hideLoading() {
+  var el = document.getElementById('map-loading');
+  if (el) el.style.display = 'none';
+ }
+
+ function showError(msg) {
+  hasError = true;
+  var el = document.getElementById('map-error');
+  if (el) {
+   el.style.display = 'block';
+   if (msg) el.innerHTML = '<span style="display:inline-block;margin-right:6px;">⚠️</span> ' + msg;
+  }
+ }
+
+ function hideError() {
+  hasError = false;
+  var el = document.getElementById('map-error');
+  if (el) el.style.display = 'none';
+ }
+
  function renderStores(storesToRender) {
  clusters.clearLayers();
  markerBounds = [];
@@ -65,7 +115,8 @@
  var lon = geo.lon;
  if (lat == null || lon == null) return;
 
- var isBienestar = (store._cxc || {}).esTiendaBienestar === true;
+ var isBienestarFilter = getLivewireFilter('tiendaSalud') === 'salud';
+ var isBienestar = isBienestarFilter || ((store._cxc || {}).esTiendaBienestar === true);
  var colorMap = { OK: '#22c55e', FUERA_MEXICO: '#ef4444', FUERA_ESTADO: '#f59e0b' };
  var color = isBienestar ? '#7c3aed' : (colorMap[geo.status] || '#6b7280');
 
@@ -114,27 +165,57 @@
  initialLoad = false;
  }
 
+ function getLivewireFilter(key) {
+  try {
+   if (typeof Livewire === 'undefined') return '';
+   var c = Livewire.first();
+   return (c && typeof c.get === 'function') ? (c.get(key) || '') : '';
+  } catch(e) { return ''; }
+ }
+
  function fetchViewportStores() {
- var requestId = ++latestRequestId;
- if (activeRequest) activeRequest.abort();
- activeRequest = new AbortController();
- var mapBounds = map.getBounds();
- var dataUrl = new URL(@json(route('mapa.data')), window.location.origin);
- var currentParams = new URLSearchParams(window.location.search);
- currentParams.delete('export');
- currentParams.forEach(function (value, key) { dataUrl.searchParams.set(key, value); });
- dataUrl.searchParams.set('north', mapBounds.getNorth());
- dataUrl.searchParams.set('south', mapBounds.getSouth());
- dataUrl.searchParams.set('east', mapBounds.getEast());
- dataUrl.searchParams.set('west', mapBounds.getWest());
+  var requestId = ++latestRequestId;
+  if (activeRequest) activeRequest.abort();
+  activeRequest = new AbortController();
+  hideError();
+  showLoading();
+  var mapBounds = map.getBounds();
+  var dataUrl = new URL(@json(route('mapa.data')), window.location.origin);
+  var currentTiendaSalud = getLivewireFilter('tiendaSalud');
+  var currentEstadoGeo = getLivewireFilter('estado_geo');
+  var currentAlmacen = getLivewireFilter('almacen');
+  if (currentAlmacen) dataUrl.searchParams.set('almacen', currentAlmacen);
+  if (currentEstadoGeo) dataUrl.searchParams.set('estado_geo', currentEstadoGeo);
+  if (currentTiendaSalud) dataUrl.searchParams.set('tienda_salud', currentTiendaSalud);
+  dataUrl.searchParams.set('north', mapBounds.getNorth());
+  dataUrl.searchParams.set('south', mapBounds.getSouth());
+  dataUrl.searchParams.set('east', mapBounds.getEast());
+  dataUrl.searchParams.set('west', mapBounds.getWest());
+
+ var timeoutId = setTimeout(function () {
+  if (activeRequest && !activeRequest.signal.aborted) {
+   activeRequest.abort();
+  }
+ }, 45000);
+
  fetch(dataUrl.toString(), { headers: { 'Accept': 'application/json' }, signal: activeRequest.signal })
-  .then(function (response) { return response.json(); })
+  .then(function (response) {
+   clearTimeout(timeoutId);
+   if (!response.ok) throw new Error('Error del servidor (' + response.status + ')');
+   return response.json();
+  })
   .then(function (payload) {
   if (requestId !== latestRequestId) return;
+  hideError();
   renderStores(payload.stores || []);
   })
   .catch(function (error) {
+   clearTimeout(timeoutId);
    if (error.name === 'AbortError') return;
+   showError('No se pudieron cargar datos del mapa. Verifica tu conexi\u00f3n.');
+   })
+  .finally(function () {
+   if (requestId === latestRequestId) hideLoading();
    });
   }
   window.__fetchViewportStores = fetchViewportStores;
@@ -157,10 +238,10 @@
   var div = L.DomUtil.create('div', 'map-legend');
   div.innerHTML =
    '<div class="map-legend-title">Leyenda</div>' +
-   '<div><span style="color:#22c55e">●</span> Válidas</div>' +
+   '<div><span style="color:#22c55e">●</span> V\u00e1lidas</div>' +
    '<div><span style="color:#7c3aed">●</span> Tienda de Salud Bienestar CxC</div>' +
   '<div><span style="color:#f59e0b">●</span> ' + @json($geoMismatchLabel ?? ($geoLabels['FUERA_ESTADO']['label'] ?? 'No corresponde al filtro territorial')) + '</div>' +
- '<div><span style="color:#ef4444">●</span> Fuera de México</div>';
+ '<div><span style="color:#ef4444">●</span> Fuera de M\u00e9xico</div>';
  return div;
  };
  legend.addTo(map);
@@ -169,13 +250,23 @@
  }
   initMap();
 
-  document.addEventListener('livewire:init', function () {
-   Livewire.on('mapa-filters-updated', function () {
-    if (window.__fetchViewportStores) window.__fetchViewportStores();
-   });
-  });
+   function setupFilterListener() {
+    Livewire.on('mapa-filters-updated', function () {
+     if (window.__fetchViewportStores) window.__fetchViewportStores();
+    });
+   }
+   if (typeof Livewire !== 'undefined') {
+    setupFilterListener();
+   } else {
+    document.addEventListener('livewire:init', setupFilterListener);
+   }
   });
 
+  (function () {
+   var style = document.createElement('style');
+   style.textContent = '@keyframes map-spin { to { transform: rotate(360deg); } }';
+   document.head.appendChild(style);
+  })();
 </script>
 @endpush
 

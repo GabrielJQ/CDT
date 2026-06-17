@@ -6,6 +6,7 @@ use App\Servicios\ServicioExportacion;
 use App\Servicios\ServicioGeo;
 use App\Servicios\ServicioPostgresql;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class MapaController extends Controller
 {
@@ -75,12 +76,34 @@ class MapaController extends Controller
             'tienda_salud' => $request->query('tienda_salud', ''),
         ];
 
-        $filtered = $this->postgres->obtenerMapaViewport(
-            $regionFilter,
-            $filters,
-            $request->only(['north', 'south', 'east', 'west']),
-            self::COLUMNS,
-        );
+        $bounds = $request->only(['north', 'south', 'east', 'west']);
+        $north = (float) ($bounds['north'] ?? 90);
+        $south = (float) ($bounds['south'] ?? -90);
+        $east = (float) ($bounds['east'] ?? 180);
+        $west = (float) ($bounds['west'] ?? -180);
+
+        $cacheKey = 'mapa_viewport_'.md5(json_encode($regionFilter).json_encode($filters));
+
+        $allStoresForViewport = Cache::remember($cacheKey, 60, function () use ($regionFilter, $filters) {
+            return $this->postgres->obtenerMapaViewport(
+                $regionFilter,
+                $filters,
+                ['north' => 90, 'south' => -90, 'east' => 180, 'west' => -180],
+                self::COLUMNS,
+            );
+        });
+
+        $skipBounds = in_array($filters['estado_geo'] ?? '', ['FUERA_MEXICO', 'INCIDENCIAS'], true);
+        if ($skipBounds) {
+            $filtered = $allStoresForViewport;
+        } else {
+            $filtered = array_values(array_filter($allStoresForViewport, function ($store) use ($north, $south, $east, $west) {
+                $lat = (float) ($store['Latitud'] ?? 0);
+                $lng = (float) ($store['Longitud'] ?? 0);
+
+                return $lat >= $south && $lat <= $north && $lng >= $west && $lng <= $east;
+            }));
+        }
 
         return response()->json(['stores' => $filtered, 'limited' => count($filtered) >= 3000]);
     }
