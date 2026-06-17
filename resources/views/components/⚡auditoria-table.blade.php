@@ -447,7 +447,7 @@ new class extends Component
         <div>
             <p class="text-xs font-extrabold uppercase tracking-[0.22em] text-[#988256]">Módulo operativo</p>
             <h3 class="mt-1 text-xl font-extrabold text-gray-900 dark:text-gray-100">Auditoría Operativa</h3>
-            <p class="mt-1 max-w-3xl text-sm text-gray-500 dark:text-gray-400">Consulta el estatus de auditoría por tienda incluyendo comités, montos auditados, rotación y nivel de riesgo. Los filtros, KPIs y paginación se actualizan sin recargar la página.</p>
+            <p class="mt-1 max-w-3xl text-sm text-gray-500 dark:text-gray-400">Consulta el estatus de auditoría por tienda incluyendo comités, montos auditados, rotación y nivel de riesgo. Al usar los filtros se actualiza la tabla automáticamente.</p>
         </div>
         <a href="{{ $this->exportUrl() }}" class="btn-export self-start lg:self-center" wire:navigate.hover="false">Exportar CSV</a>
     </div>

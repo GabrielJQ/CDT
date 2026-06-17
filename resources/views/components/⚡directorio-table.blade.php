@@ -434,7 +434,7 @@ new class extends Component
         <div>
             <p class="text-xs font-extrabold uppercase tracking-[0.22em] text-[#988256]">Módulo operativo</p>
             <h3 class="mt-1 text-xl font-extrabold text-gray-900 dark:text-gray-100">Directorio de Tiendas</h3>
-            <p class="mt-1 max-w-3xl text-sm text-gray-500 dark:text-gray-400">Consulta todas las tiendas con información de contacto, ventas, capital, comités, auditoría y ubicación. Los filtros, KPIs y paginación se actualizan sin recargar la página.</p>
+            <p class="mt-1 max-w-3xl text-sm text-gray-500 dark:text-gray-400">Consulta todas las tiendas con información de contacto, ventas, capital, comités, auditoría y ubicación. Al usar los filtros se actualiza la tabla automáticamente.</p>
         </div>
         <a href="{{ $this->exportUrl() }}" class="btn-export self-start lg:self-center" wire:navigate.hover="false">Exportar CSV</a>
     </div>
@@ -465,11 +465,11 @@ new class extends Component
             </div>
             <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-pink-500">
                 <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">💸 Faltante cap.</p>
-                <p class="text-3xl font-bold text-pink-600">{{ number_format($stats['tiendasFaltante'] ?? 0) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round(($stats['tiendasFaltante'] ?? 0) / $totalCount * 100, 1) : 0 }}% · ${{ number_format($stats['importeFaltante'] ?? 0, 2) }})</span></p>
+                <p class="text-3xl font-bold text-pink-600">{{ number_format($stats['tiendasFaltante'] ?? 0) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round(($stats['tiendasFaltante'] ?? 0) / $totalCount * 100, 1) : 0 }}%)</span></p>
             </div>
             <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-blue-500">
                 <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">📄 Pagarés vencidos</p>
-                <p class="text-3xl font-bold text-blue-600">{{ number_format($stats['pagaresVencidos'] ?? 0) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round(($stats['pagaresVencidos'] ?? 0) / $totalCount * 100, 1) : 0 }}% · ${{ number_format($stats['importePagaresVencidos'] ?? 0, 2) }})</span></p>
+                <p class="text-3xl font-bold text-blue-600">{{ number_format($stats['pagaresVencidos'] ?? 0) }} <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ $totalCount > 0 ? round(($stats['pagaresVencidos'] ?? 0) / $totalCount * 100, 1) : 0 }}%)</span></p>
             </div>
         </div>
     @endif
