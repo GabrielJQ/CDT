@@ -13,6 +13,7 @@ class AperturasTableTest extends TestCase
         parent::setUp();
 
         Cache::flush();
+        $this->signIn();
     }
 
     public function test_component_renders_aperturas_data(): void

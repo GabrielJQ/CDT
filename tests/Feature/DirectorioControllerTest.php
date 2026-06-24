@@ -16,6 +16,7 @@ class DirectorioControllerTest extends TestCase
     {
         parent::setUp();
         Cache::flush();
+        $this->signIn();
     }
 
     public function test_index_returns_200(): void

@@ -2,14 +2,68 @@
 
 namespace Tests;
 
+use App\Models\User;
 use App\Servicios\ServicioPostgresql;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\DB;
 
 abstract class TestCase extends BaseTestCase
 {
+    protected static ?string $tempMigrationDir = null;
+
+    protected ?User $user = null;
+
+    protected function signIn(?User $user = null): static
+    {
+        $this->user = $user ?? User::factory()->create();
+
+        return $this->actingAs($this->user);
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Use pgsql_imports as default so all tables (including those from
+        // migrations with Schema::connection('pgsql_imports')) live in the
+        // same database — FK constraints work across connections in tests.
+        config([
+            'database.default' => 'pgsql_imports',
+            'database.connections.pgsql_imports' => [
+                'driver' => 'sqlite',
+                'database' => ':memory:',
+                'prefix' => '',
+                'foreign_key_constraints' => true,
+            ],
+        ]);
+
+        if (static::$tempMigrationDir === null) {
+            static::$tempMigrationDir = sys_get_temp_dir().'/cdt_migrations_'.uniqid();
+            mkdir(static::$tempMigrationDir, 0777, true);
+
+            foreach ([
+                '0001_01_01_000000_create_users_table.php',
+                '2026_06_24_145033_create_regions_table.php',
+                '2026_06_24_145036_create_unidad_operativas_table.php',
+                '2026_06_24_145055_add_access_control_fields_to_users_table.php',
+                '2026_06_24_160953_fix_unidad_operativas_unique_key.php',
+            ] as $file) {
+                copy(database_path('migrations/'.$file), static::$tempMigrationDir.'/'.$file);
+            }
+        }
+
+        $this->artisan('migrate', [
+            '--database' => config('database.default'),
+            '--path' => static::$tempMigrationDir,
+            '--realpath' => true,
+            '--no-interaction' => true,
+        ]);
+
+        DB::beginTransaction();
+
+        $this->beforeApplicationDestroyed(function () {
+            DB::rollBack();
+        });
 
         $this->app->bind(ServicioPostgresql::class, function () {
             return new class extends ServicioPostgresql

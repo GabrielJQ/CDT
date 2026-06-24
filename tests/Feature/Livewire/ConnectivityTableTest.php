@@ -13,6 +13,7 @@ class ConnectivityTableTest extends TestCase
         parent::setUp();
 
         Cache::flush();
+        $this->signIn();
     }
 
     public function test_component_renders_connectivity_data(): void
