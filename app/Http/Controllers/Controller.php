@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Servicios\ServicioAlcanceUsuario;
+
 abstract class Controller
 {
     protected const DEFAULT_PAGE_SIZE = 50;
@@ -15,10 +17,7 @@ abstract class Controller
 
     protected function applyRegionFilter(): array
     {
-        return [
-            'region' => request()->cookie('region_filter', ''),
-            'uo' => request()->cookie('uo_filter', ''),
-        ];
+        return app(ServicioAlcanceUsuario::class)->filtroEfectivo(request());
     }
 
     protected function paginateArray(array $items): array

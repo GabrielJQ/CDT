@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Servicios\ServicioAlcanceUsuario;
 use App\Servicios\ServicioPostgresql;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
@@ -35,7 +36,13 @@ class AppServiceProvider extends ServiceProvider
         View::composer('layouts.app', function ($view) {
             try {
                 $postgres = app(ServicioPostgresql::class);
-                $view->with('regionesData', $postgres->obtenerJerarquiaRegional());
+                $jerarquia = $postgres->obtenerJerarquiaRegional();
+                $user = request()->user();
+                if ($user !== null) {
+                    $jerarquia = app(ServicioAlcanceUsuario::class)->filtrarJerarquia($user, $jerarquia);
+                }
+
+                $view->with('regionesData', $jerarquia);
             } catch (\Throwable) {
                 $view->with('regionesData', []);
             }

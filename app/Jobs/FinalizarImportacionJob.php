@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Http\Controllers\DashboardController;
 use App\Servicios\ServicioDerivadosTienda;
+use App\Servicios\ServicioJerarquiaOperativa;
 use App\Servicios\ServicioMapeoColumnas;
 use App\Servicios\ServicioPeriodosImportacion;
 use Carbon\Carbon;
@@ -133,6 +134,8 @@ class FinalizarImportacionJob implements ShouldQueue
         if ($this->periodoImportacionId !== null) {
             $periodos->activar(ServicioPeriodosImportacion::TIPO_REGULAR, $this->periodoImportacionId, $exitos, $errores);
         }
+
+        app(ServicioJerarquiaOperativa::class)->sincronizar();
 
         DashboardController::invalidateDashboardCache();
     }
