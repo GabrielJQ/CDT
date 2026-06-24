@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\EnsureCanManageUsers;
+use App\Http\Middleware\EnsureUserIsActive;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -13,6 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: [
             'tema',
+        ]);
+
+        $middleware->alias([
+            'active.user' => EnsureUserIsActive::class,
+            'canManageUsers' => EnsureCanManageUsers::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
