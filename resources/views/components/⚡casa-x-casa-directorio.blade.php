@@ -1,5 +1,6 @@
 <?php
 
+use App\Servicios\ServicioAlcanceUsuario;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
@@ -48,12 +49,9 @@ new class extends Component
 
     private function uoFilter(): array
     {
-        $filter = [
-            'region' => request()->cookie('region_filter', ''),
-            'uo' => request()->cookie('uo_filter', ''),
-        ];
-        $region = $filter['region'] ?? '';
-        $uo = $filter['uo'] ?? '';
+        $filtro = app(ServicioAlcanceUsuario::class)->filtroEfectivo(request());
+        $region = $filtro['region'];
+        $uo = $filtro['uo'];
 
         if (empty($region) && empty($uo)) {
             return [];

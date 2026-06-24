@@ -1,5 +1,6 @@
 <?php
 
+use App\Servicios\ServicioAlcanceUsuario;
 use App\Servicios\ServicioGeo;
 use App\Servicios\ServicioPostgresql;
 use Illuminate\Support\Facades\Cache;
@@ -48,10 +49,7 @@ new class extends Component
 
     private function regionFilters(): array
     {
-        return [
-            'region' => request()->cookie('region_filter', ''),
-            'uo' => request()->cookie('uo_filter', ''),
-        ];
+        return app(ServicioAlcanceUsuario::class)->filtroEfectivo(request());
     }
 
     private function filters(): array

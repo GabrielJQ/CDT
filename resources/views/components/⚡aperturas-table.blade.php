@@ -1,5 +1,6 @@
 <?php
 
+use App\Servicios\ServicioAlcanceUsuario;
 use App\Servicios\ServicioFecha;
 use App\Servicios\ServicioPostgresql;
 use Livewire\Component;
@@ -61,10 +62,7 @@ new class extends Component
      */
     private function regionFilters(): array
     {
-        return [
-            'region' => request()->cookie('region_filter', ''),
-            'uo' => request()->cookie('uo_filter', ''),
-        ];
+        return app(ServicioAlcanceUsuario::class)->filtroEfectivo(request());
     }
 
     /**

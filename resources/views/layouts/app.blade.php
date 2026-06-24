@@ -53,12 +53,14 @@
             }
             $sectionLabel = match (true) {
                 str_starts_with($currentPath, 'casa-x-casa') => 'Tiendas de Salud',
+                str_starts_with($currentPath, 'usuarios') => 'Administración',
                 str_starts_with($currentPath, 'carga-masiva') => 'Importaciones',
                 $presenciaActive => 'Presencia Tiendas',
                 str_starts_with($currentPath, 'auditoria') => 'Control Operativo',
                 str_starts_with($currentPath, 'directorio') => 'Directorio',
                 default => 'Monitoreo CDT',
             };
+            $authUser = auth()->user();
         @endphp
 
         {{-- Overlay for mobile --}}
@@ -74,12 +76,28 @@
                 <button onclick="toggleSidebar()" class="lg:hidden text-white/70 hover:text-white text-xl leading-none px-2">&times;</button>
             </div>
             <nav class="flex-1 p-2 space-y-1 overflow-y-auto overflow-x-hidden">
+                <a href="{{ route('perfil') }}"
+                   title="Mi Perfil"
+                   class="nav-link institutional-nav-link {{ str_starts_with($currentPath, 'perfil') ? 'institutional-nav-link-active' : '' }}">
+                    <span class="text-lg shrink-0 w-6 text-center">👤</span>
+                    <span class="nav-label truncate">Mi Perfil</span>
+                </a>
+
                 <a href="{{ url('carga-masiva') }}"
                    title="Carga Masiva"
                    class="nav-link institutional-nav-link {{ str_starts_with($currentPath, 'carga-masiva') ? 'institutional-nav-link-active' : '' }}">
                     <span class="text-lg shrink-0 w-6 text-center">📥</span>
                     <span class="nav-label truncate">Carga Masiva</span>
                 </a>
+
+                @if($authUser?->canManageUsers())
+                    <a href="{{ route('usuarios.index') }}"
+                       title="Usuarios"
+                       class="nav-link institutional-nav-link {{ str_starts_with($currentPath, 'usuarios') ? 'institutional-nav-link-active' : '' }}">
+                        <span class="text-lg shrink-0 w-6 text-center">👤</span>
+                        <span class="nav-label truncate">Usuarios</span>
+                    </a>
+                @endif
 
                 @foreach($navItems as $path => $item)
                     @php
@@ -170,14 +188,21 @@
                 </div>
                 <div class="flex items-center gap-2 w-full lg:w-auto">
                     @php
-                        $currentRegionCookie = request()->cookie('region_filter', '');
-                        $currentUoCookie = request()->cookie('uo_filter', '');
+                        $effectiveFilter = app(\App\Servicios\ServicioAlcanceUsuario::class)->filtroEfectivo(request());
+                        $currentRegionCookie = $effectiveFilter['region'];
+                        $currentUoCookie = $effectiveFilter['uo'];
                     @endphp
                     <form action="{{ url('/set-region') }}" method="POST" id="region-form" class="flex-1 lg:flex-none flex gap-1.5">
                         @csrf
                         <input type="hidden" name="redirect" value="{{ url()->current() }}">
+                        @php
+                            $isUnidad = $authUser?->role === 'unidad';
+                            $regionDisabled = !($authUser?->hasGlobalAccess() ?? false);
+                            $uoDisabled = $isUnidad;
+                        @endphp
                         <select name="region" id="region-select"
-                                class="input-institutional w-full lg:w-auto text-xs lg:text-sm">
+                                class="input-institutional w-full lg:w-auto text-xs lg:text-sm"
+                                {{ $regionDisabled ? 'disabled' : '' }}>
                             <option value="">🌎 Todas</option>
                             @foreach($regionesData ?? [] as $reg)
                                 <option value="{{ $reg['clave'] }}" {{ $currentRegionCookie === $reg['clave'] ? 'selected' : '' }}>
@@ -186,7 +211,8 @@
                             @endforeach
                         </select>
                         <select name="uo" id="uo-select"
-                                class="input-institutional w-full lg:w-auto text-xs lg:text-sm">
+                                class="input-institutional w-full lg:w-auto text-xs lg:text-sm"
+                                {{ $uoDisabled ? 'disabled' : '' }}>
                             <option value="">📍 Todas UO</option>
                             @foreach($regionesData ?? [] as $reg)
                                 @foreach($reg['uos'] as $uo)
@@ -206,6 +232,14 @@
                         </button>
                     </form>
                     <button id="tema-toggle" class="flex h-8 w-8 items-center justify-center rounded-lg text-lg leading-none text-white/85 transition hover:bg-white/10 hover:text-white" title="Cambiar tema">🌙</button>
+                    <div class="hidden min-w-0 flex-col text-right text-xs text-white/70 xl:flex">
+                        <span class="truncate font-extrabold text-white">{{ $authUser?->name }}</span>
+                        <span class="uppercase tracking-wide">{{ $authUser?->role }}</span>
+                    </div>
+                    <form action="{{ route('logout') }}" method="POST" class="flex-none">
+                        @csrf
+                        <button type="submit" class="rounded-lg px-3 py-1.5 text-xs font-extrabold text-white/80 transition hover:bg-white/10 hover:text-white">Salir</button>
+                    </form>
                 </div>
             </div>
 
@@ -313,6 +347,7 @@
             var regionForm = document.getElementById('region-form');
 
             function actualizarUoOptions() {
+                if (uoSelect.disabled) return;
                 var selectedRegion = regionSelect.value;
                 var currentUo = uoSelect.value;
                 uoSelect.innerHTML = '<option value="">📍 Todas UO</option>';
