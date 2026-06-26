@@ -160,7 +160,7 @@ new class extends Component
             <div>
                 <p class="eyebrow">Tiendas de Salud</p>
                 <h1 class="page-heading">Seguimiento Casa por Casa</h1>
-                <p class="page-subheading">Monitorea estatus, anaqueles, aviso de funcionamiento y cruce contra el catalogo general de tiendas.</p>
+                <p class="page-subheading">Monitorea estatus, anaqueles, aviso de funcionamiento y cruce contra el directorio nacional de tiendas.</p>
             </div>
             <div class="flex flex-wrap gap-2">
                 <a href="{{ route('casa-x-casa.directorio') }}" class="btn-institutional">Directorio CxC</a>
@@ -184,7 +184,7 @@ new class extends Component
         </div>
         <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-lg shadow-sm px-3 lg:px-4 py-2 lg:py-3">
             <div class="text-lg lg:text-xl font-bold text-purple-600">{{ number_format($cruce['enTiendas']) }} <span class="text-xs font-normal text-gray-400">({{ $pct($cruce['enTiendas']) }}%)</span></div>
-            <div class="text-xs text-purple-500">🔗 También en catálogo general</div>
+            <div class="text-xs text-purple-500">🔗 También en directorio nacional</div>
         </div>
     </div>
 
@@ -198,7 +198,7 @@ new class extends Component
                             <span class="text-gray-600 dark:text-gray-400">{{ $e->estatus ?: 'Sin estatus' }}</span>
                             <span class="font-semibold text-gray-800 dark:text-gray-100">{{ number_format($e->total) }} <span class="text-gray-400">({{ $pct($e->total) }}%)</span></span>
                         </div>
-                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
                             <div class="bg-green-500 h-1.5 rounded-full" style="width: {{ $total > 0 ? round($e->total / $total * 100) : 0 }}%"></div>
                         </div>
                     @endforeach
@@ -233,7 +233,7 @@ new class extends Component
         </div>
 
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 lg:p-5">
-            <h3 class="text-sm font-bold text-gray-800 dark:text-gray-100 mb-3">🔗 Cruce con catálogo general</h3>
+            <h3 class="text-sm font-bold text-gray-800 dark:text-gray-100 mb-3">🔗 Cruce con directorio nacional de tiendas</h3>
             <div class="space-y-3">
                 <div class="flex items-center justify-between text-xs">
                     <span class="text-gray-600 dark:text-gray-400">En ambas tablas</span>
@@ -243,7 +243,7 @@ new class extends Component
                     <span class="text-gray-600 dark:text-gray-400">Solo en CxC</span>
                     <span class="font-semibold text-orange-600">{{ number_format($cruce['soloCxc']) }} <span class="text-gray-400">({{ $pct($cruce['soloCxc']) }}%)</span></span>
                 </div>
-                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
                     <div class="bg-green-500 h-2 rounded-full" style="width: {{ $total > 0 ? round($cruce['enTiendas'] / $total * 100) : 0 }}%"></div>
                 </div>
             </div>
@@ -258,7 +258,7 @@ new class extends Component
                             <span class="text-gray-600 dark:text-gray-400">Tipo {{ $t->tipo_anaquel }}</span>
                             <span class="font-semibold text-gray-800 dark:text-gray-100">{{ number_format($t->total) }} <span class="text-gray-400">({{ $pct($t->total) }}%)</span></span>
                         </div>
-                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
                             <div class="bg-emerald-500 h-1.5 rounded-full" style="width: {{ $total > 0 ? round($t->total / $total * 100) : 0 }}%"></div>
                         </div>
                     @endforeach
@@ -277,7 +277,7 @@ new class extends Component
                             <span class="text-gray-600 dark:text-gray-400 truncate mr-2">{{ $u->unidad_operativa }}</span>
                             <span class="font-semibold text-gray-800 dark:text-gray-100 shrink-0">{{ number_format($u->total) }} <span class="text-gray-400">({{ $pct($u->total) }}%)</span></span>
                         </div>
-                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1">
+                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1 overflow-hidden">
                             <div class="bg-indigo-500 h-1 rounded-full" style="width: {{ $total > 0 ? round($u->total / $total * 100) : 0 }}%"></div>
                         </div>
                     @endforeach
