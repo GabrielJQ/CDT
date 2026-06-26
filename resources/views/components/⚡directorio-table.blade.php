@@ -225,11 +225,7 @@ new class extends Component
         }
 
         if (in_array($column, ['Fec_CRA', 'Vigencia', 'Fch_Audit', 'Pagare_Fecha'], true)) {
-            if (! $val || $val === '0') {
-                return '<span class="text-gray-400 dark:text-gray-500">—</span>';
-            }
-
-            return '<span class="font-mono text-gray-700 dark:text-gray-300">'.substr($val, 0, 10).'</span>';
+            return RenderTiendaPresentador::formatDate($val);
         }
 
         if (in_array($column, ['Nom_Pre_CRA', 'Nom_Pre_Sup_CRA', 'Nom_Sec_CRA', 'Nom_Sec_Sup_CRA', 'Nom_Tes_CRA', 'Nom_Vcv_CRA', 'Nom_Voc_Gen_CRA'], true)) {
