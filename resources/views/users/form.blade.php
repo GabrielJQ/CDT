@@ -1,5 +1,5 @@
 @php
-    $selectedRole = old('role', $user?->role ?? 'nacional');
+    $selectedRole = old('role', $user?->role?->value ?? 'nacional');
     $selectedRegion = (string) old('region_id', $user?->region_id ?? '');
     $selectedUo = (string) old('unidad_operativa_id', $user?->unidad_operativa_id ?? '');
 @endphp

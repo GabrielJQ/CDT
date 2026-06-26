@@ -196,7 +196,7 @@
                         @csrf
                         <input type="hidden" name="redirect" value="{{ url()->current() }}">
                         @php
-                            $isUnidad = $authUser?->role === 'unidad';
+                            $isUnidad = $authUser?->isUnidad() ?? false;
                             $regionDisabled = !($authUser?->hasGlobalAccess() ?? false);
                             $uoDisabled = $isUnidad;
                         @endphp
@@ -234,7 +234,7 @@
                     <button id="tema-toggle" class="flex h-8 w-8 items-center justify-center rounded-lg text-lg leading-none text-white/85 transition hover:bg-white/10 hover:text-white" title="Cambiar tema">🌙</button>
                     <div class="hidden min-w-0 flex-col text-right text-xs text-white/70 xl:flex">
                         <span class="truncate font-extrabold text-white">{{ $authUser?->name }}</span>
-                        <span class="uppercase tracking-wide">{{ $authUser?->role }}</span>
+                        <span class="uppercase tracking-wide">{{ $authUser?->role?->value }}</span>
                     </div>
                     <form action="{{ route('logout') }}" method="POST" class="flex-none">
                         @csrf

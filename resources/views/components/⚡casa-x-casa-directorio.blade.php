@@ -53,29 +53,36 @@ new class extends Component
         $region = $filtro['region'];
         $uo = $filtro['uo'];
 
+        if ($region === '__NO_ACCESS__' || $uo === '__NO_ACCESS__') {
+            return ['__NO_ACCESS__'];
+        }
+
         if (empty($region) && empty($uo)) {
             return [];
         }
 
         $conn = DB::connection('pgsql_imports');
 
+        $query = $conn->table('tiendas_casa_x_casa')
+            ->join('tiendas', function ($join) use ($conn) {
+                $join->on('tiendas_casa_x_casa.no_tienda', '=', $conn->raw('"tiendas"."No_Tienda_Actual"'))
+                    ->on('tiendas_casa_x_casa.almacen', '=', $conn->raw('"tiendas"."Nombre_Almacen"'))
+                    ->on('tiendas_casa_x_casa.estado', '=', $conn->raw('"tiendas"."Estado"'))
+                    ->on('tiendas_casa_x_casa.municipio', '=', $conn->raw('"tiendas"."Municipio"'));
+            })
+            ->where('tiendas.es_activo', true)
+            ->where('tiendas_casa_x_casa.es_activo', true);
+
         if (! empty($uo)) {
-            $names = $conn->table('tiendas')
-                ->where('es_activo', true)
-                ->where('Clave_UniOpe', $uo)
-                ->distinct()
-                ->pluck('Nombre_UniOpe')
-                ->toArray();
+            $query->where('tiendas.Clave_UniOpe', $uo);
+            if (! empty($region)) {
+                $query->where('tiendas.Clave_Regional', $region);
+            }
         } else {
-            $names = $conn->table('tiendas')
-                ->where('es_activo', true)
-                ->where('Clave_Regional', $region)
-                ->distinct()
-                ->pluck('Nombre_UniOpe')
-                ->toArray();
+            $query->where('tiendas.Clave_Regional', $region);
         }
 
-        return array_filter($names);
+        return $query->distinct()->pluck('tiendas_casa_x_casa.unidad_operativa')->toArray();
     }
 
     private function baseQuery()
@@ -244,7 +251,8 @@ new class extends Component
             ->skip(($this->page - 1) * $this->perPage)
             ->take($this->perPage)
             ->get()
-            ->toArray();
+            ->map(fn ($item) => (array) $item)
+            ->all();
 
         return [
             'stores' => $stores,

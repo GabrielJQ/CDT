@@ -1,5 +1,6 @@
 <?php
 
+use App\Presenters\IndicadorPresenter;
 use App\Servicios\ServicioAlcanceUsuario;
 use App\Servicios\ServicioPostgresql;
 use Livewire\Component;
@@ -20,21 +21,6 @@ new class extends Component
     ];
 
     private const EXCLUDED_SORT_COLUMNS = ['Nombre_Almacen', 'No_Tienda_Actual', 'Localidad', 'Municipio'];
-
-    private const FACTOR_KEYS = [
-        'capital_bajo', 'capital_dictaminado_bajo', 'comite_vencido', 'auditoria_elevada',
-        'pagare_vencido', 'rotacion_baja', 'asamblea_pendiente',
-    ];
-
-    private const FACTOR_LABELS = [
-        'capital_bajo' => '💰 Capital total bajo',
-        'capital_dictaminado_bajo' => '🏛️ Capital Bienestar bajo',
-        'comite_vencido' => '📅 Comité vencido',
-        'auditoria_elevada' => '🔍 Auditoría > $500k',
-        'pagare_vencido' => '📄 Pagaré vencido',
-        'rotacion_baja' => '📉 Rotación baja',
-        'asamblea_pendiente' => '🗳️ Asamblea pendiente',
-    ];
 
     public string $almacen = '';
 
@@ -179,11 +165,6 @@ new class extends Component
         ][$column] ?? $column;
     }
 
-    private function cleanFactorLabel(string $label): string
-    {
-        return preg_replace('/^[^\p{L}\p{N}]+/u', '', $label);
-    }
-
     public function renderCell(string $column, array $store): string
     {
         $e = $store['_critico'] ?? [];
@@ -191,15 +172,9 @@ new class extends Component
         if ($column === 'Estado') {
             $level = $e['level'] ?? 'verde';
             $count = $e['count'] ?? 0;
+            $badge = IndicadorPresenter::levelBadge($level, $count);
 
-            $levelConfig = [
-                'rojo' => ['bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300', '🔴 '.$count.' — Crítico'],
-                'amarillo' => ['bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300', '🟡 '.$count.' — Monitoreo'],
-                'verde' => ['bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300', '🟢 '.$count.' — Normal'],
-            ];
-            $cfg = $levelConfig[$level] ?? $levelConfig['verde'];
-
-            return '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold '.$cfg[0].'">'.$cfg[1].'</span>';
+            return '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold '.$badge['classes'].'">'.$badge['label'].'</span>';
         }
 
         if ($column === 'Nombre_Almacen') {
@@ -219,8 +194,8 @@ new class extends Component
         if ($column === 'Factores') {
             return implode(' ', array_map(function (string $key) use ($e): string {
                 $active = ! empty($e['conditions'][$key]);
-                $rawLabel = $e['labels'][$key]['label'] ?? self::FACTOR_LABELS[$key] ?? $key;
-                $cleanLabel = $this->cleanFactorLabel($rawLabel);
+                $rawLabel = $e['labels'][$key]['label'] ?? IndicadorPresenter::factorLabel($key);
+                $cleanLabel = IndicadorPresenter::cleanLabel($rawLabel);
                 $title = $active ? '🔴 '.$cleanLabel : '⚪ '.$cleanLabel;
 
                 if ($active) {
@@ -228,7 +203,7 @@ new class extends Component
                 }
 
                 return '<span class="text-base text-gray-300 cursor-help" title="'.e($title).'">⚪</span>';
-            }, self::FACTOR_KEYS));
+            }, IndicadorPresenter::factorKeys()));
         }
 
         if ($column === 'Detalle') {
@@ -236,26 +211,16 @@ new class extends Component
                 return '<span class="text-gray-400 dark:text-gray-500 text-xs">Sin incidencias</span>';
             }
 
-            $activeKeys = array_values(array_filter(self::FACTOR_KEYS, fn (string $k): bool => ! empty($e['conditions'][$k])));
+            $activeKeys = array_values(array_filter(IndicadorPresenter::factorKeys(), fn (string $k): bool => ! empty($e['conditions'][$k])));
 
             if (empty($activeKeys)) {
                 return '<span class="text-gray-400 dark:text-gray-500 text-xs">Sin incidencias</span>';
             }
 
-            $factorStyles = [
-                'capital_bajo' => ['bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700', '💰'],
-                'capital_dictaminado_bajo' => ['bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-700', '🏛️'],
-                'comite_vencido' => ['bg-red-100 text-red-800 border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700', '📅'],
-                'auditoria_elevada' => ['bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700', '🔍'],
-                'pagare_vencido' => ['bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700', '📄'],
-                'rotacion_baja' => ['bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700', '📉'],
-                'asamblea_pendiente' => ['bg-cyan-100 text-cyan-800 border-cyan-300 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-700', '🗳️'],
-            ];
-
-            $chips = array_map(function (string $k) use ($e, $factorStyles): string {
+            $chips = array_map(function (string $k) use ($e): string {
                 $info = $e['labels'][$k] ?? [];
-                $style = $factorStyles[$k] ?? ['bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600', '▪'];
-                $label = $this->cleanFactorLabel($info['label'] ?? $k);
+                $style = IndicadorPresenter::factorStyle($k);
+                $label = IndicadorPresenter::cleanLabel($info['label'] ?? $k);
                 $detail = $info['detail'] ?? '';
 
                 $html = '<span class="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-lg border '.$style[0].'">';
@@ -423,7 +388,7 @@ new class extends Component
                 <label class="block text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Indicador</label>
                 <select wire:model.live="indicador" class="input-filter">
                     <option value="">Todos</option>
-                    @foreach(self::FACTOR_LABELS as $key => $label)
+                    @foreach(IndicadorPresenter::factorLabels() as $key => $label)
                         <option value="{{ $key }}">{{ $label }}</option>
                     @endforeach
                 </select>

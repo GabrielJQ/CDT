@@ -34,7 +34,7 @@
                             <p class="text-xs text-gray-500 dark:text-gray-400">{{ $user->email }}</p>
                         </td>
                         <td class="px-4 py-3">
-                            <span class="status-pill bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">{{ $user->role }}</span>
+                            <span class="status-pill bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">{{ $user->role?->value }}</span>
                         </td>
                         <td class="px-4 py-3 text-gray-600 dark:text-gray-300">
                             @if($user->hasGlobalAccess())

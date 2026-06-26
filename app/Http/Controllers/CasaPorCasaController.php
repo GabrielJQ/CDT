@@ -7,11 +7,17 @@ use Illuminate\Support\Facades\DB;
 
 class CasaPorCasaController extends Controller
 {
+    private const NO_ACCESS = '__NO_ACCESS__';
+
     private function resolveUoFilter(): array
     {
         $filter = $this->applyRegionFilter();
         $region = $filter['region'] ?? '';
         $uo = $filter['uo'] ?? '';
+
+        if ($region === self::NO_ACCESS || $uo === self::NO_ACCESS) {
+            return [self::NO_ACCESS];
+        }
 
         if (empty($region) && empty($uo)) {
             return [];
@@ -19,23 +25,26 @@ class CasaPorCasaController extends Controller
 
         $conn = DB::connection('pgsql_imports');
 
+        $query = $conn->table('tiendas_casa_x_casa')
+            ->join('tiendas', function ($join) use ($conn) {
+                $join->on('tiendas_casa_x_casa.no_tienda', '=', $conn->raw('"tiendas"."No_Tienda_Actual"'))
+                    ->on('tiendas_casa_x_casa.almacen', '=', $conn->raw('"tiendas"."Nombre_Almacen"'))
+                    ->on('tiendas_casa_x_casa.estado', '=', $conn->raw('"tiendas"."Estado"'))
+                    ->on('tiendas_casa_x_casa.municipio', '=', $conn->raw('"tiendas"."Municipio"'));
+            })
+            ->where('tiendas.es_activo', true)
+            ->where('tiendas_casa_x_casa.es_activo', true);
+
         if (! empty($uo)) {
-            $names = $conn->table('tiendas')
-                ->where('es_activo', true)
-                ->where('Clave_UniOpe', $uo)
-                ->distinct()
-                ->pluck('Nombre_UniOpe')
-                ->toArray();
+            $query->where('tiendas.Clave_UniOpe', $uo);
+            if (! empty($region)) {
+                $query->where('tiendas.Clave_Regional', $region);
+            }
         } else {
-            $names = $conn->table('tiendas')
-                ->where('es_activo', true)
-                ->where('Clave_Regional', $region)
-                ->distinct()
-                ->pluck('Nombre_UniOpe')
-                ->toArray();
+            $query->where('tiendas.Clave_Regional', $region);
         }
 
-        return array_filter($names);
+        return $query->distinct()->pluck('tiendas_casa_x_casa.unidad_operativa')->toArray();
     }
 
     public function dashboard()
@@ -191,8 +200,14 @@ class CasaPorCasaController extends Controller
     public function show(int $id)
     {
         $conn = DB::connection('pgsql_imports');
+        $uoFilter = $this->resolveUoFilter();
 
-        $store = $this->activeCxcQuery($conn)->where('id', $id)->first();
+        $query = $this->activeCxcQuery($conn)->where('id', $id);
+        if (! empty($uoFilter)) {
+            $query->whereIn('unidad_operativa', $uoFilter);
+        }
+
+        $store = $query->first();
         if (! $store) {
             abort(404);
         }
