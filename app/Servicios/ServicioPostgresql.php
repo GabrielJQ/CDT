@@ -26,11 +26,19 @@ class ServicioPostgresql
         private ?ServicioConsultasTiendas $consultas = null,
         private ?PresentadorTiendas $presentador = null,
         private ?ServicioKpiTiendas $kpiTiendas = null,
+        private ?ServicioMapaTiendas $mapaTiendas = null,
+        private ?ServicioJerarquiaRegional $jerarquiaRegional = null,
+        private ?ServicioExportacionTiendas $exportacionTiendas = null,
+        private ?ServicioDashboardMetricas $dashboardMetricas = null,
     ) {
         $this->indicadores ??= app(ServicioIndicadorCriticidad::class);
         $this->consultas ??= app(ServicioConsultasTiendas::class);
         $this->presentador ??= app(PresentadorTiendas::class);
         $this->kpiTiendas ??= app(ServicioKpiTiendas::class);
+        $this->mapaTiendas ??= app(ServicioMapaTiendas::class);
+        $this->jerarquiaRegional ??= app(ServicioJerarquiaRegional::class);
+        $this->exportacionTiendas ??= app(ServicioExportacionTiendas::class);
+        $this->dashboardMetricas ??= app(ServicioDashboardMetricas::class);
     }
 
     public function getUltimoError(): ?string
@@ -98,42 +106,7 @@ class ServicioPostgresql
     public function obtenerJerarquiaRegional(): array
     {
         try {
-            $conn = $this->consultas->conexion();
-            $rows = $conn->select("
-                SELECT
-                    \"Clave_Regional\", \"Nombre_Regional\",
-                    \"Clave_UniOpe\", \"Nombre_UniOpe\",
-                    COUNT(*) as total,
-                    COUNT(DISTINCT \"Nombre_Almacen\") as almacenes
-                FROM tiendas
-                WHERE es_activo = true AND \"Nombre_Regional\" IS NOT NULL AND TRIM(\"Nombre_Regional\") != ''
-                GROUP BY \"Clave_Regional\", \"Nombre_Regional\", \"Clave_UniOpe\", \"Nombre_UniOpe\"
-                ORDER BY \"Clave_Regional\", \"Clave_UniOpe\"
-            ");
-
-            $jerarquia = [];
-            foreach ($rows as $row) {
-                $claveReg = $row->{'Clave_Regional'};
-                if (! isset($jerarquia[$claveReg])) {
-                    $jerarquia[$claveReg] = [
-                        'clave' => $claveReg,
-                        'nombre' => $row->{'Nombre_Regional'},
-                        'total' => 0,
-                        'almacenes' => 0,
-                        'uos' => [],
-                    ];
-                }
-                $jerarquia[$claveReg]['total'] += (int) $row->total;
-                $jerarquia[$claveReg]['almacenes'] += (int) $row->almacenes;
-                $jerarquia[$claveReg]['uos'][] = [
-                    'clave' => $row->{'Clave_UniOpe'},
-                    'nombre' => $row->{'Nombre_UniOpe'},
-                    'total' => (int) $row->total,
-                    'almacenes' => (int) $row->almacenes,
-                ];
-            }
-
-            return array_values($jerarquia);
+            return $this->jerarquiaRegional->obtenerJerarquiaRegional();
         } catch (\Throwable $e) {
             Log::error('[Postgresql] obtenerJerarquiaRegional: '.$e->getMessage());
 
@@ -337,156 +310,34 @@ class ServicioPostgresql
 
     public function obtenerMapa(array $regionFilters, array $filters, array $columns): array
     {
-        $query = $this->consultas->conexion()->table('tiendas');
-        $this->consultas->aplicarPeriodoActivo($query, $regionFilters);
-        $this->consultas->aplicarFiltroRegional($query, $regionFilters);
-        $this->consultas->aplicarFiltrosMapa($query, $filters);
-        $this->consultas->aplicarFiltroTiendaSalud($query, $filters['tienda_salud'] ?? '');
-
-        $rows = $this->consultas->selectMapaColumns($query, $columns, $filters['tienda_salud'] ?? null)
-            ->orderBy('id')
-            ->limit(20000)
-            ->get()
-            ->map(fn ($row) => $this->presentador->rowToGeoStore($row, $columns))
-            ->all();
-
-        return $rows;
+        return $this->mapaTiendas->obtenerMapa($regionFilters, $filters, $columns);
     }
 
     public function obtenerMapaViewport(array $regionFilters, array $filters, array $bounds, array $columns, int $limit = 3000): array
     {
-        $query = $this->consultas->conexion()->table('tiendas');
-        $this->consultas->aplicarPeriodoActivo($query, $regionFilters);
-        $this->consultas->aplicarFiltroRegional($query, $regionFilters);
-        $this->consultas->aplicarFiltrosMapa($query, $filters);
-        $this->consultas->aplicarFiltroTiendaSalud($query, $filters['tienda_salud'] ?? '');
-        if (! in_array($filters['estado_geo'] ?? '', ['FUERA_MEXICO', 'INCIDENCIAS'], true)) {
-            $this->consultas->aplicarBounds($query, $bounds, 'Latitud', 'Longitud');
-        }
-
-        $rows = $this->consultas->selectMapaColumns($query, $columns, $filters['tienda_salud'] ?? null)
-            ->whereNotNull('Latitud')
-            ->whereNotNull('Longitud')
-            ->where('Latitud', '!=', '0')
-            ->where('Longitud', '!=', '0')
-            ->limit($limit)
-            ->get()
-            ->map(fn ($row) => $this->presentador->rowToGeoStore($row, $columns))
-            ->all();
-
-        return $rows;
+        return $this->mapaTiendas->obtenerMapaViewport($regionFilters, $filters, $bounds, $columns, $limit);
     }
 
     public function contarMapaFiltrado(array $regionFilters, array $filters): int
     {
-        $query = $this->consultas->conexion()->table('tiendas');
-        $this->consultas->aplicarPeriodoActivo($query, $regionFilters);
-        $this->consultas->aplicarFiltroRegional($query, $regionFilters);
-        $this->consultas->aplicarFiltrosMapa($query, $filters);
-        $this->consultas->aplicarFiltroTiendaSalud($query, $filters['tienda_salud'] ?? '');
-
-        return $query->count();
+        return $this->mapaTiendas->contarMapaFiltrado($regionFilters, $filters);
     }
 
     public function obtenerIncidenciasMapaPaginadas(array $regionFilters, array $filters, array $columns, ?string $sort = null, string $direction = 'asc', int $page = 1, int $perPage = 50): array
     {
-        $filters['sort'] = $sort;
-        $filters['direction'] = $direction;
-
-        $countQuery = $this->consultas->conexion()->table('tiendas');
-        $this->consultas->aplicarPeriodoActivo($countQuery, $regionFilters);
-        $this->consultas->aplicarFiltroRegional($countQuery, $regionFilters);
-        $this->consultas->aplicarFiltrosMapa($countQuery, $filters);
-        $this->consultas->aplicarFiltroTiendaSalud($countQuery, $filters['tienda_salud'] ?? '');
-        $countQuery->whereNotIn('estado_geo', ['OK']);
-        $total = $countQuery->count();
-
-        $dataQuery = $this->consultas->conexion()->table('tiendas');
-        $this->consultas->aplicarPeriodoActivo($dataQuery, $regionFilters);
-        $this->consultas->aplicarFiltroRegional($dataQuery, $regionFilters);
-        $this->consultas->aplicarFiltrosMapa($dataQuery, $filters);
-        $this->consultas->aplicarFiltroTiendaSalud($dataQuery, $filters['tienda_salud'] ?? '');
-        $dataQuery->whereNotIn('estado_geo', ['OK']);
-
-        $sortable = ['Nombre_Almacen', 'No_Tienda_Actual', 'Municipio', 'Estado'];
-        $direction = strtolower($direction) === 'desc' ? 'desc' : 'asc';
-        if ($sort && in_array($sort, $sortable, true)) {
-            $dataQuery->orderBy($sort, $direction);
-        } else {
-            $dataQuery->orderBy('id');
-        }
-
-        $offset = max(0, ($page - 1) * $perPage);
-        $rows = $this->consultas->selectMapaColumns($dataQuery, $columns, $filters['tienda_salud'] ?? null)
-            ->limit($perPage)
-            ->offset($offset)
-            ->get()
-            ->map(fn ($row) => $this->presentador->rowToGeoStore($row, $columns))
-            ->all();
-
-        return ['items' => $rows, 'total' => $total];
+        return $this->mapaTiendas->obtenerIncidenciasMapaPaginadas($regionFilters, $filters, $columns, $sort, $direction, $page, $perPage);
     }
 
     public function obtenerDashboardMetricas(array $regionFilters): array
     {
-        $base = $this->consultas->conexion()->table('tiendas');
-        $this->consultas->aplicarPeriodoActivo($base, $regionFilters);
-        $this->consultas->aplicarFiltroRegional($base, $regionFilters);
-
-        $total = (clone $base)->count();
         $usarDerivados = $this->derivadosCompletos($regionFilters);
-        $aperturasPorMes = $this->kpiTiendas->aperturasPorMes(clone $base);
-        $directorioStats = $this->kpiTiendas->statsDirectorio(clone $base, $this->trackedDirectorioColumns);
-        $completos = max(0, $total - ($directorioStats['incompletos'] ?? 0));
 
-        return [
-            'totalCount' => $total,
-            'connectivityKpis' => $this->kpiTiendas->kpisConectividad(clone $base),
-            'criticalSummary' => $this->kpiTiendas->resumenCriticidad(clone $base, $usarDerivados),
-            'sinConectividad' => $this->kpiTiendas->sinConectividadCount(clone $base),
-            'aperturasEsteMes' => $this->kpiTiendas->aperturasEsteMesCount(clone $base),
-            'geoStats' => $this->kpiTiendas->geoStats(clone $base, $usarDerivados),
-            'aperturasKpi' => $this->kpiTiendas->aperturasKpiDashboard(clone $base),
-            'aperturasPorMes' => $aperturasPorMes,
-            'directorioStats' => ['completos' => $completos, 'incompletos' => (int) ($directorioStats['incompletos'] ?? 0)],
-            'auditoriaKpis' => $this->kpiTiendas->kpisAuditoria(clone $base, $usarDerivados),
-        ];
+        return $this->dashboardMetricas->obtenerDashboardMetricas($regionFilters, $usarDerivados, $this->trackedDirectorioColumns);
     }
 
     public function exportarTiendas(array $regionFilters, array $filters, array $columns, string $module): \Generator
     {
-        $query = $this->consultas->conexion()->table('tiendas');
-        $this->consultas->aplicarPeriodoActivo($query, $regionFilters);
-        $this->consultas->aplicarFiltroRegional($query, $regionFilters);
-
-        if ($module === 'conectividad') {
-            $this->consultas->aplicarFiltrosConectividad($query, $filters);
-        } elseif ($module === 'directorio') {
-            $this->consultas->aplicarFiltrosDirectorio($query, $filters, $this->trackedDirectorioColumns);
-        } elseif ($module === 'criticidad') {
-            $this->consultas->aplicarFiltrosCriticidad($query, $filters, $this->derivadosCompletos($regionFilters));
-            $columns = array_values(array_unique(array_merge($columns, ['nivel_critico', 'factores_criticos_count'])));
-        } elseif ($module === 'auditoria') {
-            $this->consultas->aplicarFiltrosAuditoria($query, $filters, $this->derivadosCompletos($regionFilters));
-            $columns = array_values(array_unique(array_merge($columns, ['nivel_critico', 'estado_comite', 'rango_rotacion', 'auditoria_pendiente'])));
-        } elseif ($module === 'aperturas') {
-            $this->consultas->aplicarFiltrosAperturas($query, $filters);
-        } elseif ($module === 'mapa') {
-            $this->consultas->aplicarFiltrosMapa($query, $filters);
-            $columns = array_values(array_unique(array_merge($columns, ['estado_geo'])));
-        }
-
-        $this->consultas->aplicarFiltroTiendaSalud($query, $filters['tienda_salud'] ?? '');
-
-        foreach ($this->consultas->addTiendaSaludFlag($query->select($columns), $filters['tienda_salud'] ?? null)->orderBy('id')->cursor() as $row) {
-            yield match ($module) {
-                'criticidad' => $this->presentador->rowToCriticalStore($row, $columns),
-                'auditoria' => $this->presentador->rowToAuditStore($row, $columns),
-                'aperturas' => $this->presentador->rowToAperturaStore($row, $columns),
-                'mapa' => $this->presentador->rowToGeoStore($row, $columns),
-                default => $this->presentador->rowToStore($row, $columns),
-            };
-        }
+        return $this->exportacionTiendas->exportarTiendas($regionFilters, $filters, $columns, $module, $this->derivadosCompletos($regionFilters), $this->trackedDirectorioColumns);
     }
 
     public function tieneDatos(): bool
