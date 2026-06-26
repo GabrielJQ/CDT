@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Contracts\Repositories\TiendaRepositoryInterface;
 use App\Servicios\ServicioExportacion;
 use App\Servicios\ServicioGeo;
 use App\Servicios\ServicioPostgresql;
@@ -16,6 +17,7 @@ class MapaController extends Controller
     ];
 
     public function __construct(
+        private TiendaRepositoryInterface $tiendaRepository,
         private ServicioGeo $geo,
         private ServicioPostgresql $postgres,
     ) {}

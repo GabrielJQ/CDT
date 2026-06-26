@@ -2,6 +2,8 @@
 
 namespace App\Servicios;
 
+use App\Presenters\IndicadorPresenter;
+
 class ServicioTiendaCritica
 {
     public function __construct(
@@ -114,15 +116,7 @@ class ServicioTiendaCritica
 
         arsort($desglose);
 
-        $condLabels = [
-            'capital_bajo' => '💰 Capital total bajo',
-            'capital_dictaminado_bajo' => '🏛️ Capital Bienestar bajo',
-            'comite_vencido' => '📅 Comité vencido',
-            'auditoria_elevada' => '🔍 Auditoría > $500k',
-            'pagare_vencido' => '📄 Pagaré vencido',
-            'rotacion_baja' => '📉 Rotación baja',
-            'asamblea_pendiente' => '🗳️ Asamblea pendiente',
-        ];
+        $condLabels = IndicadorPresenter::factorLabels();
 
         $desgloseLabels = [];
         foreach ($desglose as $key => $count) {

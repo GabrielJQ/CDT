@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Contracts\Repositories\TiendaRepositoryInterface;
 use App\Servicios\ServicioExportacion;
 use App\Servicios\ServicioPostgresql;
 use Illuminate\Http\Request;
@@ -14,6 +15,7 @@ class AuditoriaController extends Controller
     ];
 
     public function __construct(
+        private TiendaRepositoryInterface $tiendaRepository,
         private ServicioPostgresql $postgres,
     ) {}
 

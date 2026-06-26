@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Contracts\Repositories\TiendaRepositoryInterface;
 use App\Servicios\ServicioExportacion;
 use App\Servicios\ServicioPostgresql;
 use Illuminate\Http\Request;
@@ -14,6 +15,7 @@ class CriticalStoresController extends Controller
     ];
 
     public function __construct(
+        private TiendaRepositoryInterface $tiendaRepository,
         private ServicioPostgresql $postgres,
     ) {}
 
@@ -54,16 +56,6 @@ class CriticalStoresController extends Controller
             ], 'informacion-tiendas.csv');
         }
 
-        $indicadores = [
-            'capital_bajo' => '💰 Capital total bajo',
-            'capital_dictaminado_bajo' => '🏛️ Capital Bienestar bajo',
-            'comite_vencido' => '📅 Comité vencido',
-            'auditoria_elevada' => '🔍 Auditoría > $500k',
-            'pagare_vencido' => '📄 Pagaré vencido',
-            'rotacion_baja' => '📉 Rotación baja',
-            'asamblea_pendiente' => '🗳️ Asamblea pendiente',
-        ];
-
         [$page, $perPage] = $this->paginationInput();
         $sortableColumns = array_merge(self::COLUMNS, ['Factores', 'Detalle']);
         $sort = $this->tableSortInput($sortableColumns);
@@ -76,7 +68,6 @@ class CriticalStoresController extends Controller
             'serverPagination' => $this->paginationMeta($page, $perPage, $result['filtered']),
             'summary' => $result['summary'],
             'filters' => $filters,
-            'indicadores' => $indicadores,
             'sort' => $sort,
             'updatedAt' => now()->toDateTimeString(),
         ]);

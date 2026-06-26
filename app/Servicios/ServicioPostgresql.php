@@ -2,6 +2,7 @@
 
 namespace App\Servicios;
 
+use App\Presenters\IndicadorPresenter;
 use Carbon\Carbon;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Query\Builder;
@@ -40,7 +41,7 @@ class ServicioPostgresql
     {
         $conn = $this->conexion();
         $countQuery = $conn->table('tiendas');
-        $this->aplicarPeriodoActivo($countQuery);
+        $this->aplicarPeriodoActivo($countQuery, $filters);
         $count = $countQuery->count();
         if ($count === 0) {
             throw new \RuntimeException('La tabla tiendas está vacía en PostgreSQL');
@@ -54,7 +55,7 @@ class ServicioPostgresql
         $dbColumns = array_values(array_unique(array_map(fn (string $csvColumn) => $reverseMap[$csvColumn], $csvColumns)));
 
         $query = $conn->table('tiendas')->select($dbColumns);
-        $this->aplicarPeriodoActivo($query);
+        $this->aplicarPeriodoActivo($query, $filters);
 
         if (! empty($filters['region'])) {
             $query->where('Clave_Regional', $filters['region']);
@@ -135,7 +136,7 @@ class ServicioPostgresql
         try {
             $conn = $this->conexion();
             $base = $conn->table('tiendas');
-            $this->aplicarPeriodoActivo($base);
+            $this->aplicarPeriodoActivo($base, $regionFilters);
             $this->aplicarFiltroRegional($base, $regionFilters);
 
             $filtered = clone $base;
@@ -180,7 +181,7 @@ class ServicioPostgresql
         try {
             $conn = $this->conexion();
             $base = $conn->table('tiendas');
-            $this->aplicarPeriodoActivo($base);
+            $this->aplicarPeriodoActivo($base, $regionFilters);
             $this->aplicarFiltroRegional($base, $regionFilters);
 
             $filtered = clone $base;
@@ -220,7 +221,7 @@ class ServicioPostgresql
         try {
             $conn = $this->conexion();
             $base = $conn->table('tiendas');
-            $this->aplicarPeriodoActivo($base);
+            $this->aplicarPeriodoActivo($base, $regionFilters);
             $this->aplicarFiltroRegional($base, $regionFilters);
             $usarDerivados = $this->derivadosCompletos($regionFilters);
 
@@ -262,7 +263,7 @@ class ServicioPostgresql
         try {
             $conn = $this->conexion();
             $base = $conn->table('tiendas');
-            $this->aplicarPeriodoActivo($base);
+            $this->aplicarPeriodoActivo($base, $regionFilters);
             $this->aplicarFiltroRegional($base, $regionFilters);
             $usarDerivados = $this->derivadosCompletos($regionFilters);
 
@@ -304,7 +305,7 @@ class ServicioPostgresql
         try {
             $conn = $this->conexion();
             $base = $conn->table('tiendas');
-            $this->aplicarPeriodoActivo($base);
+            $this->aplicarPeriodoActivo($base, $regionFilters);
             $this->aplicarFiltroRegional($base, $regionFilters);
 
             $filtered = clone $base;
@@ -337,7 +338,7 @@ class ServicioPostgresql
     public function obtenerMapa(array $regionFilters, array $filters, array $columns): array
     {
         $query = $this->conexion()->table('tiendas');
-        $this->aplicarPeriodoActivo($query);
+        $this->aplicarPeriodoActivo($query, $regionFilters);
         $this->aplicarFiltroRegional($query, $regionFilters);
         $this->aplicarFiltrosMapa($query, $filters);
         $this->aplicarFiltroTiendaSalud($query, $filters['tienda_salud'] ?? '');
@@ -355,7 +356,7 @@ class ServicioPostgresql
     public function obtenerMapaViewport(array $regionFilters, array $filters, array $bounds, array $columns, int $limit = 3000): array
     {
         $query = $this->conexion()->table('tiendas');
-        $this->aplicarPeriodoActivo($query);
+        $this->aplicarPeriodoActivo($query, $regionFilters);
         $this->aplicarFiltroRegional($query, $regionFilters);
         $this->aplicarFiltrosMapa($query, $filters);
         $this->aplicarFiltroTiendaSalud($query, $filters['tienda_salud'] ?? '');
@@ -379,7 +380,7 @@ class ServicioPostgresql
     public function contarMapaFiltrado(array $regionFilters, array $filters): int
     {
         $query = $this->conexion()->table('tiendas');
-        $this->aplicarPeriodoActivo($query);
+        $this->aplicarPeriodoActivo($query, $regionFilters);
         $this->aplicarFiltroRegional($query, $regionFilters);
         $this->aplicarFiltrosMapa($query, $filters);
         $this->aplicarFiltroTiendaSalud($query, $filters['tienda_salud'] ?? '');
@@ -393,7 +394,7 @@ class ServicioPostgresql
         $filters['direction'] = $direction;
 
         $countQuery = $this->conexion()->table('tiendas');
-        $this->aplicarPeriodoActivo($countQuery);
+        $this->aplicarPeriodoActivo($countQuery, $regionFilters);
         $this->aplicarFiltroRegional($countQuery, $regionFilters);
         $this->aplicarFiltrosMapa($countQuery, $filters);
         $this->aplicarFiltroTiendaSalud($countQuery, $filters['tienda_salud'] ?? '');
@@ -401,7 +402,7 @@ class ServicioPostgresql
         $total = $countQuery->count();
 
         $dataQuery = $this->conexion()->table('tiendas');
-        $this->aplicarPeriodoActivo($dataQuery);
+        $this->aplicarPeriodoActivo($dataQuery, $regionFilters);
         $this->aplicarFiltroRegional($dataQuery, $regionFilters);
         $this->aplicarFiltrosMapa($dataQuery, $filters);
         $this->aplicarFiltroTiendaSalud($dataQuery, $filters['tienda_salud'] ?? '');
@@ -429,7 +430,7 @@ class ServicioPostgresql
     public function obtenerDashboardMetricas(array $regionFilters): array
     {
         $base = $this->conexion()->table('tiendas');
-        $this->aplicarPeriodoActivo($base);
+        $this->aplicarPeriodoActivo($base, $regionFilters);
         $this->aplicarFiltroRegional($base, $regionFilters);
 
         $total = (clone $base)->count();
@@ -455,7 +456,7 @@ class ServicioPostgresql
     public function exportarTiendas(array $regionFilters, array $filters, array $columns, string $module): \Generator
     {
         $query = $this->conexion()->table('tiendas');
-        $this->aplicarPeriodoActivo($query);
+        $this->aplicarPeriodoActivo($query, $regionFilters);
         $this->aplicarFiltroRegional($query, $regionFilters);
 
         if ($module === 'conectividad') {
@@ -525,7 +526,7 @@ class ServicioPostgresql
     {
         try {
             $query = $this->conexion()->table('tiendas');
-            $this->aplicarPeriodoActivo($query);
+            $this->aplicarPeriodoActivo($query, $regionFilters);
             $this->aplicarFiltroRegional($query, $regionFilters);
             $row = $query->selectRaw('
                 COUNT(*) as total,
@@ -571,9 +572,13 @@ class ServicioPostgresql
         }
     }
 
-    private function aplicarPeriodoActivo(Builder $query): void
+    private function aplicarPeriodoActivo(Builder $query, array $filters = []): void
     {
-        $query->where('es_activo', true);
+        if (! empty($filters['periodo_importacion_id'])) {
+            $query->where('periodo_importacion_id', $filters['periodo_importacion_id']);
+        } else {
+            $query->where('es_activo', true);
+        }
     }
 
     private function aplicarFiltrosConectividad(Builder $query, array $filters): void
@@ -1149,15 +1154,7 @@ class ServicioPostgresql
 
     private function indicadorLabels(): array
     {
-        return [
-            'capital_bajo' => '💰 Capital total bajo',
-            'capital_dictaminado_bajo' => '🏛️ Capital Bienestar bajo',
-            'comite_vencido' => '📅 Comité vencido',
-            'auditoria_elevada' => '🔍 Auditoría > $500k',
-            'pagare_vencido' => '📄 Pagaré vencido',
-            'rotacion_baja' => '📉 Rotación baja',
-            'asamblea_pendiente' => '🗳️ Asamblea pendiente',
-        ];
+        return IndicadorPresenter::factorLabels();
     }
 
     private function camposIncompletosSql(array $columns): string

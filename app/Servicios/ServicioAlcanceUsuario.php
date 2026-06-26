@@ -9,42 +9,51 @@ class ServicioAlcanceUsuario
 {
     private const NO_ACCESS = '__NO_ACCESS__';
 
+    public function __construct(
+        private ServicioPeriodosImportacion $periodos,
+    ) {}
+
     /**
-     * @return array{region: string, uo: string}
+     * @return array{region: string, uo: string, periodo_importacion_id: int|null}
      */
     public function filtroEfectivo(Request $request): array
     {
         $user = $request->user();
         if (! $user instanceof User) {
-            return ['region' => self::NO_ACCESS, 'uo' => self::NO_ACCESS];
+            return ['region' => self::NO_ACCESS, 'uo' => self::NO_ACCESS, 'periodo_importacion_id' => null];
         }
 
-        return $this->resolverFiltro($user, [
+        $filtro = $this->resolverFiltro($user, [
             'region' => (string) $request->cookie('region_filter', ''),
             'uo' => (string) $request->cookie('uo_filter', ''),
         ]);
+
+        $periodo = $this->periodos->obtenerActivo('regular', $user);
+
+        $filtro['periodo_importacion_id'] = $periodo?->id;
+
+        return $filtro;
     }
 
     /**
      * @param  array{region?: string|null, uo?: string|null}  $requested
-     * @return array{region: string, uo: string}
+     * @return array{region: string, uo: string, periodo_importacion_id: int|null}
      */
     public function resolverFiltro(User $user, array $requested = []): array
     {
         $requestedRegion = trim((string) ($requested['region'] ?? ''));
         $requestedUo = trim((string) ($requested['uo'] ?? ''));
 
+        $base = fn (array $extra = []): array => $extra + ['region' => '', 'uo' => '', 'periodo_importacion_id' => null];
+
         if ($user->hasGlobalAccess()) {
-            return [
-                'region' => $requestedRegion,
-                'uo' => $requestedUo,
-            ];
+            return $base(['region' => $requestedRegion, 'uo' => $requestedUo]);
         }
 
         if ($user->isRegional()) {
             $region = $user->region?->clave;
             if ($region === null || $region === '') {
-                return ['region' => self::NO_ACCESS, 'uo' => self::NO_ACCESS];
+                return $base(['region' => self::NO_ACCESS, 'uo' => self::NO_ACCESS]);
             }
 
             $uo = '';
@@ -52,20 +61,20 @@ class ServicioAlcanceUsuario
                 $uo = $requestedUo;
             }
 
-            return ['region' => $region, 'uo' => $uo];
+            return $base(['region' => $region, 'uo' => $uo]);
         }
 
         if ($user->isUnidad()) {
             $region = $user->region?->clave;
             $uo = $user->unidadOperativa?->clave;
             if ($region === null || $region === '' || $uo === null || $uo === '') {
-                return ['region' => self::NO_ACCESS, 'uo' => self::NO_ACCESS];
+                return $base(['region' => self::NO_ACCESS, 'uo' => self::NO_ACCESS]);
             }
 
-            return ['region' => $region, 'uo' => $uo];
+            return $base(['region' => $region, 'uo' => $uo]);
         }
 
-        return ['region' => self::NO_ACCESS, 'uo' => self::NO_ACCESS];
+        return $base(['region' => self::NO_ACCESS, 'uo' => self::NO_ACCESS]);
     }
 
     /**

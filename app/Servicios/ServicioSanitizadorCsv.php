@@ -15,7 +15,10 @@ class ServicioSanitizadorCsv
             'total_lines' => 0,
             'encoding_fixes' => 0,
             'control_chars_removed' => 0,
+            'metadata_rows_skipped' => 0,
         ];
+
+        $skippingMetadata = false;
 
         while (! $in->eof()) {
             $linea = $in->fgets();
@@ -39,12 +42,39 @@ class ServicioSanitizadorCsv
 
             $linea = rtrim($linea, "\r\n")."\n";
 
+            if ($stats['total_lines'] === 1 && $this->esLineaMetadata($linea, $delimiter)) {
+                $skippingMetadata = true;
+            }
+
+            if ($skippingMetadata) {
+                $esBlanco = trim($linea, "\r\n") === '' || preg_match('/^[,;\t]+$/', trim($linea, "\r\n")) === 1;
+                if ($this->esLineaMetadata($linea, $delimiter) || $esBlanco) {
+                    $stats['metadata_rows_skipped']++;
+
+                    continue;
+                }
+
+                $skippingMetadata = false;
+            }
+
             $out->fwrite($linea);
         }
 
         unset($in, $out);
 
         return $stats;
+    }
+
+    private function esLineaMetadata(string $linea, string $delimiter = ','): bool
+    {
+        $first = strtok($linea, $delimiter);
+        if ($first === false || $first === '') {
+            return false;
+        }
+
+        $first = trim($first, '" ');
+
+        return (bool) preg_match('/^(Fecha de Reporte|Reporte|Fecha|Periodo|Elaboró|Revisó|No\.|Tipo de Reporte|Con DATOS|Programa|CANAL DE DISTRIBUCION|Informe)/i', $first);
     }
 
     public function contarFilas(string $csvPath, bool $skipHeader = true): int

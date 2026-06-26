@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Contracts\Repositories\TiendaRepositoryInterface;
 use App\Servicios\ServicioExportacion;
 use App\Servicios\ServicioFecha;
 use App\Servicios\ServicioPostgresql;
@@ -14,6 +15,7 @@ class AperturaController extends Controller
     ];
 
     public function __construct(
+        private TiendaRepositoryInterface $tiendaRepository,
         private ServicioFecha $fecha,
         private ServicioPostgresql $postgres,
     ) {}
