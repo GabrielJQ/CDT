@@ -82,12 +82,14 @@ class DashboardControllerTest extends TestCase
     public function test_refresh_invalidates_dashboard_cache(): void
     {
         Cache::put('dashboard_metrics_version', 1);
+        Cache::put('some_old_metric', 'stale');
 
         $response = $this->post('/refresh');
 
         $response->assertStatus(302);
         $response->assertSessionHas('success');
-        $this->assertSame(2, Cache::get('dashboard_metrics_version'));
+        $this->assertNull(Cache::get('dashboard_metrics_version'));
+        $this->assertNull(Cache::get('some_old_metric'));
     }
 
     public function test_dashboard_with_region_filter(): void
