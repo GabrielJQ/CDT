@@ -2,122 +2,27 @@
 
 namespace App\Http\Controllers;
 
+use App\Servicios\ServicioCasaPorCasa;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class CasaPorCasaController extends Controller
 {
-    private const NO_ACCESS = '__NO_ACCESS__';
-
-    private function resolveUoFilter(): array
-    {
-        $filter = $this->applyRegionFilter();
-        $region = $filter['region'] ?? '';
-        $uo = $filter['uo'] ?? '';
-
-        if ($region === self::NO_ACCESS || $uo === self::NO_ACCESS) {
-            return [self::NO_ACCESS];
-        }
-
-        if (empty($region) && empty($uo)) {
-            return [];
-        }
-
-        $conn = DB::connection('pgsql_imports');
-
-        $query = $conn->table('tiendas_casa_x_casa')
-            ->join('tiendas', function ($join) use ($conn) {
-                $join->on('tiendas_casa_x_casa.no_tienda', '=', $conn->raw('"tiendas"."No_Tienda_Actual"'))
-                    ->on('tiendas_casa_x_casa.almacen', '=', $conn->raw('"tiendas"."Nombre_Almacen"'))
-                    ->on('tiendas_casa_x_casa.estado', '=', $conn->raw('"tiendas"."Estado"'))
-                    ->on('tiendas_casa_x_casa.municipio', '=', $conn->raw('"tiendas"."Municipio"'));
-            })
-            ->where('tiendas.es_activo', true)
-            ->where('tiendas_casa_x_casa.es_activo', true);
-
-        if (! empty($uo)) {
-            $query->where('tiendas.Clave_UniOpe', $uo);
-            if (! empty($region)) {
-                $query->where('tiendas.Clave_Regional', $region);
-            }
-        } else {
-            $query->where('tiendas.Clave_Regional', $region);
-        }
-
-        return $query->distinct()->pluck('tiendas_casa_x_casa.unidad_operativa')->toArray();
-    }
+    public function __construct(
+        private ServicioCasaPorCasa $cxc,
+    ) {}
 
     public function dashboard()
     {
-        $conn = DB::connection('pgsql_imports');
-        $uoFilter = $this->resolveUoFilter();
+        $data = $this->cxc->dashboardData();
 
-        $query = $this->activeCxcQuery($conn);
-        if (! empty($uoFilter)) {
-            $query->whereIn('unidad_operativa', $uoFilter);
-        }
-        $total = (clone $query)->count();
-
-        $porEstatus = (clone $query)
-            ->select('estatus', DB::raw('count(*) as total'))
-            ->whereNotNull('estatus')
-            ->groupBy('estatus')
-            ->orderByDesc('total')
-            ->get();
-
-        $anaqueles = [
-            'instalados' => (clone $query)->where('anaqueles_instalados', true)->count(),
-            'pendientes' => (clone $query)->where('anaqueles_instalados', false)->count(),
-        ];
-
-        $aviso = [
-            'con_aviso' => (clone $query)->where('aviso_funcionamiento', true)->count(),
-            'sin_aviso' => (clone $query)->where('aviso_funcionamiento', false)->count(),
-        ];
-
-        $topUos = (clone $query)
-            ->select('unidad_operativa', DB::raw('count(*) as total'))
-            ->groupBy('unidad_operativa')
-            ->orderByDesc('total')
-            ->limit(20)
-            ->get();
-
-        $porTipoAnaquel = (clone $query)
-            ->select('tipo_anaquel', DB::raw('count(*) as total'))
-            ->whereNotNull('tipo_anaquel')
-            ->groupBy('tipo_anaquel')
-            ->orderByDesc('total')
-            ->get();
-
-        $cruce = $this->calcularCruce($conn, $uoFilter);
-
-        return view('casa-x-casa.dashboard', compact(
-            'total', 'porEstatus', 'anaqueles', 'aviso',
-            'topUos', 'porTipoAnaquel', 'cruce',
-        ));
-    }
-
-    private function whereUoFilterSql(array $uoFilter, string $alias = ''): string
-    {
-        if (empty($uoFilter)) {
-            return '';
-        }
-
-        $escaped = array_map(fn ($v) => "'".str_replace("'", "''", $v)."'", $uoFilter);
-        $prefix = $alias ? $alias.'.' : '';
-
-        return 'AND '.$prefix.'unidad_operativa IN ('.implode(', ', $escaped).')';
+        return view('casa-x-casa.dashboard', $data);
     }
 
     public function directorio(Request $request)
     {
-        $conn = DB::connection('pgsql_imports');
-        $uoFilter = $this->resolveUoFilter();
+        $uoFilter = $this->cxc->resolveUoFilter();
 
-        $query = $this->activeCxcQuery($conn);
-        if (! empty($uoFilter)) {
-            $query->whereIn('unidad_operativa', $uoFilter);
-        }
+        $query = $this->cxc->directorioQuery($uoFilter);
 
         if ($estado = $request->query('estado')) {
             $query->where('estado', $estado);
@@ -149,19 +54,13 @@ class CasaPorCasaController extends Controller
 
         $stores = $query->paginate(50);
 
-        $baseQuery = $this->activeCxcQuery($conn);
-        if (! empty($uoFilter)) {
-            $baseQuery->whereIn('unidad_operativa', $uoFilter);
-        }
-        $estados = (clone $baseQuery)->select('estado')
-            ->distinct()->orderBy('estado')->pluck('estado');
-        $unidadesOperativas = (clone $baseQuery)->select('unidad_operativa')
-            ->distinct()->orderBy('unidad_operativa')->pluck('unidad_operativa');
-        $estatusList = (clone $baseQuery)->select('estatus')
-            ->whereNotNull('estatus')->distinct()->orderBy('estatus')->pluck('estatus');
+        $filterOptions = $this->cxc->directorioFilterOptions($uoFilter);
+        $estados = $filterOptions['estados'];
+        $unidadesOperativas = $filterOptions['unidadesOperativas'];
+        $estatusList = $filterOptions['estatusList'];
 
         return view('casa-x-casa.directorio', compact(
-            'stores', 'totalCount', 'estados', 'unidadesOperativas', 'estatusList', 'sort',
+            'stores', 'totalCount', 'sort', 'estados', 'unidadesOperativas', 'estatusList',
         ));
     }
 
@@ -172,25 +71,9 @@ class CasaPorCasaController extends Controller
 
     public function mapaData(Request $request)
     {
-        $conn = DB::connection('pgsql_imports');
-        $uoFilter = $this->resolveUoFilter();
-
-        $query = $conn->table('tiendas_casa_x_casa')
-            ->select([
-                'id', 'almacen', 'no_tienda', 'municipio', 'estado', 'unidad_operativa',
-                'tipo_anaquel', 'anaqueles_instalados', 'latitud', 'longitud',
-            ])
-            ->whereNotNull('latitud')
-            ->whereNotNull('longitud')
-            ->where('latitud', '!=', 0)
-            ->where('longitud', '!=', 0)
-            ->where('es_activo', true);
-
-        if (! empty($uoFilter)) {
-            $query->whereIn('unidad_operativa', $uoFilter);
-        }
-
-        $this->applyNumericBounds($query, $request, 'latitud', 'longitud');
+        $uoFilter = $this->cxc->resolveUoFilter();
+        $query = $this->cxc->mapaQuery($uoFilter);
+        $this->cxc->applyNumericBounds($query, $request, 'latitud', 'longitud');
 
         $stores = $query->orderBy('id')->limit(3000)->get();
 
@@ -199,104 +82,15 @@ class CasaPorCasaController extends Controller
 
     public function show(int $id)
     {
-        $conn = DB::connection('pgsql_imports');
-        $uoFilter = $this->resolveUoFilter();
+        $uoFilter = $this->cxc->resolveUoFilter();
+        $store = $this->cxc->findStore($id, $uoFilter);
 
-        $query = $this->activeCxcQuery($conn)->where('id', $id);
-        if (! empty($uoFilter)) {
-            $query->whereIn('unidad_operativa', $uoFilter);
-        }
-
-        $store = $query->first();
         if (! $store) {
             abort(404);
         }
 
-        $cruce = $this->cruceIndividual($conn, $store);
+        $cruce = $this->cxc->cruceIndividual($store);
 
         return view('casa-x-casa.show', compact('store', 'cruce'));
-    }
-
-    private function calcularCruce($conn, array $uoFilter = []): array
-    {
-        $enTiendas = $conn->select('
-            SELECT COUNT(*) as total
-            FROM tiendas_casa_x_casa cxc
-            INNER JOIN tiendas t
-                ON t."No_Tienda_Actual" = cxc.no_tienda
-                AND t."Nombre_Almacen" = cxc.almacen
-                AND t."Estado" = cxc.estado
-                AND t."Municipio" = cxc.municipio
-                AND t.es_activo = true
-            WHERE cxc.es_activo = true
-            '.$this->whereUoFilterSql($uoFilter, 'cxc').'
-        ');
-
-        $soloCxc = $conn->select('
-            SELECT COUNT(*) as total
-            FROM tiendas_casa_x_casa cxc
-            LEFT JOIN tiendas t
-                ON t."No_Tienda_Actual" = cxc.no_tienda
-                AND t."Nombre_Almacen" = cxc.almacen
-                AND t."Estado" = cxc.estado
-                AND t."Municipio" = cxc.municipio
-                AND t.es_activo = true
-            WHERE cxc.es_activo = true AND t.id IS NULL
-            '.$this->whereUoFilterSql($uoFilter, 'cxc').'
-        ');
-
-        return [
-            'enTiendas' => (int) ($enTiendas[0]->total ?? 0),
-            'soloCxc' => (int) ($soloCxc[0]->total ?? 0),
-        ];
-    }
-
-    private function cruceIndividual($conn, $store): ?object
-    {
-        $rows = $conn->select('
-            SELECT "No_Tienda_Actual", "Nombre_Almacen", "Estado", "Municipio",
-                   "Fecha_Apertura", "TELEFONIA", "INTERNET", "Señal de celular",
-                   "Compañía", "Cap_Tot", "Fch_Audit", "Vigencia"
-            FROM tiendas
-            WHERE "No_Tienda_Actual" = ?
-              AND "Nombre_Almacen" = ?
-              AND "Estado" = ?
-              AND "Municipio" = ?
-              AND es_activo = true
-            LIMIT 1
-        ', [$store->no_tienda, $store->almacen, $store->estado, $store->municipio]);
-
-        return $rows[0] ?? null;
-    }
-
-    private function applyNumericBounds($query, Request $request, string $latColumn, string $lonColumn): void
-    {
-        $values = [];
-        foreach (['north', 'south', 'east', 'west'] as $key) {
-            $value = $request->query($key);
-            if (! is_numeric($value)) {
-                return;
-            }
-            $values[$key] = (float) $value;
-        }
-
-        $north = min(90, $values['north']);
-        $south = max(-90, $values['south']);
-        $east = min(180, $values['east']);
-        $west = max(-180, $values['west']);
-
-        $query->whereBetween($latColumn, [min($south, $north), max($south, $north)]);
-        if ($west <= $east) {
-            $query->whereBetween($lonColumn, [$west, $east]);
-        } else {
-            $query->where(function ($query) use ($lonColumn, $west, $east) {
-                $query->whereBetween($lonColumn, [$west, 180])->orWhereBetween($lonColumn, [-180, $east]);
-            });
-        }
-    }
-
-    private function activeCxcQuery($conn)
-    {
-        return $conn->table('tiendas_casa_x_casa')->where('es_activo', true);
     }
 }
