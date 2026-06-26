@@ -191,14 +191,7 @@ new class extends Component
 @endphp
 
 <div class="page-shell" wire:loading.class="opacity-70" wire:target="almacen,desde,hasta,sortBy,clearFilters,previousTablePage,nextTablePage,goToTablePage,showApertura">
-    <div class="institutional-card mb-6 flex flex-col gap-4 border-l-4 border-[#988256] p-5 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-            <p class="text-xs font-extrabold uppercase tracking-[0.22em] text-[#988256]">Módulo operativo</p>
-            <h3 class="mt-1 text-xl font-extrabold text-gray-900 dark:text-gray-100">Apertura de Tiendas</h3>
-            <p class="mt-1 max-w-3xl text-sm text-gray-500 dark:text-gray-400">Consulta fechas de apertura y antigüedad de tiendas. Al usar los filtros se actualiza la tabla automáticamente.</p>
-        </div>
-        <a href="{{ $this->exportUrl() }}" class="btn-export self-start lg:self-center" wire:navigate.hover="false">Exportar CSV</a>
-    </div>
+    <x-module-header title="Apertura de Tiendas" description="Consulta fechas de apertura y antigüedad de tiendas. Al usar los filtros se actualiza la tabla automáticamente." exportUrl="{{ $this->exportUrl() }}" />
 
     <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
         <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-blue-500">
@@ -255,13 +248,7 @@ new class extends Component
         </label>
     </div>
 
-    <div class="text-sm text-gray-500 dark:text-gray-400 mb-2">
-        Mostrando <strong>{{ number_format($from) }}</strong>–<strong>{{ number_format($to) }}</strong> de <strong>{{ number_format($filteredCount) }}</strong> tiendas
-        @if($filteredCount !== $totalCount)
-            <span class="text-gray-400 dark:text-gray-500">(filtradas de {{ number_format($totalCount) }})</span>
-        @endif
-        <span wire:loading class="ml-2 text-[#988256] font-semibold">Actualizando...</span>
-    </div>
+    <x-table-summary :from="$from" :to="$to" :filteredCount="$filteredCount" :totalCount="$totalCount" />
 
     <div x-data="{ page: @entangle('page') }" x-init="$watch('page', () => $nextTick(() => $el.scrollTop = 0))" class="max-h-[65vh] overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800">
         <table id="aper-table" class="w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm dark:text-gray-200">
@@ -303,29 +290,5 @@ new class extends Component
         </table>
     </div>
 
-    <div class="flex items-center justify-between mt-4">
-        <button type="button" wire:click="previousTablePage({{ $totalPages }})" @disabled($page <= 1) class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/30 disabled:opacity-30 disabled:cursor-not-allowed transition">← Anterior</button>
-        <div class="flex gap-1">
-            @php
-                $startPage = max(1, $page - 3);
-                $endPage = min($totalPages, $page + 3);
-            @endphp
-            @if($startPage > 1)
-                <button type="button" wire:click="goToTablePage(1, {{ $totalPages }})" class="page-btn px-2.5 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg transition hover:bg-gray-100 dark:hover:bg-gray-700/30 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">1</button>
-                @if($startPage > 2)
-                    <span class="text-gray-400 dark:text-gray-500 px-1 self-end">...</span>
-                @endif
-            @endif
-            @for($tablePage = $startPage; $tablePage <= $endPage; $tablePage++)
-                <button type="button" wire:click="goToTablePage({{ $tablePage }}, {{ $totalPages }})" class="page-btn px-2.5 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg transition hover:bg-gray-100 dark:hover:bg-gray-700/30 {{ $tablePage === $page ? 'active' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300' }}">{{ $tablePage }}</button>
-            @endfor
-            @if($endPage < $totalPages)
-                @if($endPage < $totalPages - 1)
-                    <span class="text-gray-400 dark:text-gray-500 px-1 self-end">...</span>
-                @endif
-                <button type="button" wire:click="goToTablePage({{ $totalPages }}, {{ $totalPages }})" class="page-btn px-2.5 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg transition hover:bg-gray-100 dark:hover:bg-gray-700/30 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">{{ $totalPages }}</button>
-            @endif
-        </div>
-        <button type="button" wire:click="nextTablePage({{ $totalPages }})" @disabled($page >= $totalPages) class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/30 disabled:opacity-30 disabled:cursor-not-allowed transition">Siguiente →</button>
-    </div>
+    <x-table-pagination :page="$page" :totalPages="$totalPages" />
 </div>
