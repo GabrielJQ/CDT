@@ -11,7 +11,7 @@
                 <h1 class="page-heading">Mi Perfil</h1>
             </div>
             <span class="status-pill {{ $user->isAdmin() ? 'status-critical' : ($user->isNacional() ? 'status-warning' : 'status-ok') }}">
-                {{ ucfirst($user->role) }}
+                {{ ucfirst($user->role?->value ?? '') }}
             </span>
         </div>
     </div>
@@ -30,7 +30,7 @@
             </div>
             <div>
                 <dt class="kpi-label">Rol</dt>
-                <dd class="kpi-value text-base capitalize">{{ $user->role }}</dd>
+                <dd class="kpi-value text-base capitalize">{{ $user->role?->label() }}</dd>
             </div>
             <div>
                 <dt class="kpi-label">Miembro desde</dt>
@@ -81,7 +81,7 @@
     <div class="institutional-card p-5 lg:p-6">
         <h2 class="institutional-title mb-4">Permisos</h2>
         <p class="text-sm leading-relaxed text-gray-600 dark:text-gray-300">
-            {{ $roleDescriptions[$user->role] ?? '' }}
+            {{ $roleDescriptions[$user->role?->value ?? ''] ?? '' }}
         </p>
         <ul class="mt-3 space-y-1.5 text-sm text-gray-600 dark:text-gray-300">
             <li class="flex items-center gap-2">

@@ -2,8 +2,9 @@
 
 namespace App\Providers;
 
+use App\Contracts\Repositories\TiendaRepositoryInterface;
+use App\Repositories\TiendaPostgresqlRepository;
 use App\Servicios\ServicioAlcanceUsuario;
-use App\Servicios\ServicioPostgresql;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -15,7 +16,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(
+            TiendaRepositoryInterface::class,
+            TiendaPostgresqlRepository::class,
+        );
     }
 
     /**
@@ -34,18 +38,21 @@ class AppServiceProvider extends ServiceProvider
         }
 
         View::composer('layouts.app', function ($view) {
+            $jerarquia = rescue(
+                fn () => $this->app->make(TiendaRepositoryInterface::class)->getJerarquiaRegional(),
+                [],
+            );
+
             try {
-                $postgres = app(ServicioPostgresql::class);
-                $jerarquia = $postgres->obtenerJerarquiaRegional();
                 $user = request()->user();
                 if ($user !== null) {
                     $jerarquia = app(ServicioAlcanceUsuario::class)->filtrarJerarquia($user, $jerarquia);
                 }
-
-                $view->with('regionesData', $jerarquia);
             } catch (\Throwable) {
-                $view->with('regionesData', []);
+                $jerarquia = [];
             }
+
+            $view->with('regionesData', $jerarquia);
         });
     }
 }

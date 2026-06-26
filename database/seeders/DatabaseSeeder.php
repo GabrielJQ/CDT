@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\RolUsuario;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -21,7 +22,7 @@ class DatabaseSeeder extends Seeder
         ], [
             'name' => env('ADMIN_NAME', 'Administrador'),
             'password' => Hash::make(env('ADMIN_PASSWORD', 'password')),
-            'role' => 'admin',
+            'role' => RolUsuario::Admin,
             'region_id' => null,
             'unidad_operativa_id' => null,
             'is_active' => true,

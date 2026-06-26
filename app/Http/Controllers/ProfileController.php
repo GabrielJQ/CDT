@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\RolUsuario;
+use App\Http\Requests\ProfilePasswordRequest;
+use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\UnidadOperativa;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rules\Password;
 
 class ProfileController extends Controller
 {
@@ -20,12 +21,10 @@ class ProfileController extends Controller
                 ->get();
         }
 
-        $roleDescriptions = [
-            'admin' => 'Acceso total a todos los módulos, importación de datos y administración de usuarios.',
-            'nacional' => 'Acceso a todos los módulos operativos e importación de datos. No administra usuarios.',
-            'regional' => 'Acceso limitado a su región asignada. Puede filtrar por Unidad Operativa dentro de su región.',
-            'unidad' => 'Acceso limitado únicamente a su Unidad Operativa asignada.',
-        ];
+        $roleDescriptions = [];
+        foreach (RolUsuario::cases() as $role) {
+            $roleDescriptions[$role->value] = $role->description();
+        }
 
         return view('profile', [
             'user' => $user,
@@ -34,12 +33,8 @@ class ProfileController extends Controller
         ]);
     }
 
-    public function update(Request $request): RedirectResponse
+    public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-        ]);
-
         $request->user()->update([
             'name' => $request->name,
         ]);
@@ -48,15 +43,10 @@ class ProfileController extends Controller
             ->with('success', 'Nombre actualizado correctamente.');
     }
 
-    public function updatePassword(Request $request): RedirectResponse
+    public function updatePassword(ProfilePasswordRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'current_password' => ['required', 'current_password'],
-            'password' => ['required', 'confirmed', Password::defaults()],
-        ]);
-
         $request->user()->update([
-            'password' => $validated['password'],
+            'password' => $request->password,
         ]);
 
         return redirect()->to(url()->previous().'#section-password')

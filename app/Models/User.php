@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\RolUsuario;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,11 +14,6 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
         'name',
         'email',
@@ -30,21 +25,11 @@ class User extends Authenticatable
         'last_login_at',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -52,6 +37,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_active' => 'boolean',
             'last_login_at' => 'datetime',
+            'role' => RolUsuario::class,
         ];
     }
 
@@ -67,36 +53,36 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return $this->role === RolUsuario::Admin;
     }
 
     public function isNacional(): bool
     {
-        return $this->role === 'nacional';
+        return $this->role === RolUsuario::Nacional;
     }
 
     public function isRegional(): bool
     {
-        return $this->role === 'regional';
+        return $this->role === RolUsuario::Regional;
     }
 
     public function isUnidad(): bool
     {
-        return $this->role === 'unidad';
+        return $this->role === RolUsuario::Unidad;
     }
 
     public function canManageUsers(): bool
     {
-        return $this->isAdmin();
+        return $this->role?->canManageUsers() ?? false;
     }
 
     public function canImportGlobal(): bool
     {
-        return $this->isAdmin() || $this->isNacional();
+        return $this->role?->canImportGlobal() ?? false;
     }
 
     public function hasGlobalAccess(): bool
     {
-        return $this->isAdmin() || $this->isNacional();
+        return $this->role?->isGlobal() ?? false;
     }
 }
