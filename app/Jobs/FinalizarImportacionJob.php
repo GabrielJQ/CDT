@@ -13,6 +13,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class FinalizarImportacionJob implements ShouldQueue
 {
@@ -41,7 +42,13 @@ class FinalizarImportacionJob implements ShouldQueue
         $periodos = app(ServicioPeriodosImportacion::class);
         $conn = DB::connection('pgsql_imports');
 
-        $total = $conn->table('staging_import')->where('_status', 'staged')->count();
+        $stagingQuery = $conn->table('staging_import')->where('_status', 'staged');
+
+        if ($this->periodoImportacionId !== null) {
+            $stagingQuery->where('periodo_importacion_id', $this->periodoImportacionId);
+        }
+
+        $total = (clone $stagingQuery)->count();
         if ($total === 0) {
             Log::info('No hay filas pendientes en staging_import');
 
@@ -52,74 +59,72 @@ class FinalizarImportacionJob implements ShouldQueue
         $exitos = 0;
         $errores = 0;
 
-        $conn->table('staging_import')
-            ->where('_status', 'staged')
-            ->chunkById(300, function ($filas) use ($conn, $mapper, $limites, $derivados, &$exitos, &$errores) {
-                $batch = [];
-                $idsOk = [];
-                $idsError = [];
-                $errors = [];
+        $stagingQuery->chunkById(300, function ($filas) use ($conn, $mapper, $limites, $derivados, $periodos, &$exitos, &$errores) {
+            $batch = [];
+            $idsOk = [];
+            $idsError = [];
+            $errors = [];
 
-                foreach ($filas as $fila) {
-                    try {
-                        $data = $this->convertirFechas($mapper->mapear($fila));
-                        $data = $derivados->agregar($data);
-                        if ($this->periodoImportacionId !== null) {
-                            $data['periodo_importacion_id'] = $this->periodoImportacionId;
-                            $data['es_activo'] = false;
-                            $data['llave_tienda_periodo'] = $periodos->llaveRegular($data);
-                        }
-                        $data = $this->truncarValores($data, $limites);
-                        $batch[] = $data;
-                        $idsOk[] = $fila->id;
-                        $exitos++;
-                    } catch (\Throwable $e) {
-                        $idsError[] = $fila->id;
-                        $errors[$fila->id] = $e->getMessage();
-                        $errores++;
+            foreach ($filas as $fila) {
+                try {
+                    $data = $this->convertirFechas($mapper->mapear($fila));
+                    $data = $derivados->agregar($data);
+                    if ($this->periodoImportacionId !== null) {
+                        $data['periodo_importacion_id'] = $this->periodoImportacionId;
+                        $data['es_activo'] = false;
+                        $data['llave_tienda_periodo'] = $periodos->llaveRegular($data);
                     }
+                    $data = $this->truncarValores($data, $limites);
+                    $batch[] = $data;
+                    $idsOk[] = $fila->id;
+                    $exitos++;
+                } catch (\Throwable $e) {
+                    $idsError[] = $fila->id;
+                    $errors[$fila->id] = $e->getMessage();
+                    $errores++;
                 }
+            }
 
-                if (! empty($batch)) {
-                    try {
-                        $conn->table('tiendas')->insert($batch);
+            if (! empty($batch)) {
+                try {
+                    $conn->table('tiendas')->insert($batch);
 
-                        $conn->table('staging_import')
-                            ->whereIn('id', $idsOk)
-                            ->update(['_status' => 'valid']);
-                    } catch (\Throwable $batchError) {
-                        foreach ($batch as $i => $row) {
-                            try {
-                                $conn->table('tiendas')->insert($row);
-                                $conn->table('staging_import')
-                                    ->where('id', $idsOk[$i])
-                                    ->update(['_status' => 'valid']);
-                            } catch (\Throwable $rowError) {
-                                $id = $idsOk[$i];
-                                $conn->table('staging_import')
-                                    ->where('id', $id)
-                                    ->update([
-                                        '_status' => 'error',
-                                        '_errors' => json_encode([$rowError->getMessage()]),
-                                    ]);
-                                $errores++;
-                                $exitos--;
-                            }
+                    $conn->table('staging_import')
+                        ->whereIn('id', $idsOk)
+                        ->update(['_status' => 'valid']);
+                } catch (\Throwable $batchError) {
+                    foreach ($batch as $i => $row) {
+                        try {
+                            $conn->table('tiendas')->insert($row);
+                            $conn->table('staging_import')
+                                ->where('id', $idsOk[$i])
+                                ->update(['_status' => 'valid']);
+                        } catch (\Throwable $rowError) {
+                            $id = $idsOk[$i];
+                            $conn->table('staging_import')
+                                ->where('id', $id)
+                                ->update([
+                                    '_status' => 'error',
+                                    '_errors' => json_encode([$rowError->getMessage()]),
+                                ]);
+                            $errores++;
+                            $exitos--;
                         }
                     }
                 }
+            }
 
-                if (! empty($idsError)) {
-                    foreach ($idsError as $id) {
-                        $conn->table('staging_import')
-                            ->where('id', $id)
-                            ->update([
-                                '_status' => 'error',
-                                '_errors' => json_encode([$errors[$id]]),
-                            ]);
-                    }
+            if (! empty($idsError)) {
+                foreach ($idsError as $id) {
+                    $conn->table('staging_import')
+                        ->where('id', $id)
+                        ->update([
+                            '_status' => 'error',
+                            '_errors' => json_encode([$errors[$id]]),
+                        ]);
                 }
-            });
+            }
+        });
 
         Log::info('Importación finalizada', [
             'total' => $total,
@@ -132,6 +137,7 @@ class FinalizarImportacionJob implements ShouldQueue
         }
 
         if ($this->periodoImportacionId !== null) {
+            $periodos->rellenarCamposRegional(ServicioPeriodosImportacion::TIPO_REGULAR, $this->periodoImportacionId);
             $periodos->activar(ServicioPeriodosImportacion::TIPO_REGULAR, $this->periodoImportacionId, $exitos, $errores);
         }
 
@@ -218,11 +224,15 @@ class FinalizarImportacionJob implements ShouldQueue
             ->where('_status', 'error')
             ->get();
 
-        $reportDir = storage_path('app/imports/_reportes');
-        @mkdir($reportDir, 0755, true);
+        $relativeDir = 'imports/_reportes';
+        Storage::disk('local')->makeDirectory($relativeDir);
 
-        $path = "{$reportDir}/errores_".now()->format('Ymd_His').'.csv';
-        $out = fopen($path, 'w');
+        $filename = 'errores_'.now()->format('Ymd_His').'.csv';
+        $path = $relativeDir.DIRECTORY_SEPARATOR.$filename;
+
+        $fullPath = Storage::disk('local')->path($path);
+
+        $out = fopen($fullPath, 'w');
 
         $first = $errores->first();
         if ($first) {
@@ -236,6 +246,6 @@ class FinalizarImportacionJob implements ShouldQueue
 
         fclose($out);
 
-        Log::info("Reporte de errores generado: {$path}");
+        Log::info("Reporte de errores generado: {$fullPath}");
     }
 }

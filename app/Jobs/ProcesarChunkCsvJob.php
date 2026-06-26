@@ -9,6 +9,7 @@ use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use PDO;
 
 class ProcesarChunkCsvJob implements ShouldQueue
@@ -25,6 +26,7 @@ class ProcesarChunkCsvJob implements ShouldQueue
         public string $chunkPath,
         public int $chunkIndex,
         public string $delimiter = ',',
+        public ?int $periodoImportacionId = null,
     ) {
         $this->onQueue('imports');
     }
@@ -37,7 +39,22 @@ class ProcesarChunkCsvJob implements ShouldQueue
             return;
         }
 
-        $this->asegurarStagingTable();
+        $header = $this->leerHeader();
+        if (empty($header)) {
+            throw new \RuntimeException("No se pudo leer el header del chunk {$this->chunkIndex}");
+        }
+
+        $columnasValidas = $this->filtrarColumnasVacias($header);
+        if (empty($columnasValidas)) {
+            throw new \RuntimeException("No hay columnas válidas en el chunk {$this->chunkIndex}");
+        }
+
+        $emptyCount = count($header) - count($columnasValidas);
+        if ($emptyCount > 0) {
+            Log::warning("Chunk {$this->chunkIndex}: {$emptyCount} columna(s) vacía(s) omitida(s)");
+        }
+
+        $this->asegurarStagingTable($columnasValidas);
 
         $pdo = $this->conexionDirecta();
 
@@ -45,12 +62,20 @@ class ProcesarChunkCsvJob implements ShouldQueue
             $pdo->exec("SET statement_timeout = '300000'");
             $pdo->exec('SET synchronous_commit = OFF');
 
-            $this->copiarViaStdin($pdo);
+            $this->copiarViaStdin($pdo, $columnasValidas);
 
-            $count = DB::connection('pgsql_imports')
+            $stagingQuery = DB::connection('pgsql_imports')
                 ->table('staging_import')
-                ->whereNull('_chunk_index')
-                ->update(['_chunk_index' => $this->chunkIndex]);
+                ->whereNull('_chunk_index');
+
+            $count = $stagingQuery->update(['_chunk_index' => $this->chunkIndex]);
+
+            if ($this->periodoImportacionId !== null && $count > 0) {
+                DB::connection('pgsql_imports')
+                    ->table('staging_import')
+                    ->where('_chunk_index', $this->chunkIndex)
+                    ->update(['periodo_importacion_id' => $this->periodoImportacionId]);
+            }
 
             Log::info("Chunk {$this->chunkIndex} importado: {$count} filas");
         } catch (\Throwable $e) {
@@ -64,16 +89,29 @@ class ProcesarChunkCsvJob implements ShouldQueue
 
     public function failed(\Throwable $e): void
     {
-        $failedDir = dirname($this->chunkPath).DIRECTORY_SEPARATOR.'_failed';
-        @mkdir($failedDir, 0755, true);
+        $storagePrefix = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, storage_path('app'));
+        $chunkNormalized = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $this->chunkPath);
+        $relativePath = ltrim(str_replace($storagePrefix, '', $chunkNormalized), DIRECTORY_SEPARATOR);
 
-        $destino = "{$failedDir}/chunk_{$this->chunkIndex}.csv";
-        rename($this->chunkPath, $destino);
+        $failedDir = dirname($relativePath).DIRECTORY_SEPARATOR.'_failed';
+        $failedPath = $failedDir.DIRECTORY_SEPARATOR.'chunk_'.$this->chunkIndex.'.csv';
 
-        Log::error("Chunk {$this->chunkIndex} definitivamente falló", [
-            'error' => $e->getMessage(),
-            'archivo' => $destino,
-        ]);
+        try {
+            Storage::disk('local')->makeDirectory($failedDir);
+            Storage::disk('local')->move($relativePath, $failedPath);
+
+            $destino = Storage::disk('local')->path($failedPath);
+
+            Log::error("Chunk {$this->chunkIndex} definitivamente falló", [
+                'error' => $e->getMessage(),
+                'archivo' => $destino,
+            ]);
+        } catch (\Throwable $moveErr) {
+            Log::error("Chunk {$this->chunkIndex} falló y no se pudo mover: {$moveErr->getMessage()}", [
+                'original_error' => $e->getMessage(),
+                'chunk_path' => $this->chunkPath,
+            ]);
+        }
     }
 
     private function conexionDirecta(): PDO
@@ -89,34 +127,28 @@ class ProcesarChunkCsvJob implements ShouldQueue
         );
     }
 
-    private function asegurarStagingTable(): void
+    private function asegurarStagingTable(array $columnasValidas): void
     {
-        $conn = DB::connection('pgsql_imports');
-
         if (Schema::connection('pgsql_imports')->hasTable('staging_import')) {
             return;
         }
 
-        $header = $this->leerHeader();
-        if (empty($header)) {
-            throw new \RuntimeException("No se pudo leer el header del chunk {$this->chunkIndex}");
-        }
-
-        Schema::connection('pgsql_imports')->create('staging_import', function (Blueprint $table) use ($header) {
+        Schema::connection('pgsql_imports')->create('staging_import', function (Blueprint $table) use ($columnasValidas) {
             $table->id();
 
-            foreach ($header as $col) {
+            foreach ($columnasValidas as $col) {
                 $colClean = $this->sanitizarNombreColumna($col);
                 $table->text($colClean)->nullable();
             }
 
             $table->unsignedInteger('_chunk_index')->nullable();
+            $table->unsignedBigInteger('periodo_importacion_id')->nullable();
             $table->string('_status', 20)->default('staged');
             $table->json('_errors')->nullable();
             $table->timestamps();
         });
 
-        Log::info('Tabla staging_import creada con '.count($header).' columnas');
+        Log::info('Tabla staging_import creada con '.count($columnasValidas).' columnas');
     }
 
     private function sanitizarNombreColumna(string $name): string
@@ -138,10 +170,25 @@ class ProcesarChunkCsvJob implements ShouldQueue
         return array_map('trim', $header);
     }
 
-    private function copiarViaStdin(PDO $pdo): void
+    private function filtrarColumnasVacias(array $header): array
     {
-        $header = $this->leerHeader();
-        $columnasSanitizadas = array_map(fn ($c) => '"'.$this->sanitizarNombreColumna($c).'"', $header);
+        $resultado = [];
+        foreach ($header as $i => $col) {
+            if ($col !== '') {
+                $resultado[$i] = $col;
+            }
+        }
+
+        return $resultado;
+    }
+
+    private function copiarViaStdin(PDO $pdo, array $columnasValidas): void
+    {
+        $indicesValidos = array_keys($columnasValidas);
+        $columnasSanitizadas = array_map(
+            fn ($c) => '"'.$this->sanitizarNombreColumna($c).'"',
+            $columnasValidas,
+        );
         $fields = implode(', ', $columnasSanitizadas);
 
         $dataOnly = $this->chunkPath.'.dataonly';
@@ -149,14 +196,19 @@ class ProcesarChunkCsvJob implements ShouldQueue
         $out = fopen($dataOnly, 'w');
 
         fgetcsv($in, 0, $this->delimiter);
-        $numColumns = count($header);
+        $numOutputColumns = count($columnasValidas);
 
         while (($row = fgetcsv($in, 0, $this->delimiter)) !== false) {
             if (count($row) === 1 && $row[0] === null) {
                 continue;
             }
 
-            $normalized = array_pad($row, $numColumns, '');
+            $rowFiltrado = [];
+            foreach ($indicesValidos as $idx) {
+                $rowFiltrado[] = $row[$idx] ?? '';
+            }
+
+            $normalized = array_pad($rowFiltrado, $numOutputColumns, '');
             $normalized = array_map(fn ($v) => $v ?? '', $normalized);
             fputcsv($out, $normalized, $this->delimiter);
         }
@@ -166,7 +218,9 @@ class ProcesarChunkCsvJob implements ShouldQueue
 
         $this->pgCopyCsv('staging_import', $dataOnly, $fields);
 
-        unlink($dataOnly);
+        if (file_exists($dataOnly)) {
+            unlink($dataOnly);
+        }
     }
 
     private function pgCopyCsv(string $table, string $file, string $fields): void

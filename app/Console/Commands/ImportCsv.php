@@ -115,6 +115,7 @@ class ImportCsv extends Command
                 chunkPath: $chunkPath,
                 chunkIndex: $index,
                 delimiter: $delimiter,
+                periodoImportacionId: $periodo ? (int) $periodo->id : null,
             );
         }
 

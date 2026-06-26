@@ -2,41 +2,45 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UploadCasaPorCasaRequest;
+use App\Http\Requests\UploadImportRequest;
 use App\Jobs\FinalizarImportacionJob;
 use App\Jobs\ProcesarChunkCsvJob;
 use App\Servicios\ServicioMapeoColumnas;
 use App\Servicios\ServicioPeriodosImportacion;
 use App\Servicios\ServicioSanitizadorCsv;
-use Illuminate\Http\Request;
+use App\Servicios\ServicioUpload;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Bus;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class ImportController extends Controller
 {
+    public function __construct(
+        private ServicioUpload $upload,
+    ) {}
+
     public function index()
     {
         $periodos = app(ServicioPeriodosImportacion::class);
 
         return view('imports', [
-            'periodosActivos' => $periodos->activos(),
+            'periodosActivos' => $periodos->activos(request()->user()),
             'trimestres' => $periodos->trimestres(),
             'currentYear' => (int) now()->year,
         ]);
     }
 
-    public function upload(Request $request, ServicioSanitizadorCsv $sanitizer, ServicioPeriodosImportacion $periodos)
+    public function upload(UploadImportRequest $request, ServicioSanitizadorCsv $sanitizer, ServicioPeriodosImportacion $periodos)
     {
-        $request->validate([
-            'csv_file' => 'required|file|mimes:csv,txt|max:51200',
-            'anio' => 'required|integer|min:2020|max:2100',
-            'trimestre' => 'required|in:T1,T2,T3,T4',
-            'fecha_corte' => 'nullable|date',
-        ]);
-
-        $anio = (int) $request->input('anio');
-        $trimestre = $request->input('trimestre');
+        $anio = (int) $request->validated('anio');
+        $trimestre = $request->validated('trimestre');
         $reemplazar = $request->boolean('reemplazar_periodo');
+
+        if ($reemplazar && ! $request->user()->canImportGlobal()) {
+            return back()->withInput($request->except('csv_file'))
+                ->with('error', 'Solo usuarios con acceso nacional pueden reemplazar periodos.');
+        }
 
         try {
             if ($periodos->existe(ServicioPeriodosImportacion::TIPO_REGULAR, $anio, $trimestre) && ! $reemplazar) {
@@ -48,28 +52,39 @@ class ImportController extends Controller
             return back()->withInput($request->except('csv_file'))->with('error', $e->getMessage());
         }
 
-        $file = $request->file('csv_file');
-        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)
-            .'_'.now()->format('Ymd_His')
-            .'.csv';
+        $relativePath = $this->upload->storeImportFile($request->file('csv_file'));
+        $destPath = $this->upload->fullPath($relativePath);
+        $fileName = basename($destPath);
 
-        $destPath = storage_path('app/imports/'.$originalName);
-        $file->move(storage_path('app/imports'), $originalName);
-
-        $sanitizedDir = storage_path('app/imports/_sanitized');
-        @mkdir($sanitizedDir, 0755, true);
-        $sanitizedPath = "{$sanitizedDir}/{$originalName}";
+        $sanitizedPath = dirname($destPath).'/_sanitized/'.$fileName;
+        $this->upload->ensureDirectory(dirname($sanitizedPath));
 
         $stats = $sanitizer->sanitizar($destPath, $sanitizedPath);
+
+        $scopeType = 'global';
+        $regionId = null;
+        $unidadOperativaId = null;
+        $user = $request->user();
+        if ($user !== null && ! $user->hasGlobalAccess()) {
+            $scopeType = $user->isRegional() ? 'regional' : 'unidad';
+            $regionId = $user->region_id;
+            if ($user->isUnidad()) {
+                $unidadOperativaId = $user->unidad_operativa_id;
+            }
+        }
 
         try {
             $periodo = $periodos->preparar(
                 ServicioPeriodosImportacion::TIPO_REGULAR,
                 $anio,
                 $trimestre,
-                $request->input('fecha_corte'),
-                $originalName,
+                $request->validated('fecha_corte'),
+                $fileName,
                 $reemplazar,
+                scopeType: $scopeType,
+                regionId: $regionId,
+                unidadOperativaId: $unidadOperativaId,
+                uploadedBy: $user?->id,
             );
         } catch (\Throwable $e) {
             return back()->withInput($request->except('csv_file'))->with('error', $e->getMessage());
@@ -79,7 +94,7 @@ class ImportController extends Controller
         $mapper = ServicioMapeoColumnas::make();
         $advertencias = $mapper->validarColumnas($header);
 
-        $chunkDir = storage_path('app/imports/_chunks');
+        $chunkDir = dirname($destPath).'/_chunks';
         $chunkFiles = $sanitizer->dividirEnChunks($sanitizedPath, $chunkDir, 100000);
 
         $jobs = [];
@@ -87,38 +102,50 @@ class ImportController extends Controller
             $jobs[] = new ProcesarChunkCsvJob(
                 chunkPath: $chunkPath,
                 chunkIndex: $index,
+                periodoImportacionId: (int) $periodo->id,
             );
         }
 
         $batch = Bus::batch($jobs)
-            ->name("Importación web: {$originalName}")
+            ->name("Importación web: {$fileName}")
             ->allowFailures()
             ->onQueue('imports')
-            ->then(function () use ($periodo) {
+            ->then(function ($batch) use ($periodo) {
+                if ($batch->hasFailures()) {
+                    Log::warning('Importación cancelada por fallos en chunks', [
+                        'periodo_id' => $periodo->id,
+                        'failed_jobs' => $batch->failedJobs,
+                    ]);
+
+                    DB::connection('pgsql_imports')->table('periodos_importacion')
+                        ->where('id', $periodo->id)
+                        ->update(['estado' => 'error', 'updated_at' => now()]);
+
+                    return;
+                }
+
                 FinalizarImportacionJob::dispatch((int) $periodo->id)->onQueue('imports');
             })
             ->dispatch();
 
         return redirect()->route('imports.index')->with('success', sprintf(
             'Archivo subido: %s (%d filas). Periodo: %s.',
-            $originalName,
+            basename($destPath),
             $stats['total_lines'] - 1,
             $periodo->nombre,
         ));
     }
 
-    public function uploadCasaPorCasa(Request $request, ServicioPeriodosImportacion $periodos)
+    public function uploadCasaPorCasa(UploadCasaPorCasaRequest $request, ServicioPeriodosImportacion $periodos)
     {
-        $request->validate([
-            'xlsx_file' => 'required|file|mimes:xlsx,xls|max:51200',
-            'anio' => 'required|integer|min:2020|max:2100',
-            'trimestre' => 'required|in:T1,T2,T3,T4',
-            'fecha_corte' => 'nullable|date',
-        ]);
-
-        $anio = (int) $request->input('anio');
-        $trimestre = $request->input('trimestre');
+        $anio = (int) $request->validated('anio');
+        $trimestre = $request->validated('trimestre');
         $reemplazar = $request->boolean('reemplazar_periodo');
+
+        if ($reemplazar && ! $request->user()->canImportGlobal()) {
+            return back()->withInput($request->except('xlsx_file'))
+                ->with('error', 'Solo usuarios con acceso nacional pueden reemplazar periodos.');
+        }
 
         if ($periodos->existe(ServicioPeriodosImportacion::TIPO_CASA_X_CASA, $anio, $trimestre) && ! $reemplazar) {
             return back()
@@ -126,21 +153,15 @@ class ImportController extends Controller
                 ->with('error', $periodos->mensajeReemplazo(ServicioPeriodosImportacion::TIPO_CASA_X_CASA, $anio, $trimestre));
         }
 
-        $file = $request->file('xlsx_file');
-        $dir = 'imports/casa-x-casa';
-
-        Storage::disk('local')->makeDirectory($dir);
-
-        $path = $file->storeAs($dir, 'cxc_'.now()->format('Ymd_His').'.'.$file->extension(), 'local');
-
-        $fullPath = Storage::disk('local')->path($path);
+        $path = $this->upload->storeCasaPorCasaFile($request->file('xlsx_file'));
+        $fullPath = $this->upload->fullPath($path);
 
         try {
             $periodo = $periodos->preparar(
                 ServicioPeriodosImportacion::TIPO_CASA_X_CASA,
                 $anio,
                 $trimestre,
-                $request->input('fecha_corte'),
+                $request->validated('fecha_corte'),
                 basename($path),
                 $reemplazar,
             );
