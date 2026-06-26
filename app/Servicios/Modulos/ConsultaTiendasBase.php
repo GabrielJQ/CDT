@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 abstract class ConsultaTiendasBase
 {
-    protected function conexion(): Connection
+    public function conexion(): Connection
     {
         return DB::connection(config('database.imports'));
     }
@@ -22,7 +22,7 @@ abstract class ConsultaTiendasBase
         return $query;
     }
 
-    protected function aplicarPeriodoActivo(Builder $query, array $filters = []): void
+    public function aplicarPeriodoActivo(Builder $query, array $filters = []): void
     {
         if (! empty($filters['periodo_importacion_id'])) {
             $query->where('periodo_importacion_id', $filters['periodo_importacion_id']);
@@ -31,7 +31,7 @@ abstract class ConsultaTiendasBase
         }
     }
 
-    protected function aplicarFiltroRegional(Builder $query, array $filters): void
+    public function aplicarFiltroRegional(Builder $query, array $filters): void
     {
         if (! empty($filters['region'])) {
             $query->where('Clave_Regional', $filters['region']);

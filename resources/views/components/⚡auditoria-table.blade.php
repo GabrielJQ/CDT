@@ -1,11 +1,13 @@
 <?php
 
-use App\Servicios\ServicioAlcanceUsuario;
+use App\Livewire\ConTablaLivewire;
 use App\Servicios\ServicioPostgresql;
 use Livewire\Component;
 
 new class extends Component
 {
+    use ConTablaLivewire;
+
     private const COLUMNS = [
         'Nombre_Almacen', 'Localidad', 'No_Tienda_Actual', 'Municipio', 'Vigencia', 'Comite',
         'Fec_CRA', 'Asam_Real_Mes', 'Fch_Audit', 'Estado_Aud', 'Imp_Res_Audi_Mes', 'Rotacion', 'Riesgo',
@@ -15,8 +17,6 @@ new class extends Component
         'Nombre_Almacen', 'Localidad', 'No_Tienda_Actual', 'Municipio', 'Vigencia', 'Imp_Res_Audi_Mes',
         'Cap_Dic', 'Vta_Mes', 'Fch_Audit', 'Audit_Realiza_Mes', 'Asam_Real_Mes',
     ];
-
-    private const EXCLUDED_SORT_COLUMNS = ['Nombre_Almacen', 'No_Tienda_Actual', 'Localidad', 'Municipio'];
 
     public string $almacen = '';
 
@@ -35,14 +35,6 @@ new class extends Component
     public string $asambleas_mes = '';
 
     public string $tiendaSalud = '';
-
-    public ?string $sort = null;
-
-    public string $direction = 'asc';
-
-    public int $page = 1;
-
-    public int $perPage = 50;
 
     public bool $showComite = true;
 
@@ -69,6 +61,31 @@ new class extends Component
         'showRendimiento' => ['except' => true],
     ];
 
+    /** @return list<string> */
+    protected function sortableColumns(): array
+    {
+        return self::COLUMNS;
+    }
+
+    /** @return list<string> */
+    protected function filterProperties(): array
+    {
+        return ['almacen', 'nivel', 'estado_comite', 'estado_auditoria', 'filtro_500k', 'rango_rotacion', 'tiempo_auditoria', 'asambleas_mes', 'tiendaSalud'];
+    }
+
+    protected function clearFilterValues(): void
+    {
+        $this->almacen = '';
+        $this->nivel = '';
+        $this->estado_comite = '';
+        $this->estado_auditoria = '';
+        $this->filtro_500k = '';
+        $this->rango_rotacion = '';
+        $this->tiempo_auditoria = '';
+        $this->asambleas_mes = '';
+        $this->tiendaSalud = '';
+    }
+
     private function filters(): array
     {
         return [
@@ -82,74 +99,6 @@ new class extends Component
             'asambleas_mes' => $this->asambleas_mes,
             'tienda_salud' => $this->tiendaSalud,
         ];
-    }
-
-    private function regionFilters(): array
-    {
-        return app(ServicioAlcanceUsuario::class)->filtroEfectivo(request());
-    }
-
-    private function sortInput(): array
-    {
-        if (! $this->sort || ! in_array($this->sort, self::COLUMNS, true) || in_array($this->sort, self::EXCLUDED_SORT_COLUMNS, true)) {
-            return ['column' => null, 'direction' => $this->direction === 'desc' ? 'desc' : 'asc'];
-        }
-
-        return ['column' => $this->sort, 'direction' => $this->direction === 'desc' ? 'desc' : 'asc'];
-    }
-
-    public function updated($property): void
-    {
-        if (in_array($property, ['almacen', 'nivel', 'estado_comite', 'estado_auditoria', 'filtro_500k', 'rango_rotacion', 'tiempo_auditoria', 'asambleas_mes', 'tiendaSalud', 'perPage'], true)) {
-            $this->page = 1;
-        }
-    }
-
-    public function sortBy(string $column): void
-    {
-        if (! in_array($column, self::COLUMNS, true) || in_array($column, self::EXCLUDED_SORT_COLUMNS, true)) {
-            return;
-        }
-
-        if ($this->sort === $column) {
-            $this->direction = $this->direction === 'asc' ? 'desc' : 'asc';
-        } else {
-            $this->sort = $column;
-            $this->direction = 'asc';
-        }
-
-        $this->page = 1;
-    }
-
-    public function clearFilters(): void
-    {
-        $this->almacen = '';
-        $this->nivel = '';
-        $this->estado_comite = '';
-        $this->estado_auditoria = '';
-        $this->filtro_500k = '';
-        $this->rango_rotacion = '';
-        $this->tiempo_auditoria = '';
-        $this->asambleas_mes = '';
-        $this->tiendaSalud = '';
-        $this->sort = null;
-        $this->direction = 'asc';
-        $this->page = 1;
-    }
-
-    public function previousTablePage(int $totalPages): void
-    {
-        $this->page = max(1, min($this->page - 1, $totalPages));
-    }
-
-    public function nextTablePage(int $totalPages): void
-    {
-        $this->page = min($totalPages, $this->page + 1);
-    }
-
-    public function goToTablePage(int $page, int $totalPages): void
-    {
-        $this->page = max(1, min($page, $totalPages));
     }
 
     private function activeColumns(): array
@@ -369,22 +318,9 @@ new class extends Component
         return '<strong class="text-gray-900 dark:text-gray-100">'.$name.'</strong>';
     }
 
-    public function sortArrow(string $column): string
-    {
-        if (in_array($column, self::EXCLUDED_SORT_COLUMNS, true)) {
-            return '';
-        }
-
-        if ($this->sort !== $column) {
-            return '↕';
-        }
-
-        return $this->direction === 'asc' ? '▲' : '▼';
-    }
-
     public function isSortable(string $column): bool
     {
-        return ! in_array($column, self::EXCLUDED_SORT_COLUMNS, true);
+        return in_array($column, $this->sortableColumns(), true) && ! in_array($column, $this->excludedSortColumns(), true);
     }
 
     public function exportUrl(): string

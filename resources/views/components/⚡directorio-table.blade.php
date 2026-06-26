@@ -1,11 +1,13 @@
 <?php
 
-use App\Servicios\ServicioAlcanceUsuario;
+use App\Livewire\ConTablaLivewire;
 use App\Servicios\ServicioPostgresql;
 use Livewire\Component;
 
 new class extends Component
 {
+    use ConTablaLivewire;
+
     private const COLUMNS = [
         'Nombre_Almacen', 'No_Tienda_Actual', 'Municipio', 'Fecha_Apertura', 'TELEFONIA', 'Señal de celular',
         'Compañía', 'INTERNET', 'CORREO', 'Direccion', 'Vta_Mes', 'VtaNeta_Mes', 'Vta_Acu', 'VtaNeta_Acu',
@@ -38,8 +40,6 @@ new class extends Component
         'Asam_Real_Mes',
     ];
 
-    private const EXCLUDED_SORT_COLUMNS = ['Nombre_Almacen', 'No_Tienda_Actual', 'Localidad', 'Municipio'];
-
     public string $q = '';
 
     public bool $incompletos = false;
@@ -47,14 +47,6 @@ new class extends Component
     public bool $sinCapital = false;
 
     public string $tiendaSalud = '';
-
-    public ?string $sort = null;
-
-    public string $direction = 'asc';
-
-    public int $page = 1;
-
-    public int $perPage = 50;
 
     public bool $showContacto = false;
 
@@ -85,6 +77,12 @@ new class extends Component
         'showUbicacion' => ['except' => false],
     ];
 
+    /** @return list<string> */
+    protected function sortableColumns(): array
+    {
+        return self::SORTABLE_COLUMNS;
+    }
+
     private function filters(): array
     {
         return [
@@ -95,67 +93,18 @@ new class extends Component
         ];
     }
 
-    private function regionFilters(): array
+    /** @return list<string> */
+    protected function filterProperties(): array
     {
-        return app(ServicioAlcanceUsuario::class)->filtroEfectivo(request());
+        return ['q', 'incompletos', 'sinCapital', 'tiendaSalud'];
     }
 
-    private function sortInput(): array
-    {
-        if (! $this->sort || ! in_array($this->sort, self::SORTABLE_COLUMNS, true) || in_array($this->sort, self::EXCLUDED_SORT_COLUMNS, true)) {
-            return ['column' => null, 'direction' => $this->direction === 'desc' ? 'desc' : 'asc'];
-        }
-
-        return ['column' => $this->sort, 'direction' => $this->direction === 'desc' ? 'desc' : 'asc'];
-    }
-
-    public function updated($property): void
-    {
-        if (in_array($property, ['q', 'incompletos', 'sinCapital', 'tiendaSalud', 'perPage'], true)) {
-            $this->page = 1;
-        }
-    }
-
-    public function sortBy(string $column): void
-    {
-        if (! in_array($column, self::SORTABLE_COLUMNS, true) || in_array($column, self::EXCLUDED_SORT_COLUMNS, true)) {
-            return;
-        }
-
-        if ($this->sort === $column) {
-            $this->direction = $this->direction === 'asc' ? 'desc' : 'asc';
-        } else {
-            $this->sort = $column;
-            $this->direction = 'asc';
-        }
-
-        $this->page = 1;
-    }
-
-    public function clearFilters(): void
+    protected function clearFilterValues(): void
     {
         $this->q = '';
         $this->incompletos = false;
         $this->sinCapital = false;
         $this->tiendaSalud = '';
-        $this->sort = null;
-        $this->direction = 'asc';
-        $this->page = 1;
-    }
-
-    public function previousTablePage(int $totalPages): void
-    {
-        $this->page = max(1, min($this->page - 1, $totalPages));
-    }
-
-    public function nextTablePage(int $totalPages): void
-    {
-        $this->page = min($totalPages, $this->page + 1);
-    }
-
-    public function goToTablePage(int $page, int $totalPages): void
-    {
-        $this->page = max(1, min($page, $totalPages));
     }
 
     private function activeColumns(): array
@@ -360,36 +309,19 @@ new class extends Component
         return '<strong class="text-gray-900 dark:text-gray-100">'.$name.'</strong>';
     }
 
-    public function sortArrow(string $column): string
-    {
-        if (in_array($column, self::EXCLUDED_SORT_COLUMNS, true)) {
-            return '';
-        }
-
-        if ($this->sort !== $column) {
-            return '↕';
-        }
-
-        return $this->direction === 'asc' ? '▲' : '▼';
-    }
-
     public function isSortable(string $column): bool
     {
-        return in_array($column, self::SORTABLE_COLUMNS, true) && ! in_array($column, self::EXCLUDED_SORT_COLUMNS, true);
+        return in_array($column, self::SORTABLE_COLUMNS, true) && ! in_array($column, $this->excludedSortColumns(), true);
     }
 
     public function exportUrl(): string
     {
-        return url('/directorio?'.http_build_query(array_filter([
+        return $this->buildExportUrl('/directorio', [
             'q' => trim($this->q),
             'incompletos' => $this->incompletos ? '1' : null,
             'sinCapital' => $this->sinCapital ? '1' : null,
             'tienda_salud' => $this->tiendaSalud,
-            'sort' => $this->sort,
-            'direction' => $this->direction,
-            'per_page' => $this->perPage,
-            'export' => 'csv',
-        ], fn ($value) => $value !== null && $value !== '')));
+        ]);
     }
 
     public function tableData(): array
