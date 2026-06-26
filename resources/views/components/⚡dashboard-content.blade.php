@@ -41,10 +41,11 @@ new class extends Component
         $filter = $this->regionFilters();
 
         return sprintf(
-            'dashboard_metrics:v%s:region:%s:uo:%s',
+            'dashboard_metrics:v%s:region:%s:uo:%s:p%s',
             Cache::get('dashboard_metrics_version', 1),
             $filter['region'] ?: 'all',
             $filter['uo'] ?: 'all',
+            $filter['periodo_importacion_id'] ?? '0',
         );
     }
 
