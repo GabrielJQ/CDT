@@ -2,7 +2,9 @@
 
 namespace Tests\Unit\Servicios;
 
-use App\Servicios\ServicioPostgresql;
+use App\Presenters\PresentadorTiendas;
+use App\Servicios\ServicioGeo;
+use App\Servicios\ServicioIndicadorCriticidad;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 
@@ -10,7 +12,7 @@ class ServicioPostgresqlTest extends TestCase
 {
     public function test_row_to_audit_store_calculates_kpis_when_derived_columns_are_null(): void
     {
-        $store = $this->invokePrivate('rowToAuditStore', [
+        $store = $this->invokePresenterPrivate('rowToAuditStore', [
             (object) [
                 'Estado' => 'Oaxaca',
                 'Nombre_Almacen' => 'Almacen Central',
@@ -43,7 +45,7 @@ class ServicioPostgresqlTest extends TestCase
 
     public function test_row_to_critical_store_calculates_level_when_derived_columns_are_null(): void
     {
-        $store = $this->invokePrivate('rowToCriticalStore', [
+        $store = $this->invokePresenterPrivate('rowToCriticalStore', [
             (object) [
                 'Estado' => 'Oaxaca',
                 'Nombre_Almacen' => 'Almacen Central',
@@ -72,7 +74,7 @@ class ServicioPostgresqlTest extends TestCase
 
     public function test_filtrar_geo_calculado_incidencias_includes_sin_coordenadas_and_fuera_mexico(): void
     {
-        $rows = $this->invokePrivate('filtrarGeoCalculado', [[
+        $rows = $this->invokePresenterPrivate('filtrarGeoCalculado', [[
             ['_geo' => ['status' => 'OK']],
             ['_geo' => ['status' => 'SIN_COORDENADAS']],
             ['_geo' => ['status' => 'FUERA_MEXICO']],
@@ -84,9 +86,12 @@ class ServicioPostgresqlTest extends TestCase
         $this->assertSame('FUERA_MEXICO', $rows[1]['_geo']['status']);
     }
 
-    private function invokePrivate(string $method, array $arguments): mixed
+    private function invokePresenterPrivate(string $method, array $arguments): mixed
     {
-        $service = new ServicioPostgresql;
+        $service = new PresentadorTiendas(
+            new ServicioIndicadorCriticidad,
+            new ServicioGeo,
+        );
         $reflection = new ReflectionClass($service);
         $reflectionMethod = $reflection->getMethod($method);
         $reflectionMethod->setAccessible(true);
