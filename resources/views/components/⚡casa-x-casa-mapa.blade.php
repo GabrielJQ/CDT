@@ -20,7 +20,7 @@ new class extends Component
             return [];
         }
 
-        $conn = DB::connection('pgsql_imports');
+        $conn = DB::connection(config('database.imports'));
 
         $query = $conn->table('tiendas_casa_x_casa')
             ->join('tiendas', function ($join) use ($conn) {
@@ -46,7 +46,7 @@ new class extends Component
 
     private function query()
     {
-        $conn = DB::connection('pgsql_imports');
+        $conn = DB::connection(config('database.imports'));
         $query = $conn->table('tiendas_casa_x_casa')->where('es_activo', true);
         $uoFilter = $this->uoFilter();
         if (! empty($uoFilter)) {

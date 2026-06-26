@@ -64,14 +64,14 @@ class ProcesarChunkCsvJob implements ShouldQueue
 
             $this->copiarViaStdin($pdo, $columnasValidas);
 
-            $stagingQuery = DB::connection('pgsql_imports')
+            $stagingQuery = DB::connection(config('database.imports'))
                 ->table('staging_import')
                 ->whereNull('_chunk_index');
 
             $count = $stagingQuery->update(['_chunk_index' => $this->chunkIndex]);
 
             if ($this->periodoImportacionId !== null && $count > 0) {
-                DB::connection('pgsql_imports')
+                DB::connection(config('database.imports'))
                     ->table('staging_import')
                     ->where('_chunk_index', $this->chunkIndex)
                     ->update(['periodo_importacion_id' => $this->periodoImportacionId]);
@@ -129,11 +129,11 @@ class ProcesarChunkCsvJob implements ShouldQueue
 
     private function asegurarStagingTable(array $columnasValidas): void
     {
-        if (Schema::connection('pgsql_imports')->hasTable('staging_import')) {
+        if (Schema::connection(config('database.imports'))->hasTable('staging_import')) {
             return;
         }
 
-        Schema::connection('pgsql_imports')->create('staging_import', function (Blueprint $table) use ($columnasValidas) {
+        Schema::connection(config('database.imports'))->create('staging_import', function (Blueprint $table) use ($columnasValidas) {
             $table->id();
 
             foreach ($columnasValidas as $col) {
@@ -225,7 +225,8 @@ class ProcesarChunkCsvJob implements ShouldQueue
 
     private function pgCopyCsv(string $table, string $file, string $fields): void
     {
-        $config = config('database.connections.pgsql_imports');
+        $connName = config('database.imports');
+        $config = config("database.connections.$connName");
         $connStr = sprintf(
             "host='%s' port='%s' dbname='%s' user='%s' password='%s'",
             $config['host'],
@@ -258,28 +259,33 @@ class ProcesarChunkCsvJob implements ShouldQueue
         pg_close($pg);
     }
 
+    private function importsConnName(): string
+    {
+        return config('database.imports');
+    }
+
     private function getDbHost(): string
     {
-        return config('database.connections.pgsql_imports.host');
+        return config("database.connections.{$this->importsConnName()}.host");
     }
 
     private function getDbPort(): string
     {
-        return (string) config('database.connections.pgsql_imports.port', '5432');
+        return (string) config("database.connections.{$this->importsConnName()}.port", '5432');
     }
 
     private function getDbName(): string
     {
-        return config('database.connections.pgsql_imports.database', 'postgres');
+        return config("database.connections.{$this->importsConnName()}.database", 'postgres');
     }
 
     private function getDbUser(): string
     {
-        return config('database.connections.pgsql_imports.username', 'postgres');
+        return config("database.connections.{$this->importsConnName()}.username", 'postgres');
     }
 
     private function getDbPass(): string
     {
-        return config('database.connections.pgsql_imports.password', '');
+        return config("database.connections.{$this->importsConnName()}.password", '');
     }
 }

@@ -61,7 +61,7 @@ new class extends Component
             return [];
         }
 
-        $conn = DB::connection('pgsql_imports');
+        $conn = DB::connection(config('database.imports'));
 
         $query = $conn->table('tiendas_casa_x_casa')
             ->join('tiendas', function ($join) use ($conn) {
@@ -87,7 +87,7 @@ new class extends Component
 
     private function baseQuery()
     {
-        $conn = DB::connection('pgsql_imports');
+        $conn = DB::connection(config('database.imports'));
         $query = $conn->table('tiendas_casa_x_casa')->where('es_activo', true);
 
         $uoFilter = $this->uoFilter();
@@ -130,7 +130,7 @@ new class extends Component
 
     public function mount(): void
     {
-        $conn = DB::connection('pgsql_imports');
+        $conn = DB::connection(config('database.imports'));
         $base = $conn->table('tiendas_casa_x_casa')->where('es_activo', true);
         $uoFilter = $this->uoFilter();
         if (! empty($uoFilter)) {

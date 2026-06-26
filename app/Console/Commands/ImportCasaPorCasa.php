@@ -45,7 +45,7 @@ class ImportCasaPorCasa extends Command
 
         $this->info('Total filas a importar: '.count($rows));
 
-        $conn = DB::connection('pgsql_imports');
+        $conn = DB::connection(config('database.imports'));
         $periodoId = $this->option('periodo') !== null ? (int) $this->option('periodo') : null;
 
         if ($this->option('truncate')) {

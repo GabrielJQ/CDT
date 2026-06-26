@@ -951,7 +951,7 @@ class ServicioPostgresql
 
     private function conexion(): Connection
     {
-        return DB::connection('pgsql_imports');
+        return DB::connection(config('database.imports'));
     }
 
     private function reverseMap(): array

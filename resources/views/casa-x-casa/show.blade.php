@@ -1,10 +1,11 @@
-@extends('layouts.app', ['pageTitle' => 'Tienda CxC #'.$store->no_tienda])
+@extends('layouts.app', ['pageTitle' => 'Tienda CxC #' . $store->no_tienda])
 
 @section('title', "Tienda #{$store->no_tienda} — {$store->almacen} — CDT")
 
 @section('content')
     <div class="mb-4">
-        <a href="{{ route('casa-x-casa.directorio') }}" class="text-xs text-blue-600 hover:underline">← Volver al directorio</a>
+        <a href="{{ route('casa-x-casa.directorio') }}" class="text-xs text-blue-600 hover:underline">← Volver al
+            directorio</a>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-6">
@@ -76,10 +77,12 @@
     </div>
 
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 lg:p-6 mb-6">
-        <h3 class="text-base font-bold text-gray-800 dark:text-gray-100 mb-4">🔗 Cruce con directorio nacional de tiendas</h3>
+        <h3 class="text-base font-bold text-gray-800 dark:text-gray-100 mb-4">🔗 Cruce con directorio nacional de tiendas
+        </h3>
         @if($cruce)
             <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                <p class="text-sm text-green-700 dark:text-green-300 font-semibold mb-3">✅ Esta tienda existe en el catálogo general</p>
+                <p class="text-sm text-green-700 dark:text-green-300 font-semibold mb-3">✅ Esta tienda existe en el catálogo
+                    nacional</p>
                 <dl class="grid grid-cols-2 gap-2 text-sm">
                     <div class="text-gray-500 dark:text-gray-400">Fecha Apertura</div>
                     <div class="font-semibold text-gray-800 dark:text-gray-100">{{ $cruce->Fecha_Apertura ?: '—' }}</div>
@@ -97,7 +100,8 @@
                     <div class="font-semibold text-gray-800 dark:text-gray-100">{{ $cruce->Compañía ?: '—' }}</div>
 
                     <div class="text-gray-500 dark:text-gray-400">Capital Total</div>
-                    <div class="font-semibold text-gray-800 dark:text-gray-100">{{ $cruce->Cap_Tot ? '$'.number_format($cruce->Cap_Tot, 2) : '—' }}</div>
+                    <div class="font-semibold text-gray-800 dark:text-gray-100">
+                        {{ $cruce->Cap_Tot ? '$' . number_format($cruce->Cap_Tot, 2) : '—' }}</div>
 
                     <div class="text-gray-500 dark:text-gray-400">Vigencia</div>
                     <div class="font-semibold text-gray-800 dark:text-gray-100">{{ $cruce->Vigencia ?: '—' }}</div>
@@ -105,7 +109,8 @@
             </div>
         @else
             <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
-                <p class="text-sm text-orange-700 dark:text-orange-300">⚠️ Esta tienda <strong>no está registrada</strong> en el directorio nacional de tiendas.</p>
+                <p class="text-sm text-orange-700 dark:text-orange-300">⚠️ Esta tienda <strong>no está registrada</strong> en el
+                    directorio nacional de tiendas.</p>
             </div>
         @endif
     </div>

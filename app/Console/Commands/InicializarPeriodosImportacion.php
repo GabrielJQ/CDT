@@ -29,7 +29,7 @@ class InicializarPeriodosImportacion extends Command
             return self::SUCCESS;
         }
 
-        $conn = DB::connection('pgsql_imports');
+        $conn = DB::connection(config('database.imports'));
 
         $regular = $periodos->buscar(ServicioPeriodosImportacion::TIPO_REGULAR, $anio, $trimestre)
             ?? $periodos->preparar(

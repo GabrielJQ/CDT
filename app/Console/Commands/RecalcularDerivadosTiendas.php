@@ -27,7 +27,7 @@ class RecalcularDerivadosTiendas extends Command
 
         $chunk = max(1, (int) $this->option('chunk'));
         $dryRun = (bool) $this->option('dry-run');
-        $conn = DB::connection('pgsql_imports');
+        $conn = DB::connection(config('database.imports'));
         $total = $conn->table('tiendas')->where('es_activo', true)->count();
 
         if ($total === 0) {

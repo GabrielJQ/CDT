@@ -70,8 +70,8 @@ class TestCopyCsv extends Command
         $this->line("   {$count} filas escritas en fragmento");
 
         $this->line('3. Creando tabla staging_import...');
-        Schema::connection('pgsql_imports')->dropIfExists('staging_import');
-        Schema::connection('pgsql_imports')->create('staging_import', function (Blueprint $table) use ($header) {
+        Schema::connection(config('database.imports'))->dropIfExists('staging_import');
+        Schema::connection(config('database.imports'))->create('staging_import', function (Blueprint $table) use ($header) {
             $table->id();
             foreach ($header as $col) {
                 $table->text(preg_replace('/[^a-zA-Z0-9_ áéíóúñÁÉÍÓÚÑàèìòùÀÈÌÒÙäëïöüÄËÏÖÜâêîôûÂÊÎÔÛ,\-\(\)\/\']/', '_', $col))->nullable();
@@ -110,7 +110,8 @@ class TestCopyCsv extends Command
 
         $this->line('5. Ejecutando pg_put_line con FORMAT CSV...');
         try {
-            $config = config('database.connections.pgsql_imports');
+            $connName = config('database.imports');
+            $config = config("database.connections.$connName");
             $connStr = sprintf(
                 "host='%s' port='%s' dbname='%s' user='%s' password='%s'",
                 $config['host'],
@@ -143,13 +144,13 @@ class TestCopyCsv extends Command
             return self::FAILURE;
         }
 
-        $stagingCount = DB::connection('pgsql_imports')->table('staging_import')->count();
+        $stagingCount = DB::connection(config('database.imports'))->table('staging_import')->count();
         $this->line("7. Filas en staging_import: {$stagingCount}");
 
         $this->line('8. Probando mapeo a tiendas...');
         $mapper = ServicioMapeoColumnas::make();
         $errores = 0;
-        DB::connection('pgsql_imports')->table('staging_import')
+        DB::connection(config('database.imports'))->table('staging_import')
             ->where('_status', 'staged')
             ->chunk(100, function ($filas) use ($mapper, &$errores) {
                 foreach ($filas as $fila) {

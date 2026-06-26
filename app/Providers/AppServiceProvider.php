@@ -31,7 +31,7 @@ class AppServiceProvider extends ServiceProvider
 
         if ($this->app->environment('production', 'local')) {
             try {
-                DB::connection('pgsql_imports')->statement('SET statement_timeout = 120000');
+                DB::connection(config('database.imports'))->statement('SET statement_timeout = 120000');
             } catch (\Throwable) {
                 // Conexion puede no estar disponible durante migraciones o cache
             }

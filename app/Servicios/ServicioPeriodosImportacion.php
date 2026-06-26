@@ -299,6 +299,6 @@ class ServicioPeriodosImportacion
 
     private function conn(): Connection
     {
-        return DB::connection('pgsql_imports');
+        return DB::connection(config('database.imports'));
     }
 }

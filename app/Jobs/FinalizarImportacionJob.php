@@ -40,7 +40,7 @@ class FinalizarImportacionJob implements ShouldQueue
         $mapper = ServicioMapeoColumnas::make();
         $derivados = app(ServicioDerivadosTienda::class);
         $periodos = app(ServicioPeriodosImportacion::class);
-        $conn = DB::connection('pgsql_imports');
+        $conn = DB::connection(config('database.imports'));
 
         $stagingQuery = $conn->table('staging_import')->where('_status', 'staged');
 

@@ -25,7 +25,7 @@ class ServicioCasaPorCasa
             return [];
         }
 
-        $conn = DB::connection('pgsql_imports');
+        $conn = DB::connection(config('database.imports'));
 
         $query = $conn->table('tiendas_casa_x_casa')
             ->join('tiendas', function ($join) {
@@ -51,7 +51,7 @@ class ServicioCasaPorCasa
 
     public function activeCxcQuery(): Builder
     {
-        return DB::connection('pgsql_imports')
+        return DB::connection(config('database.imports'))
             ->table('tiendas_casa_x_casa')
             ->where('es_activo', true);
     }
@@ -110,7 +110,7 @@ class ServicioCasaPorCasa
 
     public function calcularCruce(array $uoFilter = []): array
     {
-        $conn = DB::connection('pgsql_imports');
+        $conn = DB::connection(config('database.imports'));
 
         $enTiendas = $conn->table('tiendas_casa_x_casa', 'cxc')
             ->join('tiendas as t', function ($join) {
@@ -169,7 +169,7 @@ class ServicioCasaPorCasa
 
     public function mapaQuery(array $uoFilter = []): Builder
     {
-        $query = DB::connection('pgsql_imports')
+        $query = DB::connection(config('database.imports'))
             ->table('tiendas_casa_x_casa')
             ->select([
                 'id', 'almacen', 'no_tienda', 'municipio', 'estado', 'unidad_operativa',
@@ -196,7 +196,7 @@ class ServicioCasaPorCasa
 
     public function cruceIndividual(object $store): ?object
     {
-        $rows = DB::connection('pgsql_imports')
+        $rows = DB::connection(config('database.imports'))
             ->table('tiendas')
             ->select([
                 'No_Tienda_Actual', 'Nombre_Almacen', 'Estado', 'Municipio',

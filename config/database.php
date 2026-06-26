@@ -19,6 +19,8 @@ return [
 
     'default' => env('DB_CONNECTION', 'sqlite'),
 
+    'imports' => env('DB_IMPORTS_CONNECTION', 'pgsql_imports'),
+
     /*
     |--------------------------------------------------------------------------
     | Database Connections

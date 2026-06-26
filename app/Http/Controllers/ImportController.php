@@ -117,7 +117,7 @@ class ImportController extends Controller
                         'failed_jobs' => $batch->failedJobs,
                     ]);
 
-                    DB::connection('pgsql_imports')->table('periodos_importacion')
+                    DB::connection(config('database.imports'))->table('periodos_importacion')
                         ->where('id', $periodo->id)
                         ->update(['estado' => 'error', 'updated_at' => now()]);
 

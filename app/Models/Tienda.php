@@ -28,7 +28,10 @@ class Tienda extends Model
 
     public const SIN_AUDITORIA_ANIO_MESES = 12;
 
-    protected $connection = 'pgsql_imports';
+    public function getConnectionName(): string
+    {
+        return config('database.imports');
+    }
 
     protected $table = 'tiendas';
 

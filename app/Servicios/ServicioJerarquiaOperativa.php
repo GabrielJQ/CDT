@@ -13,7 +13,7 @@ class ServicioJerarquiaOperativa
      */
     public function sincronizar(): array
     {
-        $rows = DB::connection('pgsql_imports')
+        $rows = DB::connection(config('database.imports'))
             ->table('tiendas')
             ->select(['Clave_Regional', 'Nombre_Regional', 'Clave_UniOpe', 'Nombre_UniOpe'])
             ->where('es_activo', true)
