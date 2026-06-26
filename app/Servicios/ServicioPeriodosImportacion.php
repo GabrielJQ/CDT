@@ -2,6 +2,7 @@
 
 namespace App\Servicios;
 
+use App\Models\User;
 use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\DB;
 
@@ -51,22 +52,39 @@ class ServicioPeriodosImportacion
         };
     }
 
-    public function obtenerActivo(string $tipo): ?object
+    public function obtenerActivo(string $tipo, ?User $user = null): ?object
     {
-        return $this->conn()->table('periodos_importacion')
-            ->where('tipo', $tipo)
-            ->where('es_activo', true)
-            ->first();
+        try {
+            $query = $this->conn()->table('periodos_importacion')
+                ->where('tipo', $tipo)
+                ->where('es_activo', true);
+
+            if ($user !== null && ! $user->hasGlobalAccess()) {
+                $query->where(function ($q) use ($user) {
+                    $q->where('scope_type', $user->isRegional() ? 'regional' : 'unidad')
+                        ->where('region_id', $user->region_id);
+                    if ($user->isUnidad()) {
+                        $q->where('unidad_operativa_id', $user->unidad_operativa_id);
+                    }
+                });
+            } else {
+                $query->where('scope_type', 'global');
+            }
+
+            return $query->orderBy('id', 'desc')->first();
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**
      * @return array{regular: object|null, casa_x_casa: object|null}
      */
-    public function activos(): array
+    public function activos(?User $user = null): array
     {
         return [
-            self::TIPO_REGULAR => $this->obtenerActivo(self::TIPO_REGULAR),
-            self::TIPO_CASA_X_CASA => $this->obtenerActivo(self::TIPO_CASA_X_CASA),
+            self::TIPO_REGULAR => $this->obtenerActivo(self::TIPO_REGULAR, $user),
+            self::TIPO_CASA_X_CASA => $this->obtenerActivo(self::TIPO_CASA_X_CASA, $user),
         ];
     }
 
@@ -91,6 +109,10 @@ class ServicioPeriodosImportacion
         ?string $fechaCorte,
         ?string $archivoOriginal,
         bool $reemplazar = false,
+        string $scopeType = 'global',
+        ?int $regionId = null,
+        ?int $unidadOperativaId = null,
+        ?int $uploadedBy = null,
     ): object {
         $trimestre = $this->normalizarTrimestre($trimestre);
         $existente = $this->buscar($tipo, $anio, $trimestre);
@@ -99,7 +121,7 @@ class ServicioPeriodosImportacion
             throw new \RuntimeException($this->mensajeReemplazo($tipo, $anio, $trimestre));
         }
 
-        return $this->conn()->transaction(function () use ($tipo, $anio, $trimestre, $fechaCorte, $archivoOriginal, $existente) {
+        return $this->conn()->transaction(function () use ($tipo, $anio, $trimestre, $fechaCorte, $archivoOriginal, $existente, $scopeType, $regionId, $unidadOperativaId, $uploadedBy) {
             if ($existente !== null) {
                 $this->borrarDatosPeriodo($tipo, (int) $existente->id);
                 $this->conn()->table('periodos_importacion')->where('id', $existente->id)->update([
@@ -107,6 +129,10 @@ class ServicioPeriodosImportacion
                     'archivo_original' => $archivoOriginal,
                     'estado' => 'procesando',
                     'es_activo' => false,
+                    'scope_type' => $scopeType,
+                    'region_id' => $regionId,
+                    'unidad_operativa_id' => $unidadOperativaId,
+                    'uploaded_by' => $uploadedBy,
                     'total_filas' => 0,
                     'total_errores' => 0,
                     'updated_at' => now(),
@@ -127,6 +153,10 @@ class ServicioPeriodosImportacion
                 'archivo_original' => $archivoOriginal,
                 'estado' => 'procesando',
                 'es_activo' => false,
+                'scope_type' => $scopeType,
+                'region_id' => $regionId,
+                'unidad_operativa_id' => $unidadOperativaId,
+                'uploaded_by' => $uploadedBy,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -137,9 +167,14 @@ class ServicioPeriodosImportacion
 
     public function activar(string $tipo, int $periodoId, int $totalFilas = 0, int $totalErrores = 0): void
     {
-        $this->conn()->transaction(function () use ($tipo, $periodoId, $totalFilas, $totalErrores) {
+        $periodo = $this->conn()->table('periodos_importacion')->where('id', $periodoId)->first();
+
+        $this->conn()->transaction(function () use ($tipo, $periodoId, $totalFilas, $totalErrores, $periodo) {
             $this->conn()->table('periodos_importacion')
                 ->where('tipo', $tipo)
+                ->where('scope_type', $periodo->scope_type ?? 'global')
+                ->where('region_id', $periodo->region_id)
+                ->where('unidad_operativa_id', $periodo->unidad_operativa_id)
                 ->update(['es_activo' => false, 'updated_at' => now()]);
 
             $this->conn()->table('periodos_importacion')
@@ -153,8 +188,20 @@ class ServicioPeriodosImportacion
                 ]);
 
             $table = $tipo === self::TIPO_CASA_X_CASA ? 'tiendas_casa_x_casa' : 'tiendas';
-            $this->conn()->table($table)->update(['es_activo' => false]);
-            $this->conn()->table($table)->where('periodo_importacion_id', $periodoId)->update(['es_activo' => true]);
+            $mismosScope = $this->conn()->table('periodos_importacion')
+                ->where('tipo', $tipo)
+                ->where('scope_type', $periodo->scope_type ?? 'global')
+                ->where('region_id', $periodo->region_id)
+                ->where('unidad_operativa_id', $periodo->unidad_operativa_id)
+                ->pluck('id');
+
+            $this->conn()->table($table)
+                ->whereIn('periodo_importacion_id', $mismosScope)
+                ->update(['es_activo' => false]);
+
+            $this->conn()->table($table)
+                ->where('periodo_importacion_id', $periodoId)
+                ->update(['es_activo' => true]);
         });
     }
 
@@ -196,6 +243,42 @@ class ServicioPeriodosImportacion
         $label = $tipo === self::TIPO_CASA_X_CASA ? 'Tiendas de Salud CxC' : 'Tiendas Regulares';
 
         return $label.' '.$anio.' '.$this->normalizarTrimestre($trimestre);
+    }
+
+    public function rellenarCamposRegional(string $tipo, int $periodoId): void
+    {
+        $periodo = $this->conn()->table('periodos_importacion')->find($periodoId);
+        if ($periodo === null) {
+            return;
+        }
+
+        $table = $tipo === self::TIPO_CASA_X_CASA ? 'tiendas_casa_x_casa' : 'tiendas';
+
+        if ($periodo->scope_type === 'regional' && $periodo->region_id !== null) {
+            $region = $this->conn()->table('regiones')->find($periodo->region_id);
+            if ($region !== null) {
+                $this->conn()->table($table)
+                    ->where('periodo_importacion_id', $periodoId)
+                    ->whereNull('Clave_Regional')
+                    ->update([
+                        'Clave_Regional' => $region->clave,
+                        'Nombre_Regional' => $region->nombre,
+                    ]);
+            }
+        }
+
+        if ($periodo->scope_type === 'unidad' && $periodo->unidad_operativa_id !== null) {
+            $uo = $this->conn()->table('unidades_operativas')->find($periodo->unidad_operativa_id);
+            if ($uo !== null) {
+                $this->conn()->table($table)
+                    ->where('periodo_importacion_id', $periodoId)
+                    ->whereNull('Clave_UniOpe')
+                    ->update([
+                        'Clave_UniOpe' => $uo->clave,
+                        'Nombre_UniOpe' => $uo->nombre,
+                    ]);
+            }
+        }
     }
 
     private function borrarDatosPeriodo(string $tipo, int $periodoId): void
