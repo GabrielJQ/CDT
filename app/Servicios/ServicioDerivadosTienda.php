@@ -40,6 +40,15 @@ class ServicioDerivadosTienda
 
     public function agregar(array $store, ?string $only = null): array
     {
-        return array_merge($store, $this->calcular($store, $only));
+        return array_merge($this->normalizar($store), $this->calcular($store, $only));
+    }
+
+    public function normalizar(array $store): array
+    {
+        if (isset($store['Nombre_UniOpe']) && is_string($store['Nombre_UniOpe'])) {
+            $store['Nombre_UniOpe'] = preg_replace('/^U\.O\.\s+/i', '', $store['Nombre_UniOpe']);
+        }
+
+        return $store;
     }
 }
