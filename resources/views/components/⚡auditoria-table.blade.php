@@ -140,20 +140,6 @@ new class extends Component
         ][$column] ?? $column;
     }
 
-    private function formatMoney(float $num): string
-    {
-        return '$'.number_format($num, 2);
-    }
-
-    private function formatDate(?string $date): string
-    {
-        if (! $date) {
-            return '—';
-        }
-
-        return substr($date, 0, 10);
-    }
-
     private function mesesLabel(int $meses): string
     {
         $m = (int) round($meses);
@@ -191,13 +177,7 @@ new class extends Component
         }
 
         if ($column === 'Vigencia') {
-            $d = $audit['vigencia'] ?? null;
-
-            if ($d) {
-                return '<span class="font-mono text-gray-700 dark:text-gray-300">'.$this->formatDate($d).'</span>';
-            }
-
-            return '<span class="text-gray-400 dark:text-gray-500">—</span>';
+            return RenderTiendaPresentador::formatDate($audit['vigencia'] ?? null);
         }
 
         if ($column === 'Comite') {
@@ -214,12 +194,7 @@ new class extends Component
         }
 
         if ($column === 'Fec_CRA') {
-            $d = $store[$column] ?? '';
-            if ($d) {
-                return '<span class="font-mono text-gray-700 dark:text-gray-300">'.$this->formatDate($d).'</span>';
-            }
-
-            return '<span class="text-gray-400 dark:text-gray-500">—</span>';
+            return RenderTiendaPresentador::formatDate($store[$column] ?? '');
         }
 
         if ($column === 'Asam_Real_Mes') {
@@ -232,19 +207,14 @@ new class extends Component
                 $html = '<span class="text-gray-400 dark:text-gray-500">0</span>';
             }
             if ($dateAsam && $dateAsam !== '0' && $dateAsam !== '#N/A') {
-                $html .= '<br><span class="text-xs text-gray-500 dark:text-gray-400">📅 '.$this->formatDate($dateAsam).'</span>';
+                $html .= '<br><span class="text-xs text-gray-500 dark:text-gray-400">📅 '.RenderTiendaPresentador::formatDate($dateAsam).'</span>';
             }
 
             return $html;
         }
 
         if ($column === 'Fch_Audit') {
-            $d = $audit['fchAudit'] ?? null;
-            if ($d) {
-                return '<span class="font-mono text-gray-700 dark:text-gray-300">'.$this->formatDate($d).'</span>';
-            }
-
-            return '<span class="text-gray-400 dark:text-gray-500">—</span>';
+            return RenderTiendaPresentador::formatDate($audit['fchAudit'] ?? null);
         }
 
         if ($column === 'Estado_Aud') {
@@ -276,7 +246,7 @@ new class extends Component
         if ($column === 'Imp_Res_Audi_Mes') {
             $imp = (float) ($audit['impuesto'] ?? 0);
             if ($imp > 0) {
-                return '<span class="font-mono text-gray-700 dark:text-gray-300 text-right block">'.$this->formatMoney($imp).'</span>';
+                return '<span class="font-mono text-gray-700 dark:text-gray-300 text-right block">'.RenderTiendaPresentador::formatMoney($imp).'</span>';
             }
 
             return '<span class="text-gray-400 dark:text-gray-500">—</span>';

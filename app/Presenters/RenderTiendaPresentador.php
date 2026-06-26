@@ -17,6 +17,36 @@ class RenderTiendaPresentador
         return '<strong class="text-gray-900 dark:text-gray-100">'.$name.'</strong>';
     }
 
+    public static function formatDate(?string $date): string
+    {
+        if (! $date) {
+            return '<span class="text-gray-400 dark:text-gray-500">—</span>';
+        }
+
+        $parts = explode('-', substr($date, 0, 10));
+        if (count($parts) !== 3) {
+            return e($date);
+        }
+
+        return '<span class="font-mono text-gray-700 dark:text-gray-300">'.$parts[2].'/'.$parts[1].'/'.$parts[0].'</span>';
+    }
+
+    public static function formatMoney(string|float $val): string
+    {
+        if (is_string($val)) {
+            $num = (float) str_replace([',', '$', ' '], '', $val);
+        } else {
+            $num = $val;
+        }
+
+        return '$'.number_format($num, 2);
+    }
+
+    public static function isEmpty(?string $val): bool
+    {
+        return $val === '' || $val === null || $val === '0' || trim($val) === '';
+    }
+
     public static function yesNoBadge(?string $value): string
     {
         $normalized = strtoupper(trim($value ?? ''));

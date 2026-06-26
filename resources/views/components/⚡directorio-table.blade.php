@@ -180,18 +180,6 @@ new class extends Component
         ][$column] ?? $column;
     }
 
-    private function isEmpty(?string $val): bool
-    {
-        return $val === '' || $val === null || $val === '0' || trim($val) === '';
-    }
-
-    private function formatMoney(string $val): string
-    {
-        $num = (float) str_replace([',', '$', ' '], '', $val);
-
-        return '$'.number_format($num, 2);
-    }
-
     public function renderCell(string $column, array $store): string
     {
         $val = $store[$column] ?? '';
@@ -213,12 +201,7 @@ new class extends Component
         }
 
         if ($column === 'Fecha_Apertura') {
-            if (! $val) {
-                return '<span class="text-gray-400 dark:text-gray-500">—</span>';
-            }
-            $parts = explode('-', substr($val, 0, 10));
-
-            return '<span class="font-mono text-gray-700 dark:text-gray-300">'.(count($parts) === 3 ? $parts[2].'/'.$parts[1].'/'.$parts[0] : e($val)).'</span>';
+            return RenderTiendaPresentador::formatDate($val);
         }
 
         if (in_array($column, ['TELEFONIA', 'Señal de celular', 'INTERNET'], true)) {
@@ -234,11 +217,11 @@ new class extends Component
         }
 
         if (in_array($column, self::MONEY_COLUMNS, true)) {
-            if ($this->isEmpty($val)) {
+            if (RenderTiendaPresentador::isEmpty($val)) {
                 return '<span class="text-gray-400 dark:text-gray-500">—</span>';
             }
 
-            return '<span class="font-mono text-gray-700 dark:text-gray-300 text-right block">'.$this->formatMoney($val).'</span>';
+            return '<span class="font-mono text-gray-700 dark:text-gray-300 text-right block">'.RenderTiendaPresentador::formatMoney($val).'</span>';
         }
 
         if (in_array($column, ['Fec_CRA', 'Vigencia', 'Fch_Audit', 'Pagare_Fecha'], true)) {
@@ -250,7 +233,7 @@ new class extends Component
         }
 
         if (in_array($column, ['Nom_Pre_CRA', 'Nom_Pre_Sup_CRA', 'Nom_Sec_CRA', 'Nom_Sec_Sup_CRA', 'Nom_Tes_CRA', 'Nom_Vcv_CRA', 'Nom_Voc_Gen_CRA'], true)) {
-            if ($this->isEmpty($val)) {
+            if (RenderTiendaPresentador::isEmpty($val)) {
                 return '<span class="text-gray-400 dark:text-gray-500">—</span>';
             }
 
@@ -276,7 +259,7 @@ new class extends Component
         }
 
         if (in_array($column, ['Latitud', 'Longitud'], true)) {
-            if ($this->isEmpty($val) || $val === '0') {
+            if (RenderTiendaPresentador::isEmpty($val) || $val === '0') {
                 return '<span class="text-gray-400 dark:text-gray-500">—</span>';
             }
 

@@ -92,20 +92,6 @@ new class extends Component
         ][$column] ?? $column;
     }
 
-    public function formatDate(?string $date): string
-    {
-        if (! $date) {
-            return '<span class="text-gray-400 dark:text-gray-500">—</span>';
-        }
-
-        $parts = explode('-', substr($date, 0, 10));
-        if (count($parts) !== 3) {
-            return e($date);
-        }
-
-        return '<span class="font-mono text-gray-700 dark:text-gray-300">'.$parts[2].'/'.$parts[1].'/'.$parts[0].'</span>';
-    }
-
     public function ageBadge(?string $date): string
     {
         if (! $date) {
@@ -149,7 +135,7 @@ new class extends Component
         }
 
         if ($column === '_fecha_apertura') {
-            return '<div class="text-center font-mono text-gray-700 dark:text-gray-300">'.$this->formatDate($store['_fecha_apertura'] ?? null).'</div>';
+            return '<div class="text-center font-mono text-gray-700 dark:text-gray-300">'.RenderTiendaPresentador::formatDate($store['_fecha_apertura'] ?? null).'</div>';
         }
 
         if ($column === '_antiguedad') {
