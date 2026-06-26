@@ -2,19 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Contracts\Repositories\TiendaRepositoryInterface;
 use App\Servicios\ServicioAlcanceUsuario;
-use App\Servicios\ServicioPostgresql;
 
 class HomeController extends Controller
 {
     public function __construct(
-        private ServicioPostgresql $postgres,
+        private TiendaRepositoryInterface $tiendaRepository,
     ) {}
 
     public function index()
     {
-        $regionales = $this->postgres->obtenerJerarquiaRegional();
-        $regionales = app(ServicioAlcanceUsuario::class)->filtrarJerarquia(request()->user(), $regionales);
+        $user = request()->user();
+        $regionales = $this->tiendaRepository->getJerarquiaRegional($user);
+        $regionales = app(ServicioAlcanceUsuario::class)->filtrarJerarquia($user, $regionales);
 
         return view('home', [
             'regionales' => $regionales,
