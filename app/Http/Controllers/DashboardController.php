@@ -13,13 +13,18 @@ class DashboardController extends Controller
 
     public function refresh()
     {
-        $this->invalidateDashboardCache();
+        static::invalidateAllCaches();
 
         return back()->with('success', 'Cache actualizado correctamente desde la base local.');
     }
 
+    public static function invalidateAllCaches(): void
+    {
+        Cache::flush();
+    }
+
     public static function invalidateDashboardCache(): void
     {
-        Cache::increment('dashboard_metrics_version');
+        static::invalidateAllCaches();
     }
 }
