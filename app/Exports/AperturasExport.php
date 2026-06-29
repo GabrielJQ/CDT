@@ -17,18 +17,17 @@ class AperturasExport extends BaseExport
 
     public function filename(): string
     {
-        return 'aperturas.csv';
+        return 'aperturas.xlsx';
     }
 
     public function headings(): array
     {
         return [
             'Nombre_Almacen' => 'Almacén',
-            'No_Tienda_Actual' => 'Tienda #',
             'Localidad' => 'Localidad',
+            'No_Tienda_Actual' => 'Tienda #',
             'Municipio' => 'Municipio',
-            'Fecha_Apertura' => 'Fecha Apertura',
-            '_fecha_apertura' => 'Apertura (parseada)',
+            '_fecha_apertura' => 'Apertura',
             '_antiguedad' => 'Antigüedad',
         ];
     }
@@ -36,10 +35,5 @@ class AperturasExport extends BaseExport
     public function data(array $filters): iterable
     {
         return $this->postgres->exportarTiendas($this->regionFilters, $filters, self::COLUMNS, 'aperturas');
-    }
-
-    public function map(array $row): array
-    {
-        return $row;
     }
 }

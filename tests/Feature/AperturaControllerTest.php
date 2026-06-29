@@ -54,8 +54,8 @@ class AperturaControllerTest extends TestCase
         $response = $this->get('/export/aperturas');
 
         $response->assertStatus(200);
-        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
-        $response->assertHeader('Content-Disposition', 'attachment; filename=aperturas.csv');
+        $response->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->assertHeader('Content-Disposition', 'attachment; filename=aperturas.xlsx');
     }
 
     public function test_export_csv_with_filter(): void
@@ -65,7 +65,7 @@ class AperturaControllerTest extends TestCase
         $response = $this->get('/export/aperturas?desde=2024-01-01');
 
         $response->assertStatus(200);
-        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
-        $response->assertHeader('Content-Disposition', 'attachment; filename=aperturas.csv');
+        $response->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->assertHeader('Content-Disposition', 'attachment; filename=aperturas.xlsx');
     }
 }
