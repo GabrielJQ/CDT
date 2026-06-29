@@ -18,7 +18,7 @@ class MapaExport extends BaseExport
 
     public function filename(): string
     {
-        return 'mapa.csv';
+        return 'mapa.xlsx';
     }
 
     public function headings(): array
@@ -30,7 +30,7 @@ class MapaExport extends BaseExport
             'Estado' => 'Estado',
             '_geo.lat' => 'Latitud',
             '_geo.lon' => 'Longitud',
-            '_geo.status' => 'Estatus Geo',
+            '_geo.status' => 'Problema',
             '_geo.mensaje' => 'Mensaje',
         ];
     }
@@ -38,10 +38,5 @@ class MapaExport extends BaseExport
     public function data(array $filters): iterable
     {
         return $this->postgres->exportarTiendas($this->regionFilters, $filters, self::COLUMNS, 'mapa');
-    }
-
-    public function map(array $row): array
-    {
-        return $row;
     }
 }
