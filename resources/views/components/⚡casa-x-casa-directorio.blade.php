@@ -218,20 +218,6 @@ new class extends Component
         return $this->direction === 'asc' ? '▲' : '▼';
     }
 
-    public function exportUrl(): string
-    {
-        return url('/casa-x-casa/directorio?'.http_build_query(array_filter([
-            'estado' => $this->estado,
-            'uo' => $this->uo,
-            'estatus' => $this->estatus,
-            'buscar' => $this->buscar,
-            'sort' => $this->sort,
-            'direction' => $this->direction,
-            'per_page' => $this->perPage,
-            'export' => 'csv',
-        ], fn ($value) => $value !== null && $value !== '')));
-    }
-
     public function tableData(): array
     {
         $query = $this->baseQuery();
@@ -278,7 +264,6 @@ new class extends Component
                 <h3 class="text-base lg:text-lg font-bold text-gray-800 dark:text-gray-100">Directorio Tiendas Salud Casa por Casa</h3>
                 <p class="text-xs text-gray-500 dark:text-gray-400">Consulta y filtra las tiendas del programa Casa por Casa</p>
             </div>
-            <a href="{{ $this->exportUrl() }}" class="btn-export self-start lg:self-center" wire:navigate.hover="false">Exportar CSV</a>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
@@ -316,6 +301,7 @@ new class extends Component
         </div>
 
         <div class="flex flex-wrap items-center gap-3 mb-4">
+            <x-export-button route="export.casa-x-casa-directorio" :params="['estado' => 'estado', 'uo' => 'uo', 'estatus' => 'estatus', 'buscar' => 'buscar']" />
             <button type="button" wire:click="clearFilters" class="btn-secondary">Limpiar filtros</button>
             <span class="text-xs text-gray-500 dark:text-gray-400">
                 Mostrando <strong>{{ number_format($from) }}</strong>–<strong>{{ number_format($to) }}</strong> de <strong>{{ number_format($totalCount) }}</strong> tiendas
