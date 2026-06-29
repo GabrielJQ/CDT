@@ -18,5 +18,5 @@
         window.open('{{ route($route) }}' + qs, '_blank');
     "
     {{ $attributes->merge(['class' => 'btn-export']) }}>
-    Exportar CSV
+    Exportar información
 </button>
