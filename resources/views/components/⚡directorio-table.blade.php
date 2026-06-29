@@ -270,16 +270,6 @@ new class extends Component
         return in_array($column, self::SORTABLE_COLUMNS, true) && ! in_array($column, $this->excludedSortColumns(), true);
     }
 
-    public function exportUrl(): string
-    {
-        return $this->buildExportUrl('/directorio', [
-            'q' => trim($this->q),
-            'incompletos' => $this->incompletos ? '1' : null,
-            'sinCapital' => $this->sinCapital ? '1' : null,
-            'tienda_salud' => $this->tiendaSalud,
-        ]);
-    }
-
     public function tableData(): array
     {
         $postgres = app(ServicioPostgresql::class);
@@ -316,7 +306,7 @@ new class extends Component
 @endphp
 
 <div class="page-shell" wire:loading.class="opacity-70" wire:target="q,incompletos,sinCapital,sortBy,clearFilters,previousTablePage,nextTablePage,goToTablePage,showContacto,showVentas,showCapital,showComite,showAuditoria,showUbicacion">
-    <x-module-header title="Directorio de Tiendas" description="Consulta todas las tiendas con información de contacto, ventas, capital, comités, auditoría y ubicación. Al usar los filtros se actualiza la tabla automáticamente." exportUrl="{{ $this->exportUrl() }}" />
+    <x-module-header title="Directorio de Tiendas" description="Consulta todas las tiendas con información de contacto, ventas, capital, comités, auditoría y ubicación. Al usar los filtros se actualiza la tabla automáticamente." />
 
     @if(!empty($stats))
         <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
@@ -378,6 +368,8 @@ new class extends Component
             </div>
         </div>
     </div>
+
+    <x-export-button route="export.directorio" :params="['q' => 'q', 'incompletos' => 'incompletos', 'sinCapital' => 'sinCapital', 'tienda_salud' => 'tiendaSalud']" class="mb-6" />
 
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 mb-4 flex flex-wrap gap-4">
         <span class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold self-center">Columnas:</span>

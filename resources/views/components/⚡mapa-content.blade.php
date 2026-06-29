@@ -154,19 +154,6 @@ new class extends Component
         return $this->direction === 'asc' ? '▲' : '▼';
     }
 
-    public function exportUrl(): string
-    {
-        return url('/mapa?' . http_build_query(array_filter([
-            'almacen' => $this->almacen,
-            'estado_geo' => $this->estado_geo,
-            'tienda_salud' => $this->tiendaSalud,
-            'sort' => $this->sort,
-            'direction' => $this->direction,
-            'per_page' => $this->perPage,
-            'export' => 'csv',
-        ], fn ($value) => $value !== null && $value !== '')));
-    }
-
     public function renderCell(string $column, array $store): string
     {
         $val = $store[$column] ?? '';
@@ -299,7 +286,6 @@ new class extends Component
                 <h1 class="page-heading">Mapa de tiendas</h1>
                 <p class="page-subheading">Ubica tiendas con coordenadas válidas y prioriza registros con problemas de georreferencia para mejorar el análisis territorial.</p>
             </div>
-            <a href="{{ $this->exportUrl() }}" class="btn-export">Exportar CSV</a>
         </div>
     </section>
 
@@ -346,6 +332,8 @@ new class extends Component
             </div>
         </div>
     </div>
+
+    <x-export-button route="export.mapa" :params="['almacen' => 'almacen', 'estado_geo' => 'estado_geo', 'tienda_salud' => 'tiendaSalud']" class="mb-6" />
 
     <div class="text-sm text-gray-500 dark:text-gray-400 mb-2">
         Mostrando <strong>{{ $filteredCount }}</strong> tiendas filtradas. El mapa carga los puntos visibles según la zona actual

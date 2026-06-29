@@ -186,20 +186,6 @@ new class extends Component
         return in_array($column, $this->sortableColumns(), true) && ! in_array($column, $this->excludedSortColumns(), true);
     }
 
-    public function exportUrl(): string
-    {
-        return url('/informacion-tiendas?'.http_build_query(array_filter([
-            'almacen' => trim($this->almacen),
-            'nivel' => $this->nivel,
-            'indicador' => $this->indicador,
-            'tienda_salud' => $this->tiendaSalud,
-            'sort' => $this->sort,
-            'direction' => $this->direction,
-            'per_page' => $this->perPage,
-            'export' => 'csv',
-        ], fn ($value) => $value !== null && $value !== '')));
-    }
-
     /**
      * @return array<string, mixed>
      */
@@ -238,7 +224,7 @@ new class extends Component
 @endphp
 
 <div class="page-shell" wire:loading.class="opacity-70" wire:target="almacen,nivel,indicador,sortBy,clearFilters,previousTablePage,nextTablePage,goToTablePage,showFactores,showDetalle">
-    <x-module-header title="Información de Tiendas" description="Consulta el nivel de criticidad de las tiendas basado en factores como capital, comités, auditoría, pagarés, rotación y asambleas. Al usar los filtros se actualiza la tabla automáticamente." exportUrl="{{ $this->exportUrl() }}" />
+    <x-module-header title="Información de Tiendas" description="Consulta el nivel de criticidad de las tiendas basado en factores como capital, comités, auditoría, pagarés, rotación y asambleas. Al usar los filtros se actualiza la tabla automáticamente." />
 
     @if(!empty($summary))
         <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
@@ -313,6 +299,8 @@ new class extends Component
             </div>
         </div>
     </div>
+
+    <x-export-button route="export.criticidad" :params="['almacen' => 'almacen', 'nivel' => 'nivel', 'indicador' => 'indicador', 'tienda_salud' => 'tiendaSalud']" class="mb-6" />
 
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 mb-4 flex flex-wrap gap-4">
         <span class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold self-center">Columnas:</span>

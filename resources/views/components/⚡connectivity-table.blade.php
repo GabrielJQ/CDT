@@ -129,18 +129,6 @@ new class extends Component
         return e($store[$column] ?? '');
     }
 
-    public function exportUrl(): string
-    {
-        return $this->buildExportUrl('/conectividad', [
-            'almacen' => trim($this->almacen),
-            'telefono' => $this->telefono,
-            'senial' => $this->senial,
-            'compania' => $this->compania,
-            'internet' => $this->internet,
-            'tienda_salud' => $this->tiendaSalud,
-        ]);
-    }
-
     /** @return array<string, mixed> */
     public function tableData(): array
     {
@@ -177,7 +165,7 @@ new class extends Component
 @endphp
 
 <div class="page-shell" wire:loading.class="opacity-70" wire:target="almacen,telefono,senial,compania,internet,sortBy,clearFilters,previousTablePage,nextTablePage,goToTablePage,showConnectivity">
-    <x-module-header title="Conectividad" description="Consulta disponibilidad de telefonía fija, señal celular, compañía e internet por tienda. Al usar los filtros se actualiza la tabla automáticamente." exportUrl="{{ $this->exportUrl() }}" />
+    <x-module-header title="Conectividad" description="Consulta disponibilidad de telefonía fija, señal celular, compañía e internet por tienda. Al usar los filtros se actualiza la tabla automáticamente." />
 
     @if(!empty($kpis))
         <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
@@ -272,6 +260,8 @@ new class extends Component
             </div>
         </div>
     </div>
+
+    <x-export-button route="export.conectividad" :params="['almacen' => 'almacen', 'telefono' => 'telefono', 'senial' => 'senial', 'compania' => 'compania', 'internet' => 'internet', 'tienda_salud' => 'tiendaSalud']" class="mb-6" />
 
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 mb-4 flex flex-wrap gap-4">
         <span class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold self-center">Columnas:</span>

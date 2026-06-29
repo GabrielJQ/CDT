@@ -145,16 +145,6 @@ new class extends Component
         return e($store[$column] ?? '');
     }
 
-    public function exportUrl(): string
-    {
-        return $this->buildExportUrl('/aperturas', [
-            'almacen' => trim($this->almacen),
-            'desde' => $this->desde,
-            'hasta' => $this->hasta,
-            'tienda_salud' => $this->tiendaSalud,
-        ]);
-    }
-
     /** @return array<string, mixed> */
     public function tableData(): array
     {
@@ -191,7 +181,7 @@ new class extends Component
 @endphp
 
 <div class="page-shell" wire:loading.class="opacity-70" wire:target="almacen,desde,hasta,sortBy,clearFilters,previousTablePage,nextTablePage,goToTablePage,showApertura">
-    <x-module-header title="Apertura de Tiendas" description="Consulta fechas de apertura y antigüedad de tiendas. Al usar los filtros se actualiza la tabla automáticamente." exportUrl="{{ $this->exportUrl() }}" />
+    <x-module-header title="Apertura de Tiendas" description="Consulta fechas de apertura y antigüedad de tiendas. Al usar los filtros se actualiza la tabla automáticamente." />
 
     <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
         <div class="kpi-gold-accent bg-white dark:bg-gray-800 rounded-xl shadow p-5 border-l-4 border-blue-500">
@@ -237,6 +227,8 @@ new class extends Component
             <button type="button" wire:click="clearFilters" class="btn-secondary">Limpiar</button>
         </div>
     </div>
+
+    <x-export-button route="export.aperturas" :params="['almacen' => 'almacen', 'desde' => 'desde', 'hasta' => 'hasta', 'tienda_salud' => 'tiendaSalud']" class="mb-6" />
 
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 mb-4 flex flex-wrap gap-4">
         <span class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold self-center">Columnas:</span>

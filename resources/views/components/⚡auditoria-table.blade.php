@@ -281,25 +281,6 @@ new class extends Component
         return in_array($column, $this->sortableColumns(), true) && ! in_array($column, $this->excludedSortColumns(), true);
     }
 
-    public function exportUrl(): string
-    {
-        return url('/auditoria?'.http_build_query(array_filter([
-            'almacen' => trim($this->almacen),
-            'nivel' => $this->nivel,
-            'estado_comite' => $this->estado_comite,
-            'estado_auditoria' => $this->estado_auditoria,
-            'filtro_500k' => $this->filtro_500k,
-            'rango_rotacion' => $this->rango_rotacion,
-            'tiempo_auditoria' => $this->tiempo_auditoria,
-            'asambleas_mes' => $this->asambleas_mes,
-            'tienda_salud' => $this->tiendaSalud,
-            'sort' => $this->sort,
-            'direction' => $this->direction,
-            'per_page' => $this->perPage,
-            'export' => 'csv',
-        ], fn ($value) => $value !== null && $value !== '' && $value !== false)));
-    }
-
     public function tableData(): array
     {
         $postgres = app(ServicioPostgresql::class);
@@ -335,7 +316,7 @@ new class extends Component
 @endphp
 
 <div class="page-shell" wire:loading.class="opacity-70" wire:target="almacen,nivel,estado_comite,estado_auditoria,filtro_500k,rango_rotacion,tiempo_auditoria,asambleas_mes,sortBy,clearFilters,previousTablePage,nextTablePage,goToTablePage,showComite,showAuditoria,showRendimiento">
-    <x-module-header title="Auditoría Operativa" description="Consulta el estatus de auditoría por tienda incluyendo comités, montos auditados, rotación y nivel de riesgo. Al usar los filtros se actualiza la tabla automáticamente." exportUrl="{{ $this->exportUrl() }}" />
+    <x-module-header title="Auditoría Operativa" description="Consulta el estatus de auditoría por tienda incluyendo comités, montos auditados, rotación y nivel de riesgo. Al usar los filtros se actualiza la tabla automáticamente." />
 
     @if (! empty($kpis))
         {{-- KPIs ROW 1 --}}
@@ -487,6 +468,8 @@ new class extends Component
             </div>
         </div>
     </div>
+
+    <x-export-button route="export.auditoria" :params="['almacen' => 'almacen', 'nivel' => 'nivel', 'estado_comite' => 'estado_comite', 'estado_auditoria' => 'estado_auditoria', 'filtro_500k' => 'filtro_500k', 'rango_rotacion' => 'rango_rotacion', 'tiempo_auditoria' => 'tiempo_auditoria', 'asambleas_mes' => 'asambleas_mes', 'tienda_salud' => 'tiendaSalud']" class="mb-6" />
 
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 mb-4 flex flex-wrap gap-4">
         <span class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold self-center">Columnas:</span>
