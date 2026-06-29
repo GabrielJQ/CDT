@@ -8,6 +8,14 @@ use App\Http\Controllers\ConnectivityController;
 use App\Http\Controllers\CriticalStoresController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DirectorioController;
+use App\Http\Controllers\Export\AperturasExportController;
+use App\Http\Controllers\Export\AuditoriaExportController;
+use App\Http\Controllers\Export\CasaPorCasaDirectorioExportController;
+use App\Http\Controllers\Export\CasaPorCasaMapaExportController;
+use App\Http\Controllers\Export\ConectividadExportController;
+use App\Http\Controllers\Export\CriticidadExportController;
+use App\Http\Controllers\Export\DirectorioExportController;
+use App\Http\Controllers\Export\MapaExportController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\MapaController;
@@ -30,13 +38,13 @@ Route::middleware(['auth', 'active.user'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('/refresh', [DashboardController::class, 'refresh'])->name('refresh');
 
-    Route::get('/conectividad', [ConnectivityController::class, 'index']);
-    Route::get('/informacion-tiendas', [CriticalStoresController::class, 'index']);
-    Route::get('/mapa', [MapaController::class, 'index']);
+    Route::match(['GET', 'POST'], '/conectividad', [ConnectivityController::class, 'index']);
+    Route::match(['GET', 'POST'], '/informacion-tiendas', [CriticalStoresController::class, 'index']);
+    Route::match(['GET', 'POST'], '/mapa', [MapaController::class, 'index']);
     Route::get('/mapa/data', [MapaController::class, 'data'])->name('mapa.data');
-    Route::get('/directorio', [DirectorioController::class, 'index']);
-    Route::get('/aperturas', [AperturaController::class, 'index']);
-    Route::get('/auditoria', [AuditoriaController::class, 'index']);
+    Route::match(['GET', 'POST'], '/directorio', [DirectorioController::class, 'index']);
+    Route::match(['GET', 'POST'], '/aperturas', [AperturaController::class, 'index']);
+    Route::match(['GET', 'POST'], '/auditoria', [AuditoriaController::class, 'index']);
 
     Route::controller(ImportController::class)->prefix('carga-masiva')->name('imports.')->group(function () {
         Route::get('/', 'index')->name('index');
@@ -45,8 +53,8 @@ Route::middleware(['auth', 'active.user'])->group(function () {
     });
 
     Route::prefix('casa-x-casa')->name('casa-x-casa.')->controller(CasaPorCasaController::class)->group(function () {
-        Route::get('/', 'dashboard')->name('dashboard');
-        Route::get('/directorio', 'directorio')->name('directorio');
+        Route::match(['GET', 'POST'], '/', 'dashboard')->name('dashboard');
+        Route::match(['GET', 'POST'], '/directorio', 'directorio')->name('directorio');
         Route::get('/mapa', 'mapa')->name('mapa');
         Route::get('/mapa/data', 'mapaData')->name('mapa.data');
         Route::get('/tienda/{id}', 'show')->name('show');
@@ -62,6 +70,17 @@ Route::middleware(['auth', 'active.user'])->group(function () {
         Route::get('/', 'show')->name('perfil');
         Route::put('/', 'update');
         Route::post('/password', 'updatePassword')->name('perfil.password');
+    });
+
+    Route::prefix('export')->name('export.')->group(function () {
+        Route::get('/conectividad', [ConectividadExportController::class, 'download'])->name('conectividad');
+        Route::get('/directorio', [DirectorioExportController::class, 'download'])->name('directorio');
+        Route::get('/criticidad', [CriticidadExportController::class, 'download'])->name('criticidad');
+        Route::get('/auditoria', [AuditoriaExportController::class, 'download'])->name('auditoria');
+        Route::get('/aperturas', [AperturasExportController::class, 'download'])->name('aperturas');
+        Route::get('/mapa', [MapaExportController::class, 'download'])->name('mapa');
+        Route::get('/casa-x-casa-directorio', [CasaPorCasaDirectorioExportController::class, 'download'])->name('casa-x-casa-directorio');
+        Route::get('/casa-x-casa-mapa', [CasaPorCasaMapaExportController::class, 'download'])->name('casa-x-casa-mapa');
     });
 
     Route::post('/set-region', function (Request $r) {
