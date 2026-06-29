@@ -51,7 +51,18 @@ class AperturaControllerTest extends TestCase
     {
         $this->fakeOk();
 
-        $response = $this->get('/aperturas?export=csv');
+        $response = $this->get('/export/aperturas');
+
+        $response->assertStatus(200);
+        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+        $response->assertHeader('Content-Disposition', 'attachment; filename=aperturas.csv');
+    }
+
+    public function test_export_csv_with_filter(): void
+    {
+        $this->fakeOk();
+
+        $response = $this->get('/export/aperturas?desde=2024-01-01');
 
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');

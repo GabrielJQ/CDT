@@ -79,7 +79,18 @@ class ConnectivityControllerTest extends TestCase
     {
         $this->fakeOk();
 
-        $response = $this->get('/conectividad?export=csv');
+        $response = $this->get('/export/conectividad');
+
+        $response->assertStatus(200);
+        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+        $response->assertHeader('Content-Disposition', 'attachment; filename=conectividad.csv');
+    }
+
+    public function test_export_csv_with_filter(): void
+    {
+        $this->fakeOk();
+
+        $response = $this->get('/export/conectividad?almacen=OAXACA');
 
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');

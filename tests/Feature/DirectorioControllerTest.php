@@ -33,7 +33,18 @@ class DirectorioControllerTest extends TestCase
     {
         $this->fakeOk();
 
-        $response = $this->get('/directorio?export=csv');
+        $response = $this->get('/export/directorio');
+
+        $response->assertStatus(200);
+        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+        $response->assertHeader('Content-Disposition', 'attachment; filename=directorio.csv');
+    }
+
+    public function test_export_csv_with_filter(): void
+    {
+        $this->fakeOk();
+
+        $response = $this->get('/export/directorio?q=OAXACA');
 
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');

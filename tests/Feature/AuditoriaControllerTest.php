@@ -78,7 +78,18 @@ class AuditoriaControllerTest extends TestCase
     {
         $this->fakeOk();
 
-        $response = $this->get('/auditoria?export=csv');
+        $response = $this->get('/export/auditoria');
+
+        $response->assertStatus(200);
+        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+        $response->assertHeader('Content-Disposition', 'attachment; filename=auditoria.csv');
+    }
+
+    public function test_export_csv_with_filter(): void
+    {
+        $this->fakeOk();
+
+        $response = $this->get('/export/auditoria?nivel=rojo');
 
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');

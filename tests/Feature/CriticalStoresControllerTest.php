@@ -60,7 +60,18 @@ class CriticalStoresControllerTest extends TestCase
     {
         $this->fakeOk();
 
-        $response = $this->get('/informacion-tiendas?export=csv');
+        $response = $this->get('/export/criticidad');
+
+        $response->assertStatus(200);
+        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+        $response->assertHeader('Content-Disposition', 'attachment; filename=informacion-tiendas.csv');
+    }
+
+    public function test_export_csv_with_filter(): void
+    {
+        $this->fakeOk();
+
+        $response = $this->get('/export/criticidad?nivel=rojo');
 
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
