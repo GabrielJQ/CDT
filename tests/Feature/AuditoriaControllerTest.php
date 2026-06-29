@@ -81,8 +81,8 @@ class AuditoriaControllerTest extends TestCase
         $response = $this->get('/export/auditoria');
 
         $response->assertStatus(200);
-        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
-        $response->assertHeader('Content-Disposition', 'attachment; filename=auditoria.csv');
+        $response->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->assertHeader('Content-Disposition', 'attachment; filename=auditoria.xlsx');
     }
 
     public function test_export_csv_with_filter(): void
@@ -92,7 +92,7 @@ class AuditoriaControllerTest extends TestCase
         $response = $this->get('/export/auditoria?nivel=rojo');
 
         $response->assertStatus(200);
-        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
-        $response->assertHeader('Content-Disposition', 'attachment; filename=auditoria.csv');
+        $response->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->assertHeader('Content-Disposition', 'attachment; filename=auditoria.xlsx');
     }
 }
