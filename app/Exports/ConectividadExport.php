@@ -17,7 +17,7 @@ class ConectividadExport extends BaseExport
 
     public function filename(): string
     {
-        return 'conectividad.csv';
+        return 'conectividad.xlsx';
     }
 
     public function headings(): array
@@ -26,7 +26,7 @@ class ConectividadExport extends BaseExport
             'Nombre_Almacen' => 'Almacén',
             'No_Tienda_Actual' => 'Tienda #',
             'Municipio' => 'Municipio',
-            'TELEFONIA' => 'Teléfono',
+            'TELEFONIA' => 'Teléfono fijo',
             'Señal de celular' => 'Señal Celular',
             'Compañía' => 'Compañía',
             'INTERNET' => 'Internet',
@@ -36,10 +36,5 @@ class ConectividadExport extends BaseExport
     public function data(array $filters): iterable
     {
         return $this->postgres->exportarTiendas($this->regionFilters, $filters, self::COLUMNS, 'conectividad');
-    }
-
-    public function map(array $row): array
-    {
-        return $row;
     }
 }

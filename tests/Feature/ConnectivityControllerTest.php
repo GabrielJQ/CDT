@@ -82,8 +82,8 @@ class ConnectivityControllerTest extends TestCase
         $response = $this->get('/export/conectividad');
 
         $response->assertStatus(200);
-        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
-        $response->assertHeader('Content-Disposition', 'attachment; filename=conectividad.csv');
+        $response->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->assertHeader('Content-Disposition', 'attachment; filename=conectividad.xlsx');
     }
 
     public function test_export_csv_with_filter(): void
@@ -93,8 +93,8 @@ class ConnectivityControllerTest extends TestCase
         $response = $this->get('/export/conectividad?almacen=OAXACA');
 
         $response->assertStatus(200);
-        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
-        $response->assertHeader('Content-Disposition', 'attachment; filename=conectividad.csv');
+        $response->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->assertHeader('Content-Disposition', 'attachment; filename=conectividad.xlsx');
     }
 
     public function test_shows_kpi_cards(): void
