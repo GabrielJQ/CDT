@@ -104,17 +104,4 @@ trait ConTablaLivewire
         $this->direction = 'asc';
         $this->page = 1;
     }
-
-    protected function buildExportUrl(string $route, array $extra = []): string
-    {
-        return url($route.'?'.http_build_query(array_filter(
-            array_merge($extra, [
-                'sort' => $this->sort,
-                'direction' => $this->direction,
-                'per_page' => $this->perPage,
-                'export' => 'csv',
-            ]),
-            fn ($value) => $value !== null && $value !== '',
-        )));
-    }
 }

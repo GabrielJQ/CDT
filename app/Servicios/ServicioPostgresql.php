@@ -337,7 +337,7 @@ class ServicioPostgresql
 
     public function exportarTiendas(array $regionFilters, array $filters, array $columns, string $module): \Generator
     {
-        return $this->exportacionTiendas->exportarTiendas($regionFilters, $filters, $columns, $module, $this->derivadosCompletos($regionFilters), $this->trackedDirectorioColumns);
+        yield from $this->exportacionTiendas->exportarTiendas($regionFilters, $filters, $columns, $module, $this->derivadosCompletos($regionFilters), $this->trackedDirectorioColumns);
     }
 
     public function tieneDatos(): bool

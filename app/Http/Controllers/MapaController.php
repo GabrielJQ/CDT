@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Contracts\Repositories\TiendaRepositoryInterface;
-use App\Servicios\ServicioExportacion;
 use App\Servicios\ServicioGeo;
 use App\Servicios\ServicioPostgresql;
 use Illuminate\Http\Request;
@@ -40,19 +39,6 @@ class MapaController extends Controller
             return ($s['_geo']['status'] ?? 'OK') !== 'OK';
         })->values()->all();
         $criticalesPagination = $this->paginateArray($criticalesAll);
-
-        if ($request->query('export') === 'csv') {
-            return ServicioExportacion::csvStream($this->postgres->exportarTiendas($regionFilter, $filters, self::COLUMNS, 'mapa'), [
-                'Nombre_Almacen' => 'Almacén',
-                'No_Tienda_Actual' => 'Tienda #',
-                'Municipio' => 'Municipio',
-                'Estado' => 'Estado',
-                '_geo.lat' => 'Latitud',
-                '_geo.lon' => 'Longitud',
-                '_geo.status' => 'Estatus Geo',
-                '_geo.mensaje' => 'Mensaje',
-            ], 'mapa.csv');
-        }
 
         return view('mapa', [
             'stores' => [],

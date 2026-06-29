@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Contracts\Repositories\TiendaRepositoryInterface;
-use App\Servicios\ServicioExportacion;
 use App\Servicios\ServicioPostgresql;
 use Illuminate\Http\Request;
 
@@ -27,34 +26,6 @@ class CriticalStoresController extends Controller
             'indicador' => $request->query('indicador', ''),
             'tienda_salud' => $request->query('tienda_salud', ''),
         ];
-
-        if ($request->query('export') === 'csv') {
-            $exportData = (function () use ($filters) {
-                foreach ($this->postgres->exportarTiendas($this->applyRegionFilter(), $filters, self::COLUMNS, 'criticidad') as $store) {
-                    $critico = $store['_critico'] ?? [];
-                    $detalle = [];
-                    foreach (($critico['conditions'] ?? []) as $key => $active) {
-                        if ($active) {
-                            $label = $critico['labels'][$key]['label'] ?? $key;
-                            $detail = $critico['labels'][$key]['detail'] ?? '';
-                            $detalle[] = $detail ? "$label ($detail)" : $label;
-                        }
-                    }
-                    $store['_detalle_factores'] = implode('; ', $detalle);
-
-                    yield $store;
-                }
-            })();
-
-            return ServicioExportacion::csvStream($exportData, [
-                'Nombre_Almacen' => 'Almacén',
-                'No_Tienda_Actual' => 'Tienda #',
-                'Municipio' => 'Municipio',
-                '_critico.level' => 'Estado',
-                '_critico.count' => 'Factores Activos',
-                '_detalle_factores' => 'Detalle',
-            ], 'informacion-tiendas.csv');
-        }
 
         [$page, $perPage] = $this->paginationInput();
         $sortableColumns = array_merge(self::COLUMNS, ['Factores', 'Detalle']);

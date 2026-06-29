@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Contracts\Repositories\TiendaRepositoryInterface;
-use App\Servicios\ServicioExportacion;
 use App\Servicios\ServicioPostgresql;
 use Illuminate\Http\Request;
 
@@ -32,22 +31,6 @@ class AuditoriaController extends Controller
             'asambleas_mes' => $request->query('asambleas_mes', ''),
             'tienda_salud' => $request->query('tienda_salud', ''),
         ];
-
-        if ($request->query('export') === 'csv') {
-            return ServicioExportacion::csvStream($this->postgres->exportarTiendas($this->applyRegionFilter(), $filters, self::COLUMNS, 'auditoria'), [
-                'Nombre_Almacen' => 'Almacén',
-                'No_Tienda_Actual' => 'Tienda #',
-                'Localidad' => 'Localidad',
-                'Municipio' => 'Municipio',
-                'Vigencia' => 'Vigencia',
-                '_audit.estadoComite' => 'Estado Comité',
-                '_audit.fchAudit' => 'Fch Auditoría',
-                '_audit.mesesSinAuditoria' => 'Meses Sin Auditoría',
-                '_audit.impuesto' => 'Impuesto',
-                '_audit.rotacion' => 'Rotación',
-                '_audit.level' => 'Nivel Riesgo',
-            ], 'auditoria.csv');
-        }
 
         [$page, $perPage] = $this->paginationInput();
         $sortableColumns = array_merge(self::COLUMNS, ['Comite', 'Estado_Aud', 'Rotacion', 'Riesgo']);
