@@ -18,17 +18,17 @@ class CriticidadExport extends BaseExport
 
     public function filename(): string
     {
-        return 'informacion-tiendas.csv';
+        return 'informacion-tiendas.xlsx';
     }
 
     public function headings(): array
     {
         return [
+            '_critico.level' => 'Estado',
             'Nombre_Almacen' => 'Almacén',
             'No_Tienda_Actual' => 'Tienda #',
             'Municipio' => 'Municipio',
-            '_critico.level' => 'Estado',
-            '_critico.count' => 'Factores Activos',
+            '_critico.count' => 'Factores',
             '_detalle_factores' => 'Detalle',
         ];
     }
@@ -48,10 +48,5 @@ class CriticidadExport extends BaseExport
             $store['_detalle_factores'] = implode('; ', $detalle);
             yield $store;
         }
-    }
-
-    public function map(array $row): array
-    {
-        return $row;
     }
 }

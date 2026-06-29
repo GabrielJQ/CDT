@@ -63,8 +63,8 @@ class CriticalStoresControllerTest extends TestCase
         $response = $this->get('/export/criticidad');
 
         $response->assertStatus(200);
-        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
-        $response->assertHeader('Content-Disposition', 'attachment; filename=informacion-tiendas.csv');
+        $response->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->assertHeader('Content-Disposition', 'attachment; filename=informacion-tiendas.xlsx');
     }
 
     public function test_export_csv_with_filter(): void
@@ -74,8 +74,8 @@ class CriticalStoresControllerTest extends TestCase
         $response = $this->get('/export/criticidad?nivel=rojo');
 
         $response->assertStatus(200);
-        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
-        $response->assertHeader('Content-Disposition', 'attachment; filename=informacion-tiendas.csv');
+        $response->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->assertHeader('Content-Disposition', 'attachment; filename=informacion-tiendas.xlsx');
     }
 
     public function test_shows_semaphore_summary(): void
