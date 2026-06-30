@@ -14,7 +14,7 @@ class MapaExport extends BaseExport
 
     public function filename(): string
     {
-        return 'casa-x-casa-mapa.csv';
+        return 'casa-x-casa-mapa.xlsx';
     }
 
     public function headings(): array
@@ -40,7 +40,35 @@ class MapaExport extends BaseExport
                 'tipo_anaquel', 'anaqueles_instalados', 'latitud', 'longitud',
             ]);
 
-        return $query->orderBy('id')->cursor();
+        if (! empty($filters['almacen'])) {
+            $query->where('almacen', 'ILIKE', "%{$filters['almacen']}%");
+        }
+        if (! empty($filters['estado'])) {
+            $query->where('estado', $filters['estado']);
+        }
+        if (! empty($filters['uo'])) {
+            $query->where('unidad_operativa', $filters['uo']);
+        }
+        if (! empty($filters['estatus'])) {
+            $query->where('estatus', $filters['estatus']);
+        }
+        if (! empty($filters['anaquelStatus'])) {
+            if ($filters['anaquelStatus'] === 'instalados') {
+                $query->where('anaqueles_instalados', true);
+            } elseif ($filters['anaquelStatus'] === 'pendientes') {
+                $query->where('anaqueles_instalados', false);
+            }
+        }
+        if (! empty($filters['buscar'])) {
+            $term = "%{$filters['buscar']}%";
+            $query->where(function ($q) use ($term) {
+                $q->where('almacen', 'ILIKE', $term)
+                    ->orWhere('no_tienda', 'ILIKE', $term)
+                    ->orWhere('municipio', 'ILIKE', $term);
+            });
+        }
+
+        return $query->orderBy('id')->cursor()->map(fn (object $row) => (array) $row);
     }
 
     public function map(array $row): array
@@ -52,7 +80,7 @@ class MapaExport extends BaseExport
             'estado' => $row['estado'] ?? '',
             'unidad_operativa' => $row['unidad_operativa'] ?? '',
             'tipo_anaquel' => $row['tipo_anaquel'] ?? '',
-            'anaqueles_instalados' => $row['anaqueles_instalados'] ?? '',
+            'anaqueles_instalados' => ($row['anaqueles_instalados'] ?? false) ? 'INSTALADO' : 'PENDIENTE',
             'latitud' => $row['latitud'] ?? '',
             'longitud' => $row['longitud'] ?? '',
         ];

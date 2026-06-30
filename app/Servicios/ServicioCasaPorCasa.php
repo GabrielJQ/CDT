@@ -2,18 +2,23 @@
 
 namespace App\Servicios;
 
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ServicioCasaPorCasa
 {
+    public function __construct(
+        private ServicioAlcanceUsuario $alcanceUsuario,
+    ) {}
+
     private const NO_ACCESS = '__NO_ACCESS__';
 
     public function resolveUoFilter(?Request $request = null): array
     {
         $request ??= request();
-        $filtro = app(ServicioAlcanceUsuario::class)->filtroEfectivo($request);
+        $filtro = $this->alcanceUsuario->filtroEfectivo($request);
         $region = $filtro['region'];
         $uo = $filtro['uo'];
 
@@ -164,6 +169,57 @@ class ServicioCasaPorCasa
             'estados' => (clone $base)->select('estado')->distinct()->orderBy('estado')->pluck('estado'),
             'unidadesOperativas' => (clone $base)->select('unidad_operativa')->distinct()->orderBy('unidad_operativa')->pluck('unidad_operativa'),
             'estatusList' => (clone $base)->select('estatus')->whereNotNull('estatus')->distinct()->orderBy('estatus')->pluck('estatus'),
+        ];
+    }
+
+    private const SORTABLE_DIRECTORIO = ['no_tienda', 'almacen', 'municipio', 'estado', 'unidad_operativa', 'encargado', 'tipo_anaquel', 'estatus'];
+
+    private const EXCLUDED_SORT_DIRECTORIO = ['no_tienda', 'almacen', 'municipio'];
+
+    /**
+     * @return array{stores: LengthAwarePaginator, totalCount: int, sort: array{column: string|null, direction: string}}
+     */
+    public function directorioPaginated(array $filters, array $uoFilter = [], ?string $sortColumn = null, string $sortDirection = 'asc', int $perPage = 50): array
+    {
+        $query = $this->directorioQuery($uoFilter);
+
+        if (! empty($filters['estado'])) {
+            $query->where('estado', $filters['estado']);
+        }
+        if (! empty($filters['uo'])) {
+            $query->where('unidad_operativa', $filters['uo']);
+        }
+        if (! empty($filters['estatus'])) {
+            $query->where('estatus', $filters['estatus']);
+        }
+        if (! empty($filters['buscar'])) {
+            $buscar = $filters['buscar'];
+            $query->where(function ($q) use ($buscar) {
+                $q->where('almacen', 'ILIKE', "%{$buscar}%")
+                    ->orWhere('no_tienda', 'ILIKE', "%{$buscar}%")
+                    ->orWhere('municipio', 'ILIKE', "%{$buscar}%")
+                    ->orWhere('encargado', 'ILIKE', "%{$buscar}%");
+            });
+        }
+
+        $direction = $sortDirection === 'desc' ? 'desc' : 'asc';
+        $validSort = $sortColumn !== null
+            && in_array($sortColumn, self::SORTABLE_DIRECTORIO, true)
+            && ! in_array($sortColumn, self::EXCLUDED_SORT_DIRECTORIO, true);
+
+        if ($validSort) {
+            $query->orderBy($sortColumn, $direction)->orderBy('id');
+        } else {
+            $query->orderBy('estado')->orderBy('municipio');
+        }
+
+        $totalCount = (clone $query)->count();
+        $stores = $query->paginate($perPage);
+
+        return [
+            'stores' => $stores,
+            'totalCount' => $totalCount,
+            'sort' => ['column' => $validSort ? $sortColumn : null, 'direction' => $direction],
         ];
     }
 

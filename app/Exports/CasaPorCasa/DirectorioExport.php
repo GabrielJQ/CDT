@@ -14,7 +14,7 @@ class DirectorioExport extends BaseExport
 
     public function filename(): string
     {
-        return 'casa-x-casa-directorio.csv';
+        return 'casa-x-casa-directorio.xlsx';
     }
 
     public function headings(): array
@@ -58,7 +58,7 @@ class DirectorioExport extends BaseExport
             });
         }
 
-        return $query->orderBy('estado')->orderBy('municipio')->cursor();
+        return $query->orderBy('estado')->orderBy('municipio')->cursor()->map(fn (object $row) => (array) $row);
     }
 
     public function map(array $row): array
@@ -71,7 +71,7 @@ class DirectorioExport extends BaseExport
             'unidad_operativa' => $row['unidad_operativa'] ?? '',
             'encargado' => $row['encargado'] ?? '',
             'tipo_anaquel' => $row['tipo_anaquel'] ?? '',
-            'anaqueles_instalados' => $row['anaqueles_instalados'] ?? '',
+            'anaqueles_instalados' => ($row['anaqueles_instalados'] ?? false) ? 'INSTALADO' : 'PENDIENTE',
             'estatus' => $row['estatus'] ?? '',
             'direccion' => $row['direccion'] ?? '',
             'aviso_funcionamiento' => $row['aviso_funcionamiento'] ?? '',

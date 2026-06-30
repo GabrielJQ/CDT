@@ -22,46 +22,20 @@ class CasaPorCasaController extends Controller
     {
         $uoFilter = $this->cxc->resolveUoFilter();
 
-        $query = $this->cxc->directorioQuery($uoFilter);
-
-        if ($estado = $request->query('estado')) {
-            $query->where('estado', $estado);
-        }
-        if ($uo = $request->query('uo')) {
-            $query->where('unidad_operativa', $uo);
-        }
-        if ($estatus = $request->query('estatus')) {
-            $query->where('estatus', $estatus);
-        }
-        if ($buscar = $request->query('buscar')) {
-            $query->where(function ($q) use ($buscar) {
-                $q->where('almacen', 'ILIKE', "%{$buscar}%")
-                    ->orWhere('no_tienda', 'ILIKE', "%{$buscar}%")
-                    ->orWhere('municipio', 'ILIKE', "%{$buscar}%")
-                    ->orWhere('encargado', 'ILIKE', "%{$buscar}%");
-            });
-        }
-
-        $sortableColumns = ['no_tienda', 'almacen', 'municipio', 'estado', 'unidad_operativa', 'encargado', 'tipo_anaquel', 'estatus'];
-        $sort = $this->tableSortInput($sortableColumns, ['no_tienda', 'almacen', 'municipio']);
-        $totalCount = $query->count();
-
-        if ($sort['column'] !== null) {
-            $query->orderBy($sort['column'], $sort['direction'])->orderBy('id');
-        } else {
-            $query->orderBy('estado')->orderBy('municipio');
-        }
-
-        $stores = $query->paginate(50);
+        $result = $this->cxc->directorioPaginated(
+            filters: $request->only(['estado', 'uo', 'estatus', 'buscar']),
+            uoFilter: $uoFilter,
+            sortColumn: $request->query('sort'),
+            sortDirection: $request->query('direction', 'asc'),
+        );
 
         $filterOptions = $this->cxc->directorioFilterOptions($uoFilter);
-        $estados = $filterOptions['estados'];
-        $unidadesOperativas = $filterOptions['unidadesOperativas'];
-        $estatusList = $filterOptions['estatusList'];
 
-        return view('casa-x-casa.directorio', compact(
-            'stores', 'totalCount', 'sort', 'estados', 'unidadesOperativas', 'estatusList',
-        ));
+        return view('casa-x-casa.directorio', array_merge($result, [
+            'estados' => $filterOptions['estados'],
+            'unidadesOperativas' => $filterOptions['unidadesOperativas'],
+            'estatusList' => $filterOptions['estatusList'],
+        ]));
     }
 
     public function mapa()
@@ -74,6 +48,34 @@ class CasaPorCasaController extends Controller
         $uoFilter = $this->cxc->resolveUoFilter();
         $query = $this->cxc->mapaQuery($uoFilter);
         $this->cxc->applyNumericBounds($query, $request, 'latitud', 'longitud');
+
+        if ($almacen = $request->query('almacen')) {
+            $query->where('almacen', 'ILIKE', "%{$almacen}%");
+        }
+        if ($estado = $request->query('estado')) {
+            $query->where('estado', $estado);
+        }
+        if ($uo = $request->query('uo')) {
+            $query->where('unidad_operativa', $uo);
+        }
+        if ($estatus = $request->query('estatus')) {
+            $query->where('estatus', $estatus);
+        }
+        if ($anaquelStatus = $request->query('anaquelStatus')) {
+            if ($anaquelStatus === 'instalados') {
+                $query->where('anaqueles_instalados', true);
+            } elseif ($anaquelStatus === 'pendientes') {
+                $query->where('anaqueles_instalados', false);
+            }
+        }
+        if ($buscar = $request->query('buscar')) {
+            $term = "%{$buscar}%";
+            $query->where(function ($q) use ($term) {
+                $q->where('almacen', 'ILIKE', $term)
+                    ->orWhere('no_tienda', 'ILIKE', $term)
+                    ->orWhere('municipio', 'ILIKE', $term);
+            });
+        }
 
         $stores = $query->orderBy('id')->limit(3000)->get();
 
