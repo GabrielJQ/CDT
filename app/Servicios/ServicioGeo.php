@@ -121,4 +121,56 @@ class ServicioGeo
 
         return $stats;
     }
+
+    /** @return list<array> */
+    public function filtrarCriticos(array $stores): array
+    {
+        return array_values(array_filter($stores, function ($s) {
+            return ($s['_geo']['status'] ?? 'OK') !== 'OK';
+        }));
+    }
+
+    public function geoMismatchLabel(array $stores, array $regionFilter): string
+    {
+        if (! empty($regionFilter['uo'])) {
+            $uoName = $this->firstNonEmpty($stores, 'Nombre_UniOpe');
+
+            return $uoName !== '' ? 'No corresponde a '.$uoName : 'No corresponde a la UO filtrada';
+        }
+
+        if (! empty($regionFilter['region'])) {
+            $regionName = $this->firstNonEmpty($stores, 'Nombre_Regional');
+
+            return $regionName !== '' ? 'No corresponde a '.$regionName : 'No corresponde a la region filtrada';
+        }
+
+        return 'No corresponde al estado registrado';
+    }
+
+    private function firstNonEmpty(array $stores, string $key): string
+    {
+        foreach ($stores as $store) {
+            $value = trim((string) ($store[$key] ?? ''));
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return '';
+    }
+
+    public function skipBounds(?string $estadoGeo): bool
+    {
+        return in_array($estadoGeo ?? '', ['FUERA_MEXICO', 'INCIDENCIAS'], true);
+    }
+
+    public function filtrarPorViewport(array $stores, float $north, float $south, float $east, float $west): array
+    {
+        return array_values(array_filter($stores, function ($store) use ($north, $south, $east, $west) {
+            $lat = (float) ($store['Latitud'] ?? 0);
+            $lng = (float) ($store['Longitud'] ?? 0);
+
+            return $lat >= $south && $lat <= $north && $lng >= $west && $lng <= $east;
+        }));
+    }
 }

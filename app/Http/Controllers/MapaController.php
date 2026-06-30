@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Contracts\Repositories\TiendaRepositoryInterface;
+use App\Servicios\ServicioAlcanceUsuario;
 use App\Servicios\ServicioGeo;
 use App\Servicios\ServicioPostgresql;
 use Illuminate\Http\Request;
@@ -16,28 +16,22 @@ class MapaController extends Controller
     ];
 
     public function __construct(
-        private TiendaRepositoryInterface $tiendaRepository,
+        ServicioAlcanceUsuario $alcanceUsuario,
         private ServicioGeo $geo,
         private ServicioPostgresql $postgres,
-    ) {}
+    ) {
+        parent::__construct($alcanceUsuario);
+    }
 
     public function index(Request $request)
     {
         $regionFilter = $this->applyRegionFilter();
-        $filters = [
-            'almacen' => trim($request->query('almacen', '')),
-            'estado_geo' => $request->query('estado_geo', ''),
-            'tienda_salud' => $request->query('tienda_salud', ''),
-        ];
+        $filters = $this->filtersFromRequest($request, ['almacen', 'estado_geo', 'tienda_salud']);
 
         $allStores = $this->postgres->obtenerMapa($regionFilter, ['tienda_salud' => $filters['tienda_salud']], self::COLUMNS);
         $filtered = $this->postgres->obtenerMapa($regionFilter, $filters, self::COLUMNS);
-        $geoLabels = ServicioGeo::GEO_LABELS;
-        $geoLabels['FUERA_ESTADO']['label'] = $this->geoMismatchLabel($allStores, $regionFilter);
 
-        $criticalesAll = collect($filtered)->filter(function ($s) {
-            return ($s['_geo']['status'] ?? 'OK') !== 'OK';
-        })->values()->all();
+        $criticalesAll = $this->geo->filtrarCriticos($filtered);
         $criticalesPagination = $this->paginateArray($criticalesAll);
 
         return view('mapa', [
@@ -49,20 +43,15 @@ class MapaController extends Controller
             'filteredCount' => count($filtered),
             'stats' => $this->geo->calcularStats($allStores),
             'filters' => $filters,
-            'geoLabels' => $geoLabels,
-            'geoMismatchLabel' => $geoLabels['FUERA_ESTADO']['label'],
-            'updatedAt' => now()->toDateTimeString(),
+            'geoLabels' => ServicioGeo::GEO_LABELS,
+            'geoMismatchLabel' => $this->geo->geoMismatchLabel($allStores, $regionFilter),
         ]);
     }
 
     public function data(Request $request)
     {
         $regionFilter = $this->applyRegionFilter();
-        $filters = [
-            'almacen' => trim($request->query('almacen', '')),
-            'estado_geo' => $request->query('estado_geo', ''),
-            'tienda_salud' => $request->query('tienda_salud', ''),
-        ];
+        $filters = $this->filtersFromRequest($request, ['almacen', 'estado_geo', 'tienda_salud']);
 
         $bounds = $request->only(['north', 'south', 'east', 'west']);
         $north = (float) ($bounds['north'] ?? 90);
@@ -74,54 +63,17 @@ class MapaController extends Controller
 
         $allStoresForViewport = Cache::remember($cacheKey, 60, function () use ($regionFilter, $filters) {
             return $this->postgres->obtenerMapaViewport(
-                $regionFilter,
-                $filters,
+                $regionFilter, $filters,
                 ['north' => 90, 'south' => -90, 'east' => 180, 'west' => -180],
                 self::COLUMNS,
             );
         });
 
-        $skipBounds = in_array($filters['estado_geo'] ?? '', ['FUERA_MEXICO', 'INCIDENCIAS'], true);
-        if ($skipBounds) {
-            $filtered = $allStoresForViewport;
-        } else {
-            $filtered = array_values(array_filter($allStoresForViewport, function ($store) use ($north, $south, $east, $west) {
-                $lat = (float) ($store['Latitud'] ?? 0);
-                $lng = (float) ($store['Longitud'] ?? 0);
-
-                return $lat >= $south && $lat <= $north && $lng >= $west && $lng <= $east;
-            }));
-        }
+        $skipBounds = $this->geo->skipBounds($filters['estado_geo'] ?? '');
+        $filtered = $skipBounds
+            ? $allStoresForViewport
+            : $this->geo->filtrarPorViewport($allStoresForViewport, $north, $south, $east, $west);
 
         return response()->json(['stores' => $filtered, 'limited' => count($filtered) >= 3000]);
-    }
-
-    private function geoMismatchLabel(array $stores, array $regionFilter): string
-    {
-        if (! empty($regionFilter['uo'])) {
-            $uoName = $this->firstNonEmptyValue($stores, 'Nombre_UniOpe');
-
-            return $uoName !== '' ? 'No corresponde a '.$uoName : 'No corresponde a la UO filtrada';
-        }
-
-        if (! empty($regionFilter['region'])) {
-            $regionName = $this->firstNonEmptyValue($stores, 'Nombre_Regional');
-
-            return $regionName !== '' ? 'No corresponde a '.$regionName : 'No corresponde a la region filtrada';
-        }
-
-        return 'No corresponde al estado registrado';
-    }
-
-    private function firstNonEmptyValue(array $stores, string $key): string
-    {
-        foreach ($stores as $store) {
-            $value = trim((string) ($store[$key] ?? ''));
-            if ($value !== '') {
-                return $value;
-            }
-        }
-
-        return '';
     }
 }

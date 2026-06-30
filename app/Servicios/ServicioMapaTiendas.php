@@ -22,7 +22,6 @@ class ServicioMapaTiendas
 
         return $this->consultas->selectMapaColumns($query, $columns, $filters['tienda_salud'] ?? null)
             ->orderBy('id')
-            ->limit(20000)
             ->get()
             ->map(fn ($row) => $this->presentador->rowToGeoStore($row, $columns))
             ->all();
