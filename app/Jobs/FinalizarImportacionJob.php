@@ -2,7 +2,6 @@
 
 namespace App\Jobs;
 
-use App\Http\Controllers\DashboardController;
 use App\Servicios\ServicioDerivadosTienda;
 use App\Servicios\ServicioJerarquiaOperativa;
 use App\Servicios\ServicioMapeoColumnas;
@@ -11,6 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Bus\Batchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -35,11 +35,12 @@ class FinalizarImportacionJob implements ShouldQueue
         $this->onQueue('imports');
     }
 
-    public function handle(): void
-    {
+    public function handle(
+        ServicioDerivadosTienda $derivados,
+        ServicioPeriodosImportacion $periodos,
+        ServicioJerarquiaOperativa $jerarquia,
+    ): void {
         $mapper = ServicioMapeoColumnas::make();
-        $derivados = app(ServicioDerivadosTienda::class);
-        $periodos = app(ServicioPeriodosImportacion::class);
         $conn = DB::connection(config('database.imports'));
 
         $stagingQuery = $conn->table('staging_import')->where('_status', 'staged');
@@ -141,9 +142,9 @@ class FinalizarImportacionJob implements ShouldQueue
             $periodos->activar(ServicioPeriodosImportacion::TIPO_REGULAR, $this->periodoImportacionId, $exitos, $errores);
         }
 
-        app(ServicioJerarquiaOperativa::class)->sincronizar();
+        $jerarquia->sincronizar();
 
-        DashboardController::invalidateDashboardCache();
+        Cache::flush();
     }
 
     public function failed(\Throwable $e): void

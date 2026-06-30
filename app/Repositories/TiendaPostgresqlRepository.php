@@ -12,6 +12,10 @@ use Illuminate\Database\Eloquent\Collection;
 
 class TiendaPostgresqlRepository implements TiendaRepositoryInterface
 {
+    public function __construct(
+        private ServicioPeriodosImportacion $periodos,
+    ) {}
+
     public function find(int $id): ?Tienda
     {
         return Tienda::query()->find($id);
@@ -50,7 +54,7 @@ class TiendaPostgresqlRepository implements TiendaRepositoryInterface
     {
         $query = Tienda::query()->activo();
 
-        $periodo = app(ServicioPeriodosImportacion::class)
+        $periodo = $this->periodos
             ->obtenerActivo('regular', $user);
         if ($periodo !== null) {
             $query->where('periodo_importacion_id', $periodo->id);

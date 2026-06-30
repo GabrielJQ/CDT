@@ -6,32 +6,36 @@ use App\Http\Requests\UploadCasaPorCasaRequest;
 use App\Http\Requests\UploadImportRequest;
 use App\Jobs\FinalizarImportacionJob;
 use App\Jobs\ProcesarChunkCsvJob;
+use App\Servicios\ServicioAlcanceUsuario;
 use App\Servicios\ServicioMapeoColumnas;
 use App\Servicios\ServicioPeriodosImportacion;
 use App\Servicios\ServicioSanitizadorCsv;
 use App\Servicios\ServicioUpload;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class ImportController extends Controller
 {
     public function __construct(
         private ServicioUpload $upload,
-    ) {}
+        private ServicioPeriodosImportacion $periodos,
+        ServicioAlcanceUsuario $alcanceUsuario,
+    ) {
+        parent::__construct($alcanceUsuario);
+    }
 
     public function index()
     {
-        $periodos = app(ServicioPeriodosImportacion::class);
-
         return view('imports', [
-            'periodosActivos' => $periodos->activos(request()->user()),
-            'trimestres' => $periodos->trimestres(),
+            'periodosActivos' => $this->periodos->activos(request()->user()),
+            'trimestres' => $this->periodos->trimestres(),
             'currentYear' => (int) now()->year,
         ]);
     }
 
-    public function upload(UploadImportRequest $request, ServicioSanitizadorCsv $sanitizer, ServicioPeriodosImportacion $periodos)
+    public function upload(UploadImportRequest $request, ServicioSanitizadorCsv $sanitizer)
     {
         $anio = (int) $request->validated('anio');
         $trimestre = $request->validated('trimestre');
@@ -43,10 +47,10 @@ class ImportController extends Controller
         }
 
         try {
-            if ($periodos->existe(ServicioPeriodosImportacion::TIPO_REGULAR, $anio, $trimestre) && ! $reemplazar) {
+            if ($this->periodos->existe(ServicioPeriodosImportacion::TIPO_REGULAR, $anio, $trimestre) && ! $reemplazar) {
                 return back()
                     ->withInput($request->except('csv_file'))
-                    ->with('error', $periodos->mensajeReemplazo(ServicioPeriodosImportacion::TIPO_REGULAR, $anio, $trimestre));
+                    ->with('error', $this->periodos->mensajeReemplazo(ServicioPeriodosImportacion::TIPO_REGULAR, $anio, $trimestre));
             }
         } catch (\Throwable $e) {
             return back()->withInput($request->except('csv_file'))->with('error', $e->getMessage());
@@ -61,30 +65,20 @@ class ImportController extends Controller
 
         $stats = $sanitizer->sanitizar($destPath, $sanitizedPath);
 
-        $scopeType = 'global';
-        $regionId = null;
-        $unidadOperativaId = null;
-        $user = $request->user();
-        if ($user !== null && ! $user->hasGlobalAccess()) {
-            $scopeType = $user->isRegional() ? 'regional' : 'unidad';
-            $regionId = $user->region_id;
-            if ($user->isUnidad()) {
-                $unidadOperativaId = $user->unidad_operativa_id;
-            }
-        }
+        $scope = $this->periodos->scopeFromUser($request->user());
 
         try {
-            $periodo = $periodos->preparar(
+            $periodo = $this->periodos->preparar(
                 ServicioPeriodosImportacion::TIPO_REGULAR,
                 $anio,
                 $trimestre,
                 $request->validated('fecha_corte'),
                 $fileName,
                 $reemplazar,
-                scopeType: $scopeType,
-                regionId: $regionId,
-                unidadOperativaId: $unidadOperativaId,
-                uploadedBy: $user?->id,
+                scopeType: $scope['scopeType'],
+                regionId: $scope['regionId'],
+                unidadOperativaId: $scope['unidadOperativaId'],
+                uploadedBy: $request->user()?->id,
             );
         } catch (\Throwable $e) {
             return back()->withInput($request->except('csv_file'))->with('error', $e->getMessage());
@@ -106,7 +100,7 @@ class ImportController extends Controller
             );
         }
 
-        $batch = Bus::batch($jobs)
+        Bus::batch($jobs)
             ->name("Importación web: {$fileName}")
             ->allowFailures()
             ->onQueue('imports')
@@ -117,9 +111,7 @@ class ImportController extends Controller
                         'failed_jobs' => $batch->failedJobs,
                     ]);
 
-                    DB::connection(config('database.imports'))->table('periodos_importacion')
-                        ->where('id', $periodo->id)
-                        ->update(['estado' => 'error', 'updated_at' => now()]);
+                    $this->periodos->marcarError((int) $periodo->id);
 
                     return;
                 }
@@ -136,7 +128,7 @@ class ImportController extends Controller
         ));
     }
 
-    public function uploadCasaPorCasa(UploadCasaPorCasaRequest $request, ServicioPeriodosImportacion $periodos)
+    public function uploadCasaPorCasa(UploadCasaPorCasaRequest $request)
     {
         $anio = (int) $request->validated('anio');
         $trimestre = $request->validated('trimestre');
@@ -147,17 +139,17 @@ class ImportController extends Controller
                 ->with('error', 'Solo usuarios con acceso nacional pueden reemplazar periodos.');
         }
 
-        if ($periodos->existe(ServicioPeriodosImportacion::TIPO_CASA_X_CASA, $anio, $trimestre) && ! $reemplazar) {
+        if ($this->periodos->existe(ServicioPeriodosImportacion::TIPO_CASA_X_CASA, $anio, $trimestre) && ! $reemplazar) {
             return back()
                 ->withInput($request->except('xlsx_file'))
-                ->with('error', $periodos->mensajeReemplazo(ServicioPeriodosImportacion::TIPO_CASA_X_CASA, $anio, $trimestre));
+                ->with('error', $this->periodos->mensajeReemplazo(ServicioPeriodosImportacion::TIPO_CASA_X_CASA, $anio, $trimestre));
         }
 
         $path = $this->upload->storeCasaPorCasaFile($request->file('xlsx_file'));
         $fullPath = $this->upload->fullPath($path);
 
         try {
-            $periodo = $periodos->preparar(
+            $periodo = $this->periodos->preparar(
                 ServicioPeriodosImportacion::TIPO_CASA_X_CASA,
                 $anio,
                 $trimestre,
@@ -181,16 +173,17 @@ class ImportController extends Controller
             return back()->with('error', 'Error al importar: '.$output);
         }
 
-        DashboardController::invalidateDashboardCache();
+        Cache::flush();
 
-        $lines = explode("\n", trim($output));
-        $summary = collect($lines)->filter(fn ($l) => str_starts_with($l, 'Importación'))->first() ?? 'OK';
+        $summary = $this->extractSummaryFromOutput($output);
 
         return back()->with('success', "Archivo CxC importado correctamente. {$summary}");
     }
 
-    public function uploadForm()
+    private function extractSummaryFromOutput(string $output): string
     {
-        return view('upload-form');
+        $lines = explode("\n", trim($output));
+
+        return collect($lines)->filter(fn ($l) => str_starts_with($l, 'Importación'))->first() ?? 'OK';
     }
 }

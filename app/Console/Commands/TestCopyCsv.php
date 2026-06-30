@@ -19,7 +19,7 @@ class TestCopyCsv extends Command
 
     protected $description = 'Prueba el pipeline COPY de un CSV fragmento a Supabase';
 
-    public function handle(): int
+    public function handle(ServicioSanitizadorCsv $sanitizer): int
     {
         $path = storage_path('app/imports/'.$this->argument('file'));
         $rows = (int) $this->option('rows');
@@ -34,7 +34,6 @@ class TestCopyCsv extends Command
         $fragment = dirname($path).'/_test_fragment.csv';
 
         $this->line('1. Sanitizando...');
-        $sanitizer = app(ServicioSanitizadorCsv::class);
         $sanitizedPath = dirname($path).'/_test_sanitized.csv';
         $sanitizer->sanitizar($path, $sanitizedPath, $delimiter);
 

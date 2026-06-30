@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
-use App\Http\Controllers\DashboardController;
 use App\Servicios\ServicioPeriodosImportacion;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class InicializarPeriodosImportacion extends Command
@@ -67,7 +67,7 @@ class InicializarPeriodosImportacion extends Command
         $cxcTotal = $conn->table('tiendas_casa_x_casa')->where('periodo_importacion_id', $cxc->id)->count();
         $periodos->activar(ServicioPeriodosImportacion::TIPO_CASA_X_CASA, (int) $cxc->id, $cxcTotal);
 
-        DashboardController::invalidateDashboardCache();
+        Cache::flush();
 
         $this->info("Regular {$anio} {$trimestre}: {$regularCount} filas asignadas.");
         $this->info("CxC {$anio} {$trimestre}: {$cxcCount} filas asignadas.");

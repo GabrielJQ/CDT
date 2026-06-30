@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
-use App\Http\Controllers\DashboardController;
 use App\Servicios\ServicioDerivadosTienda;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class RecalcularDerivadosTiendas extends Command
@@ -87,7 +87,7 @@ class RecalcularDerivadosTiendas extends Command
         $this->newLine(2);
 
         if (! $dryRun) {
-            DashboardController::invalidateDashboardCache();
+            Cache::flush();
         }
 
         $this->info("Procesadas: {$procesadas}");

@@ -281,6 +281,27 @@ class ServicioPeriodosImportacion
         }
     }
 
+    /** @return array{scopeType: string, regionId: int|null, unidadOperativaId: int|null} */
+    public function scopeFromUser(?User $user): array
+    {
+        if ($user === null || $user->hasGlobalAccess()) {
+            return ['scopeType' => 'global', 'regionId' => null, 'unidadOperativaId' => null];
+        }
+
+        return [
+            'scopeType' => $user->isRegional() ? 'regional' : 'unidad',
+            'regionId' => $user->region_id,
+            'unidadOperativaId' => $user->isUnidad() ? $user->unidad_operativa_id : null,
+        ];
+    }
+
+    public function marcarError(int $periodoId): void
+    {
+        $this->conn()->table('periodos_importacion')
+            ->where('id', $periodoId)
+            ->update(['estado' => 'error', 'updated_at' => now()]);
+    }
+
     private function borrarDatosPeriodo(string $tipo, int $periodoId): void
     {
         $table = $tipo === self::TIPO_CASA_X_CASA ? 'tiendas_casa_x_casa' : 'tiendas';
