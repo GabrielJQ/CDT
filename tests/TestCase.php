@@ -68,6 +68,8 @@ abstract class TestCase extends BaseTestCase
         $this->app->bind(ServicioPostgresql::class, function () {
             return new class extends ServicioPostgresql
             {
+                public function __construct() {}
+
                 public function tieneDatos(): bool
                 {
                     return true;

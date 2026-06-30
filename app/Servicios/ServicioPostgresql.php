@@ -22,24 +22,14 @@ class ServicioPostgresql
     ];
 
     public function __construct(
-        private ?ServicioIndicadorCriticidad $indicadores = null,
-        private ?ServicioConsultasTiendas $consultas = null,
-        private ?PresentadorTiendas $presentador = null,
-        private ?ServicioKpiTiendas $kpiTiendas = null,
-        private ?ServicioMapaTiendas $mapaTiendas = null,
-        private ?ServicioJerarquiaRegional $jerarquiaRegional = null,
-        private ?ServicioExportacionTiendas $exportacionTiendas = null,
-        private ?ServicioDashboardMetricas $dashboardMetricas = null,
-    ) {
-        $this->indicadores ??= app(ServicioIndicadorCriticidad::class);
-        $this->consultas ??= app(ServicioConsultasTiendas::class);
-        $this->presentador ??= app(PresentadorTiendas::class);
-        $this->kpiTiendas ??= app(ServicioKpiTiendas::class);
-        $this->mapaTiendas ??= app(ServicioMapaTiendas::class);
-        $this->jerarquiaRegional ??= app(ServicioJerarquiaRegional::class);
-        $this->exportacionTiendas ??= app(ServicioExportacionTiendas::class);
-        $this->dashboardMetricas ??= app(ServicioDashboardMetricas::class);
-    }
+        private ServicioConsultasTiendas $consultas,
+        private PresentadorTiendas $presentador,
+        private ServicioKpiTiendas $kpiTiendas,
+        private ServicioMapaTiendas $mapaTiendas,
+        private ServicioJerarquiaRegional $jerarquiaRegional,
+        private ServicioExportacionTiendas $exportacionTiendas,
+        private ServicioDashboardMetricas $dashboardMetricas,
+    ) {}
 
     public function getUltimoError(): ?string
     {
