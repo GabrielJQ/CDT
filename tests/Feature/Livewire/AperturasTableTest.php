@@ -22,7 +22,7 @@ class AperturasTableTest extends TestCase
             ->assertStatus(200)
             ->assertSee('Módulo operativo')
             ->assertSee('Apertura de Tiendas')
-            ->assertSee('Exportar CSV')
+            ->assertSee('Exportar información')
             ->assertSee('Tiendas mostradas')
             ->assertSee('Abiertas este año');
     }

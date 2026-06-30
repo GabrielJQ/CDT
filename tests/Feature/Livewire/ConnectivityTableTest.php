@@ -21,7 +21,7 @@ class ConnectivityTableTest extends TestCase
         Livewire::test('connectivity-table')
             ->assertStatus(200)
             ->assertSee('Módulo operativo')
-            ->assertSee('Exportar CSV')
+            ->assertSee('Exportar información')
             ->assertSee('Tiendas mostradas')
             ->assertSee('Teléfono fijo')
             ->assertSee('Internet');

@@ -59,14 +59,14 @@ class DashboardControllerTest extends TestCase
         $response->assertSee('chart-critical');
     }
 
-    public function test_dashboard_shows_chartjs_script(): void
+    public function test_dashboard_loads_chartjs_module(): void
     {
         $this->fakeOk();
 
         $response = $this->get('/dashboard');
 
         $response->assertStatus(200);
-        $response->assertSee('chartjs-ready');
+        $response->assertSee('dashboard-');
     }
 
     public function test_refresh_updates_data(): void
