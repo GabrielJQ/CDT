@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Servicios\ServicioAlcanceUsuario;
+use Illuminate\Http\Request;
 
 abstract class Controller
 {
@@ -15,9 +16,18 @@ abstract class Controller
         'Municipio',
     ];
 
+    protected ?ServicioAlcanceUsuario $alcanceUsuario = null;
+
+    public function __construct(?ServicioAlcanceUsuario $alcanceUsuario = null)
+    {
+        $this->alcanceUsuario = $alcanceUsuario;
+    }
+
     protected function applyRegionFilter(): array
     {
-        return app(ServicioAlcanceUsuario::class)->filtroEfectivo(request());
+        $this->alcanceUsuario ??= app(ServicioAlcanceUsuario::class);
+
+        return $this->alcanceUsuario->filtroEfectivo(request());
     }
 
     protected function paginateArray(array $items): array
@@ -55,6 +65,20 @@ abstract class Controller
             max(1, (int) request()->query('page', 1)),
             max(10, min(100, (int) request()->query('per_page', self::DEFAULT_PAGE_SIZE))),
         ];
+    }
+
+    /**
+     * @param  array<int, string>  $keys
+     * @return array<string, string>
+     */
+    protected function filtersFromRequest(Request $request, array $keys): array
+    {
+        $filters = [];
+        foreach ($keys as $key) {
+            $filters[$key] = trim((string) $request->query($key, ''));
+        }
+
+        return $filters;
     }
 
     /**

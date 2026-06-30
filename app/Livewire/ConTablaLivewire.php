@@ -6,6 +6,8 @@ use App\Servicios\ServicioAlcanceUsuario;
 
 trait ConTablaLivewire
 {
+    protected ServicioAlcanceUsuario $alcanceUsuario;
+
     public ?string $sort = null;
 
     public string $direction = 'asc';
@@ -14,10 +16,15 @@ trait ConTablaLivewire
 
     public int $perPage = 50;
 
+    protected function setAlcanceUsuario(ServicioAlcanceUsuario $alcanceUsuario): void
+    {
+        $this->alcanceUsuario = $alcanceUsuario;
+    }
+
     /** @return array{region: string, uo: string} */
     protected function regionFilters(): array
     {
-        return app(ServicioAlcanceUsuario::class)->filtroEfectivo(request());
+        return $this->alcanceUsuario->filtroEfectivo(request());
     }
 
     /** @return list<string> */

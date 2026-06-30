@@ -46,13 +46,23 @@ class AppServiceProvider extends ServiceProvider
             try {
                 $user = request()->user();
                 if ($user !== null) {
-                    $jerarquia = app(ServicioAlcanceUsuario::class)->filtrarJerarquia($user, $jerarquia);
+                    $jerarquia = $this->app->make(ServicioAlcanceUsuario::class)->filtrarJerarquia($user, $jerarquia);
                 }
             } catch (\Throwable) {
                 $jerarquia = [];
             }
 
             $view->with('regionesData', $jerarquia);
+
+            try {
+                $alcance = $this->app->make(ServicioAlcanceUsuario::class);
+                $effectiveFilter = $alcance->filtroEfectivo(request());
+                $view->with('currentRegionCookie', $effectiveFilter['region']);
+                $view->with('currentUoCookie', $effectiveFilter['uo']);
+            } catch (\Throwable) {
+                $view->with('currentRegionCookie', '');
+                $view->with('currentUoCookie', '');
+            }
         });
     }
 }
