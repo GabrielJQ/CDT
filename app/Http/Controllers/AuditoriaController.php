@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Contracts\Repositories\TiendaRepositoryInterface;
+use App\Servicios\ServicioAlcanceUsuario;
 use App\Servicios\ServicioPostgresql;
 use Illuminate\Http\Request;
 
@@ -14,23 +14,18 @@ class AuditoriaController extends Controller
     ];
 
     public function __construct(
-        private TiendaRepositoryInterface $tiendaRepository,
+        ServicioAlcanceUsuario $alcanceUsuario,
         private ServicioPostgresql $postgres,
-    ) {}
+    ) {
+        parent::__construct($alcanceUsuario);
+    }
 
     public function index(Request $request)
     {
-        $filters = [
-            'almacen' => trim($request->query('almacen', '')),
-            'nivel' => $request->query('nivel', ''),
-            'estado_comite' => $request->query('estado_comite', ''),
-            'estado_auditoria' => $request->query('estado_auditoria', ''),
-            'filtro_500k' => $request->query('filtro_500k', ''),
-            'rango_rotacion' => $request->query('rango_rotacion', ''),
-            'tiempo_auditoria' => $request->query('tiempo_auditoria', ''),
-            'asambleas_mes' => $request->query('asambleas_mes', ''),
-            'tienda_salud' => $request->query('tienda_salud', ''),
-        ];
+        $filters = $this->filtersFromRequest($request, [
+            'almacen', 'nivel', 'estado_comite', 'estado_auditoria', 'filtro_500k',
+            'rango_rotacion', 'tiempo_auditoria', 'asambleas_mes', 'tienda_salud',
+        ]);
 
         [$page, $perPage] = $this->paginationInput();
         $sortableColumns = array_merge(self::COLUMNS, ['Comite', 'Estado_Aud', 'Rotacion', 'Riesgo']);
@@ -45,7 +40,6 @@ class AuditoriaController extends Controller
             'kpis' => $result['kpis'],
             'filters' => $filters,
             'sort' => $sort,
-            'updatedAt' => now()->toDateTimeString(),
         ]);
     }
 }

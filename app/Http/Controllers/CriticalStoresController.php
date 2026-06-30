@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Contracts\Repositories\TiendaRepositoryInterface;
+use App\Servicios\ServicioAlcanceUsuario;
 use App\Servicios\ServicioPostgresql;
 use Illuminate\Http\Request;
 
@@ -14,18 +14,15 @@ class CriticalStoresController extends Controller
     ];
 
     public function __construct(
-        private TiendaRepositoryInterface $tiendaRepository,
+        ServicioAlcanceUsuario $alcanceUsuario,
         private ServicioPostgresql $postgres,
-    ) {}
+    ) {
+        parent::__construct($alcanceUsuario);
+    }
 
     public function index(Request $request)
     {
-        $filters = [
-            'almacen' => trim($request->query('almacen', '')),
-            'nivel' => $request->query('nivel', ''),
-            'indicador' => $request->query('indicador', ''),
-            'tienda_salud' => $request->query('tienda_salud', ''),
-        ];
+        $filters = $this->filtersFromRequest($request, ['almacen', 'nivel', 'indicador', 'tienda_salud']);
 
         [$page, $perPage] = $this->paginationInput();
         $sortableColumns = array_merge(self::COLUMNS, ['Factores', 'Detalle']);
@@ -40,7 +37,6 @@ class CriticalStoresController extends Controller
             'summary' => $result['summary'],
             'filters' => $filters,
             'sort' => $sort,
-            'updatedAt' => now()->toDateTimeString(),
         ]);
     }
 }

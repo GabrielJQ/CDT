@@ -9,13 +9,16 @@ class HomeController extends Controller
 {
     public function __construct(
         private TiendaRepositoryInterface $tiendaRepository,
-    ) {}
+        ServicioAlcanceUsuario $alcanceUsuario,
+    ) {
+        parent::__construct($alcanceUsuario);
+    }
 
     public function index()
     {
         $user = request()->user();
         $regionales = $this->tiendaRepository->getJerarquiaRegional($user);
-        $regionales = app(ServicioAlcanceUsuario::class)->filtrarJerarquia($user, $regionales);
+        $regionales = $this->alcanceUsuario->filtrarJerarquia($user, $regionales);
 
         return view('home', [
             'regionales' => $regionales,

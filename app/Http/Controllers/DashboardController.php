@@ -15,16 +15,11 @@ class DashboardController extends Controller
     {
         static::invalidateAllCaches();
 
-        return back()->with('success', 'Cache actualizado correctamente desde la base local.');
+        return back()->with('success', 'Cache actualizado.');
     }
 
     public static function invalidateAllCaches(): void
     {
         Cache::flush();
-    }
-
-    public static function invalidateDashboardCache(): void
-    {
-        static::invalidateAllCaches();
     }
 }
