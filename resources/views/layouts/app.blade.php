@@ -25,7 +25,6 @@
         .dark #dir-table .cell-empty,
         .dark #aper-table .cell-empty,
         .dark #audit-table .cell-empty { background: #374151; color: #6b7280; }
-        .dark .page-btn.active { background: #22c55e; }
     </style>
     @stack('head')
 </head>
@@ -76,39 +75,19 @@
                 <button onclick="toggleSidebar()" class="lg:hidden text-white/70 hover:text-white text-xl leading-none px-2">&times;</button>
             </div>
             <nav class="flex-1 p-2 space-y-1 overflow-y-auto overflow-x-hidden">
-                <a href="{{ route('perfil') }}"
-                   title="Mi Perfil"
-                   class="nav-link institutional-nav-link {{ str_starts_with($currentPath, 'perfil') ? 'institutional-nav-link-active' : '' }}">
-                    <span class="text-lg shrink-0 w-6 text-center">👤</span>
-                    <span class="nav-label truncate">Mi Perfil</span>
-                </a>
+                <x-nav-link href="{{ route('perfil') }}" title="Mi Perfil" icon="👤" :active="str_starts_with($currentPath, 'perfil')">Mi Perfil</x-nav-link>
 
-                <a href="{{ url('carga-masiva') }}"
-                   title="Carga Masiva"
-                   class="nav-link institutional-nav-link {{ str_starts_with($currentPath, 'carga-masiva') ? 'institutional-nav-link-active' : '' }}">
-                    <span class="text-lg shrink-0 w-6 text-center">📥</span>
-                    <span class="nav-label truncate">Carga Masiva</span>
-                </a>
+                <x-nav-link href="{{ url('carga-masiva') }}" title="Carga Masiva" icon="📥" :active="str_starts_with($currentPath, 'carga-masiva')">Carga Masiva</x-nav-link>
 
                 @if($authUser?->canManageUsers())
-                    <a href="{{ route('usuarios.index') }}"
-                       title="Usuarios"
-                       class="nav-link institutional-nav-link {{ str_starts_with($currentPath, 'usuarios') ? 'institutional-nav-link-active' : '' }}">
-                        <span class="text-lg shrink-0 w-6 text-center">👤</span>
-                        <span class="nav-label truncate">Usuarios</span>
-                    </a>
+                    <x-nav-link href="{{ route('usuarios.index') }}" title="Usuarios" icon="👤" :active="str_starts_with($currentPath, 'usuarios')">Usuarios</x-nav-link>
                 @endif
 
                 @foreach($navItems as $path => $item)
                     @php
                         $isActive = $currentPath === $path || ($path !== '/' && str_starts_with($currentPath, $path));
                     @endphp
-                    <a href="{{ url($path === '/' ? '' : $path) }}"
-                       title="{{ $item['label'] }}"
-                       class="nav-link institutional-nav-link {{ $isActive ? 'institutional-nav-link-active' : '' }}">
-                        <span class="text-lg shrink-0 w-6 text-center">{{ $item['icon'] }}</span>
-                        <span class="nav-label truncate">{{ $item['label'] }}</span>
-                    </a>
+                    <x-nav-link href="{{ url($path === '/' ? '' : $path) }}" title="{{ $item['label'] }}" icon="{{ $item['icon'] }}" :active="$isActive">{{ $item['label'] }}</x-nav-link>
                 @endforeach
 
                 {{-- Dropdown: Presencia Tiendas --}}
@@ -187,11 +166,6 @@
                     <p class="hidden text-xs text-white/55 lg:block">Filtro global aplicado a todos los modulos operativos</p>
                 </div>
                 <div class="flex items-center gap-2 w-full lg:w-auto">
-                    @php
-                        $effectiveFilter = app(\App\Servicios\ServicioAlcanceUsuario::class)->filtroEfectivo(request());
-                        $currentRegionCookie = $effectiveFilter['region'];
-                        $currentUoCookie = $effectiveFilter['uo'];
-                    @endphp
                     <form action="{{ url('/set-region') }}" method="POST" id="region-form" class="flex-1 lg:flex-none flex gap-1.5">
                         @csrf
                         <input type="hidden" name="redirect" value="{{ url()->current() }}">
@@ -247,13 +221,13 @@
                 {{-- Alerts --}}
                 <div class="px-4 lg:px-6 pt-3 lg:pt-4">
                     @session('success')
-                        <div class="bg-green-100 dark:bg-green-900/50 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-300 px-4 py-3 rounded mb-4 text-sm">{{ $value }}</div>
+                        <x-alert type="success">{{ $value }}</x-alert>
                     @endsession
                     @session('error')
-                        <div class="bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-4 text-sm">{{ $value }}</div>
+                        <x-alert type="error">{{ $value }}</x-alert>
                     @endsession
                     @isset($error)
-                        <div class="bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-4 text-sm">{{ $error }}</div>
+                        <x-alert type="error">{{ $error }}</x-alert>
                     @endisset
                 </div>
 
@@ -264,123 +238,6 @@
             </div>
         </main>
     </div>
-    <script>
-        function getCookie(name) {
-            var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-            return match ? decodeURIComponent(match[2]) : null;
-        }
-
-        function setCookie(name, value, days) {
-            var expires = new Date();
-            expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-            document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires.toUTCString() + '; path=/';
-        }
-
-        function toggleSidebar() {
-            var sidebar = document.getElementById('sidebar');
-            var overlay = document.getElementById('sidebar-overlay');
-            sidebar.classList.toggle('expanded');
-            if (window.innerWidth < 1024) {
-                overlay.classList.toggle('hidden');
-            }
-        }
-
-        function aplicarTema(dark) {
-            document.documentElement.classList.toggle('dark', dark);
-            document.getElementById('tema-toggle').textContent = dark ? '☀️' : '🌙';
-            setCookie('tema', dark ? 'dark' : 'light', 30);
-        }
-
-        document.addEventListener('DOMContentLoaded', function () {
-            if (window.innerWidth < 1024) {
-                document.getElementById('sidebar').classList.remove('expanded');
-            }
-
-            var toggle = document.getElementById('presencia-toggle');
-            var submenu = document.getElementById('presencia-submenu');
-            var arrow = document.getElementById('presencia-arrow');
-            if (toggle && submenu && arrow) {
-                toggle.addEventListener('click', function () {
-                    submenu.classList.toggle('hidden');
-                    arrow.classList.toggle('-rotate-90');
-                });
-            }
-
-            var cxcToggle = document.getElementById('cxc-toggle');
-            var cxcSubmenu = document.getElementById('cxc-submenu');
-            var cxcArrow = document.getElementById('cxc-arrow');
-            if (cxcToggle && cxcSubmenu && cxcArrow) {
-                cxcToggle.addEventListener('click', function () {
-                    cxcSubmenu.classList.toggle('hidden');
-                    cxcArrow.classList.toggle('-rotate-90');
-                });
-            }
-
-            document.querySelectorAll('.nav-link').forEach(function (link) {
-                link.addEventListener('click', function () {
-                    if (window.innerWidth < 1024) {
-                        var sidebar = document.getElementById('sidebar');
-                        var overlay = document.getElementById('sidebar-overlay');
-                        sidebar.classList.remove('expanded');
-                        overlay.classList.add('hidden');
-                    }
-                });
-            });
-
-            var temaBtn = document.getElementById('tema-toggle');
-            if (temaBtn) {
-                var temaCookie = getCookie('tema');
-                if (temaCookie === 'dark' || temaCookie === 'light') {
-                    var isDark = temaCookie === 'dark';
-                    document.documentElement.classList.toggle('dark', isDark);
-                    temaBtn.textContent = isDark ? '☀️' : '🌙';
-                } else {
-                    temaBtn.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
-                }
-                temaBtn.addEventListener('click', function () {
-                    aplicarTema(!document.documentElement.classList.contains('dark'));
-                });
-            }
-
-            var regionSelect = document.getElementById('region-select');
-            var uoSelect = document.getElementById('uo-select');
-            var regionForm = document.getElementById('region-form');
-
-            function actualizarUoOptions() {
-                if (uoSelect.disabled) return;
-                var selectedRegion = regionSelect.value;
-                var currentUo = uoSelect.value;
-                uoSelect.innerHTML = '<option value="">📍 Todas UO</option>';
-                if (selectedRegion === '') {
-                    uoSelect.disabled = true;
-                    return;
-                }
-                uoSelect.disabled = false;
-                for (var i = 0; i < uoSelect.__allOptions.length; i++) {
-                    var opt = uoSelect.__allOptions[i];
-                    if (opt.getAttribute('data-region') === selectedRegion) {
-                        uoSelect.appendChild(opt.cloneNode(true));
-                    }
-                }
-                uoSelect.value = currentUo;
-            }
-
-            if (regionSelect && uoSelect) {
-                uoSelect.__allOptions = [];
-                for (var i = 0; i < uoSelect.options.length; i++) {
-                    uoSelect.__allOptions.push(uoSelect.options[i]);
-                }
-                actualizarUoOptions();
-                regionSelect.addEventListener('change', function () {
-                    actualizarUoOptions();
-                    regionForm.submit();
-                });
-                uoSelect.addEventListener('change', function () {
-                    regionForm.submit();
-                });
-            }
-        });
-    </script>
     @livewireScripts
     @stack('footer')
 </body>

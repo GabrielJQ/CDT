@@ -6,13 +6,6 @@
 @vite('resources/js/mapa.js')
 <style>
     #map { height: 520px; border-radius: 0.75rem; z-index: 0; }
-    .leaflet-popup-content { font-size: 0.85rem; line-height: 1.4; }
-    .leaflet-popup-content strong { color: #166534; }
-    .dark .leaflet-popup-content strong { color: #4ade80; }
-    .map-legend { background: #fff; color: #1f2937; border: 1px solid rgba(229, 231, 235, 0.95); border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 8px 12px; font-size: 12px; }
-    .dark .map-legend { background: #111827; color: #e5e7eb; border-color: rgba(75, 85, 99, 0.95); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.45); }
-    .map-legend-title { font-weight: 700; margin-bottom: 4px; color: #111827; }
-    .dark .map-legend-title { color: #f9fafb; }
 </style>
 @endpush
 
@@ -54,6 +47,14 @@
                 chunkInterval: 50,
             });
             map.addLayer(clusters);
+
+            function getLivewireFilter(key) {
+                try {
+                    if (typeof Livewire === 'undefined') return '';
+                    var c = Livewire.first();
+                    return (c && typeof c.get === 'function') ? (c.get(key) || '') : '';
+                } catch (e) { return ''; }
+            }
 
             function esc(value) {
                 return window.CdtTables.escapeHtml(value || '—');
@@ -121,6 +122,19 @@
                 dataUrl.searchParams.set('east', mapBounds.getEast());
                 dataUrl.searchParams.set('west', mapBounds.getWest());
 
+                var currentAlmacen = getLivewireFilter('almacen');
+                var currentEstado = getLivewireFilter('estado');
+                var currentUo = getLivewireFilter('uo');
+                var currentEstatus = getLivewireFilter('estatus');
+                var currentAnaquelStatus = getLivewireFilter('anaquelStatus');
+                var currentBuscar = getLivewireFilter('buscar');
+                if (currentAlmacen) dataUrl.searchParams.set('almacen', currentAlmacen);
+                if (currentEstado) dataUrl.searchParams.set('estado', currentEstado);
+                if (currentUo) dataUrl.searchParams.set('uo', currentUo);
+                if (currentEstatus) dataUrl.searchParams.set('estatus', currentEstatus);
+                if (currentAnaquelStatus) dataUrl.searchParams.set('anaquelStatus', currentAnaquelStatus);
+                if (currentBuscar) dataUrl.searchParams.set('buscar', currentBuscar);
+
                 fetch(dataUrl.toString(), { headers: { 'Accept': 'application/json' }, signal: activeRequest.signal })
                     .then(function (response) { return response.json(); })
                     .then(function (payload) {
@@ -131,6 +145,8 @@
                         if (error.name === 'AbortError') return;
                     });
             }
+
+            window.__fetchCxcMapa = fetchViewportStores;
 
             function scheduleViewportFetch() {
                 if (suppressNextMoveFetch) {
@@ -160,6 +176,17 @@
         }
 
         initMap();
+
+        function setupFilterListener() {
+            Livewire.on('cxc-mapa-filters-updated', function () {
+                if (window.__fetchCxcMapa) window.__fetchCxcMapa();
+            });
+        }
+        if (typeof Livewire !== 'undefined') {
+            setupFilterListener();
+        } else {
+            document.addEventListener('livewire:init', setupFilterListener);
+        }
     });
 </script>
 @endpush

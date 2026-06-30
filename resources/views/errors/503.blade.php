@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Servicio no disponible — Dashboard CDT</title>
     @vite('resources/css/app.css')
-    <script>document.documentElement.classList.toggle('dark', /tema=dark/.test(document.cookie));</script>
+    <x-error-page-scripts />
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 min-h-screen flex items-center justify-center p-6">
     <div class="text-center max-w-md">

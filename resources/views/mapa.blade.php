@@ -6,14 +6,6 @@
 @vite('resources/js/mapa.js')
 <style>
  #map { height: 520px; border-radius: 0.75rem; z-index: 0; }
- .leaflet-popup-content { font-size: 0.85rem; line-height: 1.4; }
- .leaflet-popup-content strong { color: #166534; }
-    .geo-badge { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; }
-    .dark .leaflet-popup-content strong { color: #4ade80; }
-    .map-legend { background: #fff; color: #1f2937; border: 1px solid rgba(229, 231, 235, 0.95); border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 8px 12px; font-size: 12px; }
-    .dark .map-legend { background: #111827; color: #e5e7eb; border-color: rgba(75, 85, 99, 0.95); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.45); }
-    .map-legend-title { font-weight: 700; margin-bottom: 4px; color: #111827; }
-    .dark .map-legend-title { color: #f9fafb; }
 </style>
 @endpush
 

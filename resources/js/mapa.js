@@ -3,7 +3,6 @@ import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import L from 'leaflet';
 
-window.L = L;
 window.markerclusterReady = false;
 
 import('leaflet.markercluster').then(() => {
