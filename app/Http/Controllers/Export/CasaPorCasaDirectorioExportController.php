@@ -33,7 +33,7 @@ class CasaPorCasaDirectorioExportController extends Controller
         } catch (\Throwable $e) {
             Log::error('[Export CxC Directorio] '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
 
-            return back()->with('error', 'Error al exportar: '.$e->getMessage());
+            return back()->with('error', 'Ocurrió un error al generar el archivo. Intente de nuevo más tarde.');
         }
     }
 }

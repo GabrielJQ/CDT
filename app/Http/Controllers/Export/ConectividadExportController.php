@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Export;
 
 use App\Exports\ConectividadExport;
 use App\Http\Controllers\Controller;
+use App\Servicios\ServicioAlcanceUsuario;
 use App\Servicios\ServicioExportacion;
 use App\Servicios\ServicioPostgresql;
 use Illuminate\Http\Request;
@@ -12,8 +13,11 @@ use Illuminate\Support\Facades\Log;
 class ConectividadExportController extends Controller
 {
     public function __construct(
+        ServicioAlcanceUsuario $alcanceUsuario,
         private ServicioPostgresql $postgres,
-    ) {}
+    ) {
+        parent::__construct($alcanceUsuario);
+    }
 
     public function download(Request $request)
     {
@@ -34,7 +38,7 @@ class ConectividadExportController extends Controller
         } catch (\Throwable $e) {
             Log::error('[Export Conectividad] '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
 
-            return back()->with('error', 'Error al exportar: '.$e->getMessage());
+            return back()->with('error', 'Ocurrió un error al generar el archivo. Intente de nuevo más tarde.');
         }
     }
 }
