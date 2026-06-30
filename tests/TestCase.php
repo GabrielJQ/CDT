@@ -75,11 +75,6 @@ abstract class TestCase extends BaseTestCase
                     return true;
                 }
 
-                public function getUltimoError(): ?string
-                {
-                    return null;
-                }
-
                 public function obtenerTiendas(array $filters = [], ?array $columns = null): array
                 {
                     return $this->filterRows($this->rows($columns), $filters);

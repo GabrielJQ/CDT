@@ -8,11 +8,7 @@ use Illuminate\Support\Facades\Log;
 
 class ServicioPostgresql
 {
-    private ?string $ultimoError = null;
-
-    private array $derivadosCompletosCache = [];
-
-    private array $trackedDirectorioColumns = [
+    private const TRACKED_DIRECTORIO_COLUMNS = [
         'TELEFONIA', 'CORREO', 'Señal de celular', 'Compañía', 'INTERNET',
         'Vta_Mes', 'VtaNeta_Mes', 'Cap_Tot', 'Cap_Com', 'Cap_Dic',
         'Pagare_Monto', 'Pagare_Fecha', 'Fec_CRA', 'Vigencia', 'Fch_Audit', 'Imp_Res_Audi_Mes',
@@ -20,6 +16,8 @@ class ServicioPostgresql
         'Nom_Pre_CRA', 'Nom_Pre_Sup_CRA', 'Nom_Sec_CRA', 'Nom_Sec_Sup_CRA',
         'Nom_Tes_CRA', 'Nom_Vcv_CRA', 'Nom_Voc_Gen_CRA',
     ];
+
+    private array $derivadosCompletosCache = [];
 
     public function __construct(
         private ServicioConsultasTiendas $consultas,
@@ -31,26 +29,18 @@ class ServicioPostgresql
         private ServicioDashboardMetricas $dashboardMetricas,
     ) {}
 
-    public function getUltimoError(): ?string
-    {
-        return $this->ultimoError;
-    }
-
     public function obtenerTiendas(array $filters = [], ?array $columns = null): array
     {
-        $this->ultimoError = null;
-
         try {
             return $this->fetchDesdePostgres($filters, $columns);
         } catch (\Throwable $e) {
-            $this->ultimoError = $e->getMessage();
             Log::error('[Postgresql] '.$e->getMessage());
 
             return [];
         }
     }
 
-    public function fetchDesdePostgres(array $filters = [], ?array $columns = null): array
+    private function fetchDesdePostgres(array $filters = [], ?array $columns = null): array
     {
         $conn = $this->consultas->conexion();
         $countQuery = $conn->table('tiendas');
@@ -104,10 +94,21 @@ class ServicioPostgresql
         }
     }
 
-    public function obtenerConectividadPaginada(array $regionFilters, array $filters, int $page, int $perPage, array $sort = []): array
-    {
-        $this->ultimoError = null;
-
+    private function paginateModule(
+        array $regionFilters,
+        array $filters,
+        int $page,
+        int $perPage,
+        array $columns,
+        array $sort,
+        array $extraColumns,
+        string $logTag,
+        callable $applyFilters,
+        callable $applyOrder,
+        callable $mapRow,
+        callable $computeExtras,
+        array $errorExtras,
+    ): array {
         try {
             $conn = $this->consultas->conexion();
             $base = $conn->table('tiendas');
@@ -115,187 +116,146 @@ class ServicioPostgresql
             $this->consultas->aplicarFiltroRegional($base, $regionFilters);
 
             $filtered = clone $base;
-            $this->consultas->aplicarFiltrosConectividad($filtered, $filters);
+            $applyFilters($filtered, $filters);
             $this->consultas->aplicarFiltroTiendaSalud($filtered, $filters['tienda_salud'] ?? '');
 
-            $selectColumns = [
-                'Nombre_Almacen', 'No_Tienda_Actual', 'Municipio', 'TELEFONIA', 'Señal de celular', 'Compañía', 'INTERNET',
-            ];
+            $selectColumns = $extraColumns
+                ? array_values(array_unique(array_merge($columns, $extraColumns)))
+                : $columns;
 
             $rowsQuery = $this->consultas->addTiendaSaludFlag((clone $filtered)->select($selectColumns));
-            $this->consultas->aplicarOrdenTabla($rowsQuery, $sort, $selectColumns);
+            $applyOrder($rowsQuery, $sort);
 
             $rows = $rowsQuery->offset(($page - 1) * $perPage)
                 ->limit($perPage)
                 ->get()
-                ->map(fn ($row) => $this->presentador->rowToStore($row, $selectColumns))
+                ->map(fn ($row) => $mapRow($row))
                 ->all();
 
             return [
                 'rows' => $rows,
                 'total' => (clone $base)->count(),
                 'filtered' => (clone $filtered)->count(),
-                'kpis' => $this->kpiTiendas->kpisConectividad(clone $filtered),
-                'companias' => $this->kpiTiendas->companiasConectividad(clone $base),
-            ];
+            ] + $computeExtras(clone $base, clone $filtered);
         } catch (\Throwable $e) {
-            $this->ultimoError = $e->getMessage();
-            Log::error('[Postgresql] obtenerConectividadPaginada: '.$e->getMessage());
+            Log::error("[Postgresql] {$logTag}: ".$e->getMessage());
 
-            return ['rows' => [], 'total' => 0, 'filtered' => 0, 'kpis' => [], 'companias' => []];
+            return ['rows' => [], 'total' => 0, 'filtered' => 0] + $errorExtras;
         }
+    }
+
+    public function obtenerConectividadPaginada(array $regionFilters, array $filters, int $page, int $perPage, array $sort = []): array
+    {
+        $columns = [
+            'Nombre_Almacen', 'No_Tienda_Actual', 'Municipio', 'TELEFONIA', 'Señal de celular', 'Compañía', 'INTERNET',
+        ];
+
+        return $this->paginateModule(
+            regionFilters: $regionFilters,
+            filters: $filters,
+            page: $page,
+            perPage: $perPage,
+            columns: $columns,
+            sort: $sort,
+            extraColumns: [],
+            logTag: 'obtenerConectividadPaginada',
+            applyFilters: fn ($q, $f) => $this->consultas->aplicarFiltrosConectividad($q, $f),
+            applyOrder: fn ($q, $s) => $this->consultas->aplicarOrdenTabla($q, $s, $columns),
+            mapRow: fn ($row) => $this->presentador->rowToStore($row, $columns),
+            computeExtras: fn ($base, $filtered) => [
+                'kpis' => $this->kpiTiendas->kpisConectividad($filtered),
+                'companias' => $this->kpiTiendas->companiasConectividad($base),
+            ],
+            errorExtras: ['kpis' => [], 'companias' => []],
+        );
     }
 
     public function obtenerDirectorioPaginado(array $regionFilters, array $filters, int $page, int $perPage, array $columns, array $trackedColumns, array $sort = []): array
     {
-        $this->ultimoError = null;
-
-        try {
-            $conn = $this->consultas->conexion();
-            $base = $conn->table('tiendas');
-            $this->consultas->aplicarPeriodoActivo($base, $regionFilters);
-            $this->consultas->aplicarFiltroRegional($base, $regionFilters);
-
-            $filtered = clone $base;
-            $this->consultas->aplicarFiltrosDirectorio($filtered, $filters, $trackedColumns);
-            $this->consultas->aplicarFiltroTiendaSalud($filtered, $filters['tienda_salud'] ?? '');
-
-            $rowsQuery = $this->consultas->addTiendaSaludFlag((clone $filtered)->select($columns));
-            $this->consultas->aplicarOrdenTabla($rowsQuery, $sort, $columns);
-
-            $rows = $rowsQuery->offset(($page - 1) * $perPage)
-                ->limit($perPage)
-                ->get()
-                ->map(fn ($row) => $this->presentador->rowToStore($row, $columns))
-                ->all();
-
-            return [
-                'rows' => $rows,
-                'total' => (clone $base)->count(),
-                'filtered' => (clone $filtered)->count(),
-                'stats' => $this->kpiTiendas->statsDirectorio(clone $base, $trackedColumns),
-            ];
-        } catch (\Throwable $e) {
-            $this->ultimoError = $e->getMessage();
-            Log::error('[Postgresql] obtenerDirectorioPaginado: '.$e->getMessage());
-
-            return ['rows' => [], 'total' => 0, 'filtered' => 0, 'stats' => []];
-        }
+        return $this->paginateModule(
+            regionFilters: $regionFilters,
+            filters: $filters,
+            page: $page,
+            perPage: $perPage,
+            columns: $columns,
+            sort: $sort,
+            extraColumns: [],
+            logTag: 'obtenerDirectorioPaginado',
+            applyFilters: fn ($q, $f) => $this->consultas->aplicarFiltrosDirectorio($q, $f, $trackedColumns),
+            applyOrder: fn ($q, $s) => $this->consultas->aplicarOrdenTabla($q, $s, $columns),
+            mapRow: fn ($row) => $this->presentador->rowToStore($row, $columns),
+            computeExtras: fn ($base, $filtered) => [
+                'stats' => $this->kpiTiendas->statsDirectorio($base, $trackedColumns),
+            ],
+            errorExtras: ['stats' => []],
+        );
     }
 
     public function obtenerCriticidadPaginada(array $regionFilters, array $filters, int $page, int $perPage, array $columns, array $sort = []): array
     {
-        $this->ultimoError = null;
+        $usarDerivados = $this->derivadosCompletos($regionFilters);
 
-        try {
-            $conn = $this->consultas->conexion();
-            $base = $conn->table('tiendas');
-            $this->consultas->aplicarPeriodoActivo($base, $regionFilters);
-            $this->consultas->aplicarFiltroRegional($base, $regionFilters);
-            $usarDerivados = $this->derivadosCompletos($regionFilters);
-
-            $filtered = clone $base;
-            $this->consultas->aplicarFiltrosCriticidad($filtered, $filters, $usarDerivados);
-            $this->consultas->aplicarFiltroTiendaSalud($filtered, $filters['tienda_salud'] ?? '');
-
-            $selectColumns = array_values(array_unique(array_merge($columns, ['nivel_critico', 'factores_criticos_count'])));
-            $rowsQuery = $this->consultas->addTiendaSaludFlag((clone $filtered)->select($selectColumns));
-            $this->consultas->aplicarOrdenCriticidad($rowsQuery, $sort, $columns, $usarDerivados);
-
-            $rows = $rowsQuery->offset(($page - 1) * $perPage)
-                ->limit($perPage)
-                ->get()
-                ->map(fn ($row) => $this->presentador->rowToCriticalStore($row, $columns))
-                ->all();
-
-            return [
-                'rows' => $rows,
-                'total' => (clone $base)->count(),
-                'filtered' => (clone $filtered)->count(),
-                'summary' => $this->kpiTiendas->resumenCriticidad(clone $base, $usarDerivados),
-            ];
-        } catch (\Throwable $e) {
-            $this->ultimoError = $e->getMessage();
-            Log::error('[Postgresql] obtenerCriticidadPaginada: '.$e->getMessage());
-
-            return ['rows' => [], 'total' => 0, 'filtered' => 0, 'summary' => []];
-        }
+        return $this->paginateModule(
+            regionFilters: $regionFilters,
+            filters: $filters,
+            page: $page,
+            perPage: $perPage,
+            columns: $columns,
+            sort: $sort,
+            extraColumns: ['nivel_critico', 'factores_criticos_count'],
+            logTag: 'obtenerCriticidadPaginada',
+            applyFilters: fn ($q, $f) => $this->consultas->aplicarFiltrosCriticidad($q, $f, $usarDerivados),
+            applyOrder: fn ($q, $s) => $this->consultas->aplicarOrdenCriticidad($q, $s, $columns, $usarDerivados),
+            mapRow: fn ($row) => $this->presentador->rowToCriticalStore($row, $columns),
+            computeExtras: fn ($base, $filtered) => [
+                'summary' => $this->kpiTiendas->resumenCriticidad($base, $usarDerivados),
+            ],
+            errorExtras: ['summary' => []],
+        );
     }
 
     public function obtenerAuditoriaPaginada(array $regionFilters, array $filters, int $page, int $perPage, array $columns, array $sort = []): array
     {
-        $this->ultimoError = null;
+        $usarDerivados = $this->derivadosCompletos($regionFilters);
 
-        try {
-            $conn = $this->consultas->conexion();
-            $base = $conn->table('tiendas');
-            $this->consultas->aplicarPeriodoActivo($base, $regionFilters);
-            $this->consultas->aplicarFiltroRegional($base, $regionFilters);
-            $usarDerivados = $this->derivadosCompletos($regionFilters);
-
-            $filtered = clone $base;
-            $this->consultas->aplicarFiltrosAuditoria($filtered, $filters, $usarDerivados);
-            $this->consultas->aplicarFiltroTiendaSalud($filtered, $filters['tienda_salud'] ?? '');
-
-            $selectColumns = array_values(array_unique(array_merge($columns, ['nivel_critico', 'estado_comite', 'rango_rotacion', 'auditoria_pendiente'])));
-            $rowsQuery = $this->consultas->addTiendaSaludFlag((clone $filtered)->select($selectColumns));
-            $this->consultas->aplicarOrdenAuditoria($rowsQuery, $sort, $columns, $usarDerivados);
-
-            $rows = $rowsQuery->offset(($page - 1) * $perPage)
-                ->limit($perPage)
-                ->get()
-                ->map(fn ($row) => $this->presentador->rowToAuditStore($row, $columns))
-                ->all();
-
-            return [
-                'rows' => $rows,
-                'total' => (clone $base)->count(),
-                'filtered' => (clone $filtered)->count(),
-                'kpis' => $this->kpiTiendas->kpisAuditoria(clone $base, $usarDerivados),
-            ];
-        } catch (\Throwable $e) {
-            $this->ultimoError = $e->getMessage();
-            Log::error('[Postgresql] obtenerAuditoriaPaginada: '.$e->getMessage());
-
-            return ['rows' => [], 'total' => 0, 'filtered' => 0, 'kpis' => []];
-        }
+        return $this->paginateModule(
+            regionFilters: $regionFilters,
+            filters: $filters,
+            page: $page,
+            perPage: $perPage,
+            columns: $columns,
+            sort: $sort,
+            extraColumns: ['nivel_critico', 'estado_comite', 'rango_rotacion', 'auditoria_pendiente'],
+            logTag: 'obtenerAuditoriaPaginada',
+            applyFilters: fn ($q, $f) => $this->consultas->aplicarFiltrosAuditoria($q, $f, $usarDerivados),
+            applyOrder: fn ($q, $s) => $this->consultas->aplicarOrdenAuditoria($q, $s, $columns, $usarDerivados),
+            mapRow: fn ($row) => $this->presentador->rowToAuditStore($row, $columns),
+            computeExtras: fn ($base, $filtered) => [
+                'kpis' => $this->kpiTiendas->kpisAuditoria($base, $usarDerivados),
+            ],
+            errorExtras: ['kpis' => []],
+        );
     }
 
     public function obtenerAperturasPaginada(array $regionFilters, array $filters, int $page, int $perPage, array $columns, array $sort = []): array
     {
-        $this->ultimoError = null;
-
-        try {
-            $conn = $this->consultas->conexion();
-            $base = $conn->table('tiendas');
-            $this->consultas->aplicarPeriodoActivo($base, $regionFilters);
-            $this->consultas->aplicarFiltroRegional($base, $regionFilters);
-
-            $filtered = clone $base;
-            $this->consultas->aplicarFiltrosAperturas($filtered, $filters);
-            $this->consultas->aplicarFiltroTiendaSalud($filtered, $filters['tienda_salud'] ?? '');
-
-            $rowsQuery = $this->consultas->addTiendaSaludFlag((clone $filtered)->select($columns));
-            $this->consultas->aplicarOrdenAperturas($rowsQuery, $sort, $columns);
-
-            $rows = $rowsQuery->offset(($page - 1) * $perPage)
-                ->limit($perPage)
-                ->get()
-                ->map(fn ($row) => $this->presentador->rowToAperturaStore($row, $columns))
-                ->all();
-
-            return [
-                'rows' => $rows,
-                'total' => (clone $base)->count(),
-                'filtered' => (clone $filtered)->count(),
-                'kpis' => $this->kpiTiendas->kpisAperturas(clone $filtered),
-            ];
-        } catch (\Throwable $e) {
-            $this->ultimoError = $e->getMessage();
-            Log::error('[Postgresql] obtenerAperturasPaginada: '.$e->getMessage());
-
-            return ['rows' => [], 'total' => 0, 'filtered' => 0, 'kpis' => []];
-        }
+        return $this->paginateModule(
+            regionFilters: $regionFilters,
+            filters: $filters,
+            page: $page,
+            perPage: $perPage,
+            columns: $columns,
+            sort: $sort,
+            extraColumns: [],
+            logTag: 'obtenerAperturasPaginada',
+            applyFilters: fn ($q, $f) => $this->consultas->aplicarFiltrosAperturas($q, $f),
+            applyOrder: fn ($q, $s) => $this->consultas->aplicarOrdenAperturas($q, $s, $columns),
+            mapRow: fn ($row) => $this->presentador->rowToAperturaStore($row, $columns),
+            computeExtras: fn ($base, $filtered) => [
+                'kpis' => $this->kpiTiendas->kpisAperturas($filtered),
+            ],
+            errorExtras: ['kpis' => []],
+        );
     }
 
     public function obtenerMapa(array $regionFilters, array $filters, array $columns): array
@@ -322,12 +282,12 @@ class ServicioPostgresql
     {
         $usarDerivados = $this->derivadosCompletos($regionFilters);
 
-        return $this->dashboardMetricas->obtenerDashboardMetricas($regionFilters, $usarDerivados, $this->trackedDirectorioColumns);
+        return $this->dashboardMetricas->obtenerDashboardMetricas($regionFilters, $usarDerivados, self::TRACKED_DIRECTORIO_COLUMNS);
     }
 
     public function exportarTiendas(array $regionFilters, array $filters, array $columns, string $module): \Generator
     {
-        yield from $this->exportacionTiendas->exportarTiendas($regionFilters, $filters, $columns, $module, $this->derivadosCompletos($regionFilters), $this->trackedDirectorioColumns);
+        yield from $this->exportacionTiendas->exportarTiendas($regionFilters, $filters, $columns, $module, $this->derivadosCompletos($regionFilters), self::TRACKED_DIRECTORIO_COLUMNS);
     }
 
     public function tieneDatos(): bool

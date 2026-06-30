@@ -93,7 +93,6 @@ class DashboardContent extends Component
         $this->directorioStats = (array) ($metrics['directorioStats'] ?? []);
         $this->auditoriaKpis = (array) ($metrics['auditoriaKpis'] ?? []);
         $this->updatedAt = now()->toDateTimeString();
-        $this->error = $this->postgres->getUltimoError();
         $this->chartDataJson = json_encode([
             'totalCount' => $this->totalCount,
             'connectivityKpis' => $this->connectivityKpis,
