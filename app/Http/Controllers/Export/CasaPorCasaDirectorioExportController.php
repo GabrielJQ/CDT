@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Export;
 use App\Exports\CasaPorCasa\DirectorioExport;
 use App\Http\Controllers\Controller;
 use App\Servicios\ServicioCasaPorCasa;
-use App\Servicios\ServicioExportacion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -26,10 +25,8 @@ class CasaPorCasaDirectorioExportController extends Controller
                 'buscar' => $request->query('buscar', ''),
             ];
 
-            return ServicioExportacion::download(
-                new DirectorioExport($this->cxc, $uoFilter),
-                $filters,
-            );
+            return (new DirectorioExport($this->cxc, $uoFilter))
+                ->download($filters);
         } catch (\Throwable $e) {
             Log::error('[Export CxC Directorio] '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
 

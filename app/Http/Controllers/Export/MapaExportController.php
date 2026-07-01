@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Export;
 use App\Exports\MapaExport;
 use App\Http\Controllers\Controller;
 use App\Servicios\ServicioAlcanceUsuario;
-use App\Servicios\ServicioExportacion;
 use App\Servicios\ServicioPostgresql;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -28,10 +27,8 @@ class MapaExportController extends Controller
                 'tienda_salud' => $request->query('tienda_salud', ''),
             ];
 
-            return ServicioExportacion::download(
-                new MapaExport($this->postgres, $this->applyRegionFilter()),
-                $filters,
-            );
+            return (new MapaExport($this->postgres, $this->applyRegionFilter()))
+                ->download($filters);
         } catch (\Throwable $e) {
             Log::error('[Export Mapa] '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
 

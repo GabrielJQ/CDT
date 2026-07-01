@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Export;
 use App\Exports\AuditoriaExport;
 use App\Http\Controllers\Controller;
 use App\Servicios\ServicioAlcanceUsuario;
-use App\Servicios\ServicioExportacion;
 use App\Servicios\ServicioPostgresql;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -34,10 +33,8 @@ class AuditoriaExportController extends Controller
                 'tienda_salud' => $request->query('tienda_salud', ''),
             ];
 
-            return ServicioExportacion::download(
-                new AuditoriaExport($this->postgres, $this->applyRegionFilter()),
-                $filters,
-            );
+            return (new AuditoriaExport($this->postgres, $this->applyRegionFilter()))
+                ->download($filters);
         } catch (\Throwable $e) {
             Log::error('[Export Auditoria] '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
 

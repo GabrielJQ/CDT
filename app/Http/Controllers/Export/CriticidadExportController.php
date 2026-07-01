@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Export;
 use App\Exports\CriticidadExport;
 use App\Http\Controllers\Controller;
 use App\Servicios\ServicioAlcanceUsuario;
-use App\Servicios\ServicioExportacion;
 use App\Servicios\ServicioPostgresql;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -29,10 +28,8 @@ class CriticidadExportController extends Controller
                 'tienda_salud' => $request->query('tienda_salud', ''),
             ];
 
-            return ServicioExportacion::download(
-                new CriticidadExport($this->postgres, $this->applyRegionFilter()),
-                $filters,
-            );
+            return (new CriticidadExport($this->postgres, $this->applyRegionFilter()))
+                ->download($filters);
         } catch (\Throwable $e) {
             Log::error('[Export Criticidad] '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
 

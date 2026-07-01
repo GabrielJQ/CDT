@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Export;
 use App\Exports\CasaPorCasa\MapaExport;
 use App\Http\Controllers\Controller;
 use App\Servicios\ServicioCasaPorCasa;
-use App\Servicios\ServicioExportacion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -29,10 +28,8 @@ class CasaPorCasaMapaExportController extends Controller
                 'buscar' => $request->query('buscar', ''),
             ];
 
-            return ServicioExportacion::download(
-                new MapaExport($this->cxc, $uoFilter),
-                $filters,
-            );
+            return (new MapaExport($this->cxc, $uoFilter))
+                ->download($filters);
         } catch (\Throwable $e) {
             Log::error('[Export CxC Mapa] '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
 
