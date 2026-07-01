@@ -26,8 +26,6 @@ class Tienda extends Model
 
     public const PAGARE_VENCIDO_ANIOS = 1;
 
-    public const SIN_AUDITORIA_ANIO_MESES = 12;
-
     public function getConnectionName(): string
     {
         return config('database.imports');

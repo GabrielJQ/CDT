@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 
 class ServicioPostgresql
 {
-    private const TRACKED_DIRECTORIO_COLUMNS = [
+    public const TRACKED_DIRECTORIO_COLUMNS = [
         'TELEFONIA', 'CORREO', 'Señal de celular', 'Compañía', 'INTERNET',
         'Vta_Mes', 'VtaNeta_Mes', 'Cap_Tot', 'Cap_Com', 'Cap_Dic',
         'Pagare_Monto', 'Pagare_Fecha', 'Fec_CRA', 'Vigencia', 'Fch_Audit', 'Imp_Res_Audi_Mes',

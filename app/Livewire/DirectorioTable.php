@@ -28,15 +28,6 @@ class DirectorioTable extends Component
         'Asam_Real_Mes',
     ];
 
-    private const TRACKED_COLUMNS = [
-        'TELEFONIA', 'CORREO', 'Señal de celular', 'Compañía', 'INTERNET',
-        'Vta_Mes', 'VtaNeta_Mes', 'Cap_Tot', 'Cap_Com', 'Cap_Dic',
-        'Pagare_Monto', 'Pagare_Fecha', 'Fec_CRA', 'Vigencia', 'Fch_Audit', 'Imp_Res_Audi_Mes',
-        'Audit_Realiza_Mes', 'Latitud', 'Longitud', 'Direccion',
-        'Nom_Pre_CRA', 'Nom_Pre_Sup_CRA', 'Nom_Sec_CRA', 'Nom_Sec_Sup_CRA',
-        'Nom_Tes_CRA', 'Nom_Vcv_CRA', 'Nom_Voc_Gen_CRA',
-    ];
-
     private const MONEY_COLUMNS = [
         'Cap_Tot', 'Cap_Com', 'Cap_Dic', 'Pagare_Monto',
         'Vta_Mes', 'VtaNeta_Mes', 'Vta_Acu', 'VtaNeta_Acu', 'Bon_Mes',
@@ -286,7 +277,7 @@ class DirectorioTable extends Component
             $this->page,
             $this->perPage,
             self::COLUMNS,
-            self::TRACKED_COLUMNS,
+            ServicioPostgresql::TRACKED_DIRECTORIO_COLUMNS,
             $this->sortInput(),
         );
 
