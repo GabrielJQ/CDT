@@ -149,6 +149,27 @@ class ServicioIndicadorCriticidad
         END";
     }
 
+    public function nivelAuditoriaSql(): string
+    {
+        $countSql = $this->factoresAuditoriaCountSql();
+
+        return "CASE
+            WHEN {$countSql} >= 2 THEN 'rojo'
+            WHEN {$countSql} >= 1 THEN 'amarillo'
+            ELSE 'verde'
+        END";
+    }
+
+    public function factoresAuditoriaCountSql(): string
+    {
+        return '('.implode(' + ', [
+            'CASE WHEN '.$this->estadoComiteSql()." = 'vencido' THEN 1 ELSE 0 END",
+            'CASE WHEN COALESCE("Imp_Res_Audi_Mes", 0) > '.self::AUDITORIA_ELEVADA_MIN.' THEN 1 ELSE 0 END',
+            'CASE WHEN '.$this->rangoRotacionSql()." IN ('cero', 'critico') THEN 1 ELSE 0 END",
+            'CASE WHEN '.$this->auditoriaPendienteSql().' THEN 1 ELSE 0 END',
+        ]).')';
+    }
+
     public function levelFromCriticalCount(int $count): string
     {
         if ($count >= self::FACTORES_ROJO_MIN) {

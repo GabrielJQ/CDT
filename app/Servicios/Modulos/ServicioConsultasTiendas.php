@@ -87,11 +87,7 @@ class ServicioConsultasTiendas extends ConsultaTiendasBase
         $this->aplicarAlmacenSearch($query, $filters['almacen'] ?? null);
 
         if (($filters['nivel'] ?? '') !== '') {
-            if ($usarDerivados) {
-                $query->where('nivel_critico', $filters['nivel']);
-            } else {
-                $query->whereRaw($this->indicadores->nivelCriticoSql().' = ?', [$filters['nivel']]);
-            }
+            $query->whereRaw($this->indicadores->nivelAuditoriaSql().' = ?', [$filters['nivel']]);
         }
 
         if (($filters['estado_comite'] ?? '') !== '') {
