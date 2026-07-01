@@ -23,7 +23,7 @@ class ServicioAuditoria
         if ($vigencia !== null) {
             if ($vigencia->isPast()) {
                 $estadoComite = 'vencido';
-            } elseif (abs($vigencia->diffInDays(now())) <= 30) {
+            } elseif ($vigencia->lte(now()->addDays(30))) {
                 $estadoComite = 'proximo_a_vencer';
             } else {
                 $estadoComite = 'vigente';
@@ -56,11 +56,11 @@ class ServicioAuditoria
 
         // Determinar rango de rotacion
         $rangoRotacion = '';
-        if ($rotacion == 0) {
+        if ($capDic <= 0) {
             $rangoRotacion = 'cero';
-        } elseif ($rotacion < 0.5) {
+        } elseif ($vtaMes / $capDic < 0.5) {
             $rangoRotacion = 'critico';
-        } elseif ($rotacion < 1) {
+        } elseif ($vtaMes / $capDic < 1) {
             $rangoRotacion = 'amarillo';
         } else {
             $rangoRotacion = 'optimo';
