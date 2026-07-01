@@ -19,7 +19,7 @@ class TestCopyCsv extends Command
 
     protected $description = 'Prueba el pipeline COPY de un CSV fragmento a Supabase';
 
-    public function handle(ServicioSanitizadorCsv $sanitizer): int
+    public function handle(ServicioSanitizadorCsv $sanitizer, ServicioMapeoColumnas $mapper): int
     {
         $path = storage_path('app/imports/'.$this->argument('file'));
         $rows = (int) $this->option('rows');
@@ -147,7 +147,6 @@ class TestCopyCsv extends Command
         $this->line("7. Filas en staging_import: {$stagingCount}");
 
         $this->line('8. Probando mapeo a tiendas...');
-        $mapper = ServicioMapeoColumnas::make();
         $errores = 0;
         DB::connection(config('database.imports'))->table('staging_import')
             ->where('_status', 'staged')

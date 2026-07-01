@@ -21,6 +21,7 @@ class ImportController extends Controller
     public function __construct(
         private ServicioUpload $upload,
         private ServicioPeriodosImportacion $periodos,
+        private ServicioMapeoColumnas $mapper,
         ServicioAlcanceUsuario $alcanceUsuario,
     ) {
         parent::__construct($alcanceUsuario);
@@ -85,8 +86,7 @@ class ImportController extends Controller
         }
 
         $header = $sanitizer->extraerHeader($sanitizedPath);
-        $mapper = ServicioMapeoColumnas::make();
-        $advertencias = $mapper->validarColumnas($header);
+        $advertencias = $this->mapper->validarColumnas($header);
 
         $chunkDir = dirname($destPath).'/_chunks';
         $chunkFiles = $sanitizer->dividirEnChunks($sanitizedPath, $chunkDir, 100000);

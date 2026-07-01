@@ -26,7 +26,7 @@ class ImportCsv extends Command
 
     protected $description = 'Carga masiva de CSV a Supabase vía COPY';
 
-    public function handle(ServicioSanitizadorCsv $sanitizer, ServicioPeriodosImportacion $periodos): int
+    public function handle(ServicioSanitizadorCsv $sanitizer, ServicioPeriodosImportacion $periodos, ServicioMapeoColumnas $mapper): int
     {
         $originalPath = storage_path('app/imports/'.$this->argument('file'));
         $dryRun = (bool) $this->option('dry-run');
@@ -53,7 +53,6 @@ class ImportCsv extends Command
         // 2. Validar header vs mapeo
         $this->info('Validando columnas...');
         $header = $sanitizer->extraerHeader($sanitizedPath, $delimiter);
-        $mapper = ServicioMapeoColumnas::make();
         $advertencias = $mapper->validarColumnas($header);
 
         if (! empty($advertencias)) {

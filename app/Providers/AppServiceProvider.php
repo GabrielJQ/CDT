@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Contracts\Repositories\TiendaRepositoryInterface;
 use App\Repositories\TiendaPostgresqlRepository;
 use App\Servicios\ServicioAlcanceUsuario;
+use App\Servicios\ServicioMapeoColumnas;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -20,6 +21,10 @@ class AppServiceProvider extends ServiceProvider
             TiendaRepositoryInterface::class,
             TiendaPostgresqlRepository::class,
         );
+
+        $this->app->singleton(ServicioMapeoColumnas::class, function () {
+            return new ServicioMapeoColumnas(config('importacion.column_mapping', []));
+        });
     }
 
     /**

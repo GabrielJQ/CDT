@@ -8,11 +8,6 @@ class ServicioMapeoColumnas
         private array $mapping = [],
     ) {}
 
-    public static function make(): self
-    {
-        return new self(config('importacion.column_mapping', []));
-    }
-
     /**
      * Convierte una fila de staging (stdClass / array) en un array
      * asociativo con las columnas de la tabla destino.

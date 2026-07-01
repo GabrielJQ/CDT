@@ -39,8 +39,8 @@ class FinalizarImportacionJob implements ShouldQueue
         ServicioDerivadosTienda $derivados,
         ServicioPeriodosImportacion $periodos,
         ServicioJerarquiaOperativa $jerarquia,
+        ServicioMapeoColumnas $mapper,
     ): void {
-        $mapper = ServicioMapeoColumnas::make();
         $conn = DB::connection(config('database.imports'));
 
         $stagingQuery = $conn->table('staging_import')->where('_status', 'staged');
