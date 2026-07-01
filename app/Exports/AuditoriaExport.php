@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Presenters\IndicadorPresenter;
 use App\Servicios\ServicioPostgresql;
 
 class AuditoriaExport extends BaseExport
@@ -38,6 +39,15 @@ class AuditoriaExport extends BaseExport
             '_audit.rotacion' => 'Rotación',
             '_audit.level' => 'Riesgo',
         ];
+    }
+
+    public function map(array $row): array
+    {
+        if (isset($row['_audit']['level'])) {
+            $row['_audit']['level'] = IndicadorPresenter::levelDisplayLabel($row['_audit']['level']);
+        }
+
+        return $row;
     }
 
     public function data(array $filters): iterable

@@ -40,6 +40,12 @@ class IndicadorPresenter
         'verde' => ['bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300', '🟢 %d — Normal'],
     ];
 
+    private const LEVEL_DISPLAY_LABELS = [
+        'rojo' => 'Crítico',
+        'amarillo' => 'Monitoreo',
+        'verde' => 'Normal',
+    ];
+
     public static function factorKeys(): array
     {
         return self::FACTOR_KEYS;
@@ -79,5 +85,10 @@ class IndicadorPresenter
     public static function cleanLabel(string $label): string
     {
         return preg_replace('/^[^\p{L}\p{N}]+/u', '', $label);
+    }
+
+    public static function levelDisplayLabel(string $level): string
+    {
+        return self::LEVEL_DISPLAY_LABELS[$level] ?? $level;
     }
 }

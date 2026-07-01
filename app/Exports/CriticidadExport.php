@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Presenters\IndicadorPresenter;
 use App\Servicios\ServicioPostgresql;
 
 class CriticidadExport extends BaseExport
@@ -31,6 +32,15 @@ class CriticidadExport extends BaseExport
             '_critico.count' => 'Factores',
             '_detalle_factores' => 'Detalle',
         ];
+    }
+
+    public function map(array $row): array
+    {
+        if (isset($row['_critico']['level'])) {
+            $row['_critico']['level'] = IndicadorPresenter::levelDisplayLabel($row['_critico']['level']);
+        }
+
+        return $row;
     }
 
     public function data(array $filters): iterable
